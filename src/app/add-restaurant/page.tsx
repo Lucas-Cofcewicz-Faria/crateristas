@@ -71,8 +71,9 @@ export default function AddRestaurantPage() {
         }
         const reader = new FileReader();
         reader.onload = (event) => {
-          if (event.target?.result) {
-            setImages(prev => [...prev, event.target.result as string]);
+          const target = event.target;
+          if (target?.result) {
+            setImages(prev => [...prev, target.result as string]);
           }
         };
         reader.readAsDataURL(file);

@@ -23,6 +23,7 @@ interface Review {
   price: string;
   description: string;
   image: string;
+  images?: string | string[];
   author: string;
   date: string;
 }
@@ -39,6 +40,7 @@ export default function RestaurantPage() {
 
   const [review, setReview] = useState<Review | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeImage, setActiveImage] = useState<string>('');
 
   useEffect(() => {
     if (!id) return;
@@ -64,6 +66,9 @@ export default function RestaurantPage() {
         }
 
         setReview(foundReview);
+        if (foundReview) {
+          setActiveImage(foundReview.image);
+        }
       } catch (error) {
         console.error("Error loading restaurant details:", error);
       } finally {
@@ -128,6 +133,22 @@ export default function RestaurantPage() {
   const spendPerPersonVal = review.spendPerPerson ?? review.spend_per_person ?? 150;
   const avgScore = (tasteVal + serviceVal + ambianceVal + costBenefitVal + uxVal) / 5;
   const starsCount = Math.max(1, Math.min(5, Math.round(avgScore / 2)));
+  let allImages: string[] = [];
+  if (review) {
+    if (review.images) {
+      try {
+        allImages = typeof review.images === 'string' ? JSON.parse(review.images) : review.images;
+      } catch (e) {
+        allImages = [review.image];
+      }
+    } else {
+      allImages = [review.image];
+    }
+    allImages = allImages.filter(Boolean);
+    if (allImages.length === 0) {
+      allImages = [review.image];
+    }
+  }
 
   return (
     <div style={{
@@ -163,51 +184,71 @@ export default function RestaurantPage() {
           Voltar para o Painel
         </Link>
 
-        {/* Dynamic Details Layout: Left Photo, Right Text */}
+        {/* Large Image Banner Panel */}
+        <div style={{ marginBottom: '40px' }}>
+          <div className="glass-panel-gold" style={{
+            overflow: 'hidden',
+            borderRadius: '24px',
+            border: '1px solid var(--border-gold)',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.6), 0 0 25px var(--accent-gold-glow)',
+            height: '480px',
+            width: '100%',
+          }}>
+            <img 
+              src={activeImage || review.image} 
+              alt={review.name} 
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                display: 'block',
+              }}
+            />
+          </div>
+
+          {/* Thumbnail Gallery */}
+          {allImages.length > 1 && (
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              marginTop: '16px',
+              overflowX: 'auto',
+              paddingBottom: '8px',
+            }}>
+              {allImages.map((imgUrl, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveImage(imgUrl)}
+                  style={{
+                    width: '90px',
+                    height: '60px',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    border: (activeImage || review.image) === imgUrl ? '2px solid var(--accent-gold)' : '1px solid var(--border-light)',
+                    background: '#111',
+                    cursor: 'pointer',
+                    padding: 0,
+                    flexShrink: 0,
+                    transition: 'border 0.2s',
+                  }}
+                >
+                  <img src={imgUrl} alt={`Thumbnail ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Details & Review Layout below the image */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(300px, 1.1fr) 1fr',
+          gridTemplateColumns: '1.2fr 1fr',
           gap: '50px',
           alignItems: 'start',
         }} className="restaurant-details-grid">
           
-          {/* Left Side: Photo panel */}
-          <div style={{
-            position: 'sticky',
-            top: '120px',
-          }}>
-            <div className="glass-panel-gold" style={{
-              overflow: 'hidden',
-              borderRadius: '24px',
-              border: '1px solid var(--border-gold)',
-              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.6), 0 0 25px var(--accent-gold-glow)',
-            }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src={review.image} 
-                alt={review.name} 
-                style={{
-                  width: '100%',
-                  height: 'auto',
-                  maxHeight: '500px',
-                  objectFit: 'cover',
-                  display: 'block',
-                }}
-              />
-            </div>
-            
-            {/* Visual Deco Line */}
-            <div style={{
-              height: '1px',
-              background: 'linear-gradient(90deg, transparent, var(--accent-gold), transparent)',
-              marginTop: '30px',
-              opacity: 0.6,
-            }} />
-          </div>
-
-          {/* Right Side: Description & Scores */}
+          {/* Left Side: Info & Description */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-            
             {/* Title Block */}
             <div>
               <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
@@ -272,7 +313,58 @@ export default function RestaurantPage() {
               </div>
             </div>
 
-            {/* Score Breakdown Panel */}
+            {/* Critique Description */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <h3 style={{
+                fontSize: '0.9rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                color: 'var(--accent-gold)',
+                fontWeight: 700,
+              }}>
+                A Culinária e a Experiência
+              </h3>
+              
+              <p style={{
+                fontFamily: 'var(--font-serif)',
+                fontSize: '1.25rem',
+                lineHeight: 1.7,
+                color: 'var(--text-primary)',
+                fontStyle: 'italic',
+                textIndent: '20px',
+                borderLeft: '2px solid var(--accent-gold)',
+                paddingLeft: '20px',
+              }}>
+                "{review.description}"
+              </p>
+            </div>
+
+            {/* Author Signature & Date */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '16px 20px',
+              background: 'rgba(255,255,255,0.01)',
+              border: '1px dashed var(--border-light)',
+              borderRadius: '12px',
+              fontSize: '0.85rem',
+              color: 'var(--text-secondary)',
+              marginTop: '12px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <User size={16} color="var(--accent-gold)" />
+                <span>Avaliado por: <strong style={{ color: '#fff' }}>{review.author}</strong></span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Calendar size={16} color="var(--accent-gold)" />
+                <span>{review.date}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Side: Score Breakdown Panel */}
+          <div>
             <div className="glass-panel" style={{
               padding: '28px',
               border: '1px solid rgba(205, 164, 94, 0.2)',
@@ -326,59 +418,9 @@ export default function RestaurantPage() {
                 ))}
               </div>
             </div>
-
-            {/* Critique Description */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <h3 style={{
-                fontSize: '0.9rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-                color: 'var(--accent-gold)',
-                fontWeight: 700,
-              }}>
-                A Culinária e a Experiência
-              </h3>
-              
-              <p style={{
-                fontFamily: 'var(--font-serif)',
-                fontSize: '1.25rem',
-                lineHeight: 1.7,
-                color: 'var(--text-primary)',
-                fontStyle: 'italic',
-                textIndent: '20px',
-                borderLeft: '2px solid var(--accent-gold)',
-                paddingLeft: '20px',
-              }}>
-                "{review.description}"
-              </p>
-            </div>
-
-            {/* Author Signature & Date */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '16px 20px',
-              background: 'rgba(255,255,255,0.01)',
-              border: '1px dashed var(--border-light)',
-              borderRadius: '12px',
-              fontSize: '0.85rem',
-              color: 'var(--text-secondary)',
-              marginTop: '12px',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <User size={16} color="var(--accent-gold)" />
-                <span>Avaliado por: <strong style={{ color: '#fff' }}>{review.author}</strong></span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Calendar size={16} color="var(--accent-gold)" />
-                <span>{review.date}</span>
-              </div>
-            </div>
-
           </div>
-        </div>
 
+        </div>
       </main>
     </div>
   );

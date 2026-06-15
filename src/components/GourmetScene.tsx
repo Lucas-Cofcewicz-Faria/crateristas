@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 
 export default function GourmetScene() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -718,8 +717,10 @@ export default function GourmetScene() {
       transparent: true,
       opacity: 0.95,
     });
-    const sidewalkTexture = concreteTexture!.clone();
-    sidewalkTexture.repeat.set(30, 2); // Avoid horizontal stretching on the 18x1.2 sidewalk
+    const sidewalkTexture = concreteTexture ? concreteTexture.clone() : null;
+    if (sidewalkTexture) {
+      sidewalkTexture.repeat.set(30, 2); // Avoid horizontal stretching on the 18x1.2 sidewalk
+    }
 
     const grayPathMat = new THREE.MeshStandardMaterial({
       map: sidewalkTexture,
