@@ -234,13 +234,10 @@ class InMemoryReviewRepository implements ReviewRepository {
       coverPhotoUrl: null,
       photos: [],
       comments: scorecards.map((scorecard) => ({
-        id: scorecard.id,
+        memberId: scorecard.memberId,
+        displayName: this.memberRecords.get(scorecard.memberId)!.displayName,
+        avatarUrl: this.memberRecords.get(scorecard.memberId)!.avatarUrl,
         comment: scorecard.comment,
-        member: {
-          slug: this.memberRecords.get(scorecard.memberId)!.slug,
-          displayName: this.memberRecords.get(scorecard.memberId)!.displayName,
-          avatarUrl: this.memberRecords.get(scorecard.memberId)!.avatarUrl,
-        },
       })),
       historical: null,
     };

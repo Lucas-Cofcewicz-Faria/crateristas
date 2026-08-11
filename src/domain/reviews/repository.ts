@@ -77,9 +77,10 @@ export interface PublicPhoto {
 }
 
 export interface PublicComment {
-  id: string;
+  memberId: string;
+  displayName: string;
+  avatarUrl: string | null;
   comment: string;
-  member: Pick<PublicMemberSummary, 'slug' | 'displayName' | 'avatarUrl'>;
 }
 
 export type HistoricalScoreValues = Record<keyof ScoreValues, number | null>;

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { neon } from '@neondatabase/serverless';
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { AtomicScorecardSubmissionInput } from '@/domain/reviews/repository';
 import {
   createNeonReviewRepository,
@@ -434,7 +434,7 @@ describe('NeonReviewRepository', () => {
     await expect(repository.getPublicVisitBySlug('visita-privada')).resolves.toBeNull();
   });
 
-  it('returns only aggregate scores and sanitized public comments with explicit historical gaps', async () => {
+  it('returns flat allowlisted public comments with explicit historical gaps', async () => {
     const sql = {
       query: async () => [{
         id: 'visit-1',
@@ -465,6 +465,9 @@ describe('NeonReviewRepository', () => {
         }],
         comments: [{
           id: 'score-1',
+          memberId: 'member-1',
+          displayName: 'Membro 1',
+          avatarUrl: null,
           comment: 'Comentário público.',
           food: 10,
           service: 10,
@@ -503,10 +506,17 @@ describe('NeonReviewRepository', () => {
     });
     expect(result).not.toHaveProperty('scorecards');
     expect(result?.comments[0]).toEqual({
-      id: 'score-1',
+      memberId: 'member-1',
+      displayName: 'Membro 1',
+      avatarUrl: null,
       comment: 'Comentário público.',
-      member: { slug: 'membro-1', displayName: 'Membro 1', avatarUrl: null },
     });
+    expect(Object.keys(result!.comments[0]).sort()).toEqual([
+      'avatarUrl',
+      'comment',
+      'displayName',
+      'memberId',
+    ]);
     expect(result?.photos[0]).toEqual({
       id: 'photo-1',
       url: 'https://images.example.com/cover.webp',
@@ -632,6 +642,14 @@ describe('NeonReviewRepository', () => {
 
 const integrationUrl = process.env.TEST_DATABASE_URL;
 const describeIntegration = integrationUrl ? describe : describe.skip;
+const constrainedScoreColumns = [
+  'food',
+  'service',
+  'ambience',
+  'value',
+  'access',
+  'wait_time',
+] as const;
 
 describeIntegration('NeonReviewRepository database constraints', () => {
   const sql = integrationUrl ? neon(integrationUrl) : null;
@@ -649,7 +667,7 @@ describeIntegration('NeonReviewRepository database constraints', () => {
   const concurrentRestaurantId = randomUUID();
   const concurrentVisitId = randomUUID();
 
-  it('enforces one scorecard per member and scores from zero to ten', async () => {
+  beforeAll(async () => {
     if (!sql) throw new Error('TEST_DATABASE_URL ausente.');
     const suffix = memberId.slice(0, 8);
     await sql.transaction((transaction) => [
@@ -676,19 +694,28 @@ describeIntegration('NeonReviewRepository database constraints', () => {
         [visitId, memberId, 'Primeira ficha'],
       ),
     ]);
+  });
 
+  it('enforces one scorecard per member and visit', async () => {
+    if (!sql) throw new Error('TEST_DATABASE_URL ausente.');
     await expect(sql.query(
       `INSERT INTO scorecards
         (visit_id, member_id, food, service, ambience, value, access, wait_time, comment)
        VALUES ($1, $2, 1, 1, 1, 1, 1, 1, $3)`,
       [visitId, memberId, 'Duplicada'],
     )).rejects.toThrow();
-
-    await expect(sql.query(
-      `UPDATE scorecards SET food = 11 WHERE visit_id = $1 AND member_id = $2`,
-      [visitId, memberId],
-    )).rejects.toThrow();
   });
+
+  it.each(constrainedScoreColumns.flatMap((column) => [-1, 11].map((score) => ({ column, score }))))(
+    'rejects $score for the constrained score column $column',
+    async ({ column, score }) => {
+      if (!sql) throw new Error('TEST_DATABASE_URL ausente.');
+      await expect(sql.query(
+        `UPDATE scorecards SET ${column} = $1 WHERE visit_id = $2 AND member_id = $3`,
+        [score, visitId, memberId],
+      )).rejects.toThrow();
+    },
+  );
 
   it('keeps the SQL quorum transition equivalent to the domain rule for the first score', async () => {
     if (!sql) throw new Error('TEST_DATABASE_URL ausente.');

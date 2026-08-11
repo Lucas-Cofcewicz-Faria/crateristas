@@ -118,17 +118,14 @@ function publicPhotos(value: unknown): PublicPhoto[] {
 function publicComments(value: unknown): PublicComment[] {
   if (!Array.isArray(value)) throw new Error('Resposta inválida do banco: comments.');
   return value.map((comment) => {
-    if (!isRecord(comment) || !isRecord(comment.member)) {
+    if (!isRecord(comment)) {
       throw new Error('Resposta inválida do banco: comment.');
     }
     return {
-      id: requiredString(comment.id, 'comment.id'),
+      memberId: requiredString(comment.memberId, 'comment.memberId'),
+      displayName: requiredString(comment.displayName, 'comment.displayName'),
+      avatarUrl: nullableString(comment.avatarUrl, 'comment.avatarUrl'),
       comment: requiredString(comment.comment, 'comment.comment'),
-      member: {
-        slug: requiredString(comment.member.slug, 'comment.member.slug'),
-        displayName: requiredString(comment.member.displayName, 'comment.member.displayName'),
-        avatarUrl: nullableString(comment.member.avatarUrl, 'comment.member.avatarUrl'),
-      },
     };
   });
 }
@@ -828,13 +825,10 @@ class NeonReviewRepository implements ReviewRepository {
        ) photos ON TRUE
        LEFT JOIN LATERAL (
          SELECT jsonb_agg(jsonb_build_object(
-           'id', s.id,
-           'comment', s.comment,
-           'member', jsonb_build_object(
-             'slug', m.slug,
-             'displayName', m.display_name,
-             'avatarUrl', m.avatar_url
-           )
+           'memberId', s.member_id,
+           'displayName', m.display_name,
+           'avatarUrl', m.avatar_url,
+           'comment', s.comment
          ) ORDER BY s.created_at) AS items
          FROM scorecards s
          JOIN members m ON m.id = s.member_id
