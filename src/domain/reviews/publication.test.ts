@@ -24,6 +24,44 @@ describe('resolvePublication', () => {
     })).toEqual({ state: 'private', reason: null });
   });
 
+  it('uses the default quorum when a visit does not define one', () => {
+    expect(resolvePublication({
+      state: 'private',
+      reason: null,
+      participantCount: 5,
+      command: 'scorecard_saved',
+      isAdmin: false,
+    })).toEqual({ state: 'private', reason: null });
+
+    expect(resolvePublication({
+      state: 'private',
+      reason: null,
+      participantCount: 6,
+      command: 'scorecard_saved',
+      isAdmin: false,
+    })).toEqual({ state: 'published', reason: 'quorum' });
+  });
+
+  it('preserves an explicit custom quorum', () => {
+    expect(resolvePublication({
+      state: 'private',
+      reason: null,
+      participantCount: 6,
+      quorum: 7,
+      command: 'scorecard_saved',
+      isAdmin: false,
+    })).toEqual({ state: 'private', reason: null });
+
+    expect(resolvePublication({
+      state: 'private',
+      reason: null,
+      participantCount: 7,
+      quorum: 7,
+      command: 'scorecard_saved',
+      isAdmin: false,
+    })).toEqual({ state: 'published', reason: 'quorum' });
+  });
+
   it('keeps a hidden visit hidden when another scorecard is saved', () => {
     expect(resolvePublication({
       state: 'hidden',

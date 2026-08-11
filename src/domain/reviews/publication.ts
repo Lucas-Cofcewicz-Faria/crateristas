@@ -1,4 +1,4 @@
-import type { PublicationReason, PublicationState } from './types';
+import { DEFAULT_QUORUM, type PublicationReason, type PublicationState } from './types';
 
 export type PublicationCommand = 'scorecard_saved' | 'publish_early' | 'hide' | 'republish';
 
@@ -6,14 +6,15 @@ export function resolvePublication(input: {
   state: PublicationState;
   reason: PublicationReason;
   participantCount: number;
-  quorum: number;
+  quorum?: number;
   command: PublicationCommand;
   isAdmin: boolean;
 }): { state: PublicationState; reason: PublicationReason } {
   const current = { state: input.state, reason: input.reason };
+  const quorum = input.quorum ?? DEFAULT_QUORUM;
 
   if (input.command === 'scorecard_saved') {
-    if (input.state === 'private' && input.participantCount >= input.quorum) {
+    if (input.state === 'private' && input.participantCount >= quorum) {
       return { state: 'published', reason: 'quorum' };
     }
 

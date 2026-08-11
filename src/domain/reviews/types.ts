@@ -1,3 +1,6 @@
+export const CRATERISTAS_GROUP_SIZE = 8;
+export const DEFAULT_QUORUM = 6;
+
 export const SCORE_KEYS = ['food', 'service', 'ambience', 'value', 'access', 'waitTime'] as const;
 
 export type ScoreKey = (typeof SCORE_KEYS)[number];
