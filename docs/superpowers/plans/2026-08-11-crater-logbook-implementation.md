@@ -22,7 +22,7 @@
 - Manter Neon, Vercel Hobby/Blob e o subdominio `.vercel.app` dentro das cotas gratuitas.
 - Nao usar `localStorage` como fallback para dados autenticados ou publicados.
 - Nao criar cadastro publico, resumo por IA, ranking competitivo ou perfis individuais de membros.
-- Nao alterar o loop, camera, scroll, geometrias, materiais, luzes, particulas, eventos ou descarte de `GourmetScene.tsx`.
+- Nao alterar o loop, camera, scroll, geometrias, materiais, luzes, particulas, eventos ou descarte de `GourmetScene.tsx`. Por autorizacao do usuario em 2026-08-11, sao permitidas somente correcoes comprovadamente nao funcionais exigidas pelo lint, como trocar uma variavel nunca reatribuida de `let` para `const`.
 - A unica mudanca funcional permitida na landing e trocar o destino final de `/home` para `/registros`.
 - Antes de editar recursos Next.js, ler os guias locais relevantes em `node_modules/next/dist/docs/01-app/` conforme `AGENTS.md`.
 - Preservar a tabela legada `reviews`; qualquer migracao de dados deve ser aditiva e recuperavel.
@@ -1078,7 +1078,7 @@ Run `npm run db:migrate`, then compare source count with `visits WHERE legacy_re
 
 - [ ] **Step 3: Cut over the landing destination only**
 
-In `src/app/page.tsx`, change only `router.push('/home')` to `router.push('/registros')`. Do not edit `GourmetScene.tsx`.
+In `src/app/page.tsx`, change only `router.push('/home')` to `router.push('/registros')`. Do not edit `GourmetScene.tsx` except for the pre-approved, demonstrably non-functional lint correction described in Global Constraints.
 
 - [ ] **Step 4: Replace old pages with permanent redirects**
 
@@ -1155,7 +1155,7 @@ Inspect `/registros`, one restaurant, `/membros`, `/entrar`, `/painel` and both 
 
 - [ ] **Step 5: Verify the Three.js boundary**
 
-Compare `git diff origin/main -- src/components/GourmetScene.tsx`; expected: no diff. Scroll the landing from top through redirect and confirm the camera path and animation remain unchanged while the destination becomes `/registros`.
+Compare `git diff origin/main -- src/components/GourmetScene.tsx`; expected: no functional diff, with any textual change limited to the pre-approved lint-only correction in Global Constraints. Scroll the landing from top through redirect and confirm the camera path and animation remain unchanged while the destination becomes `/registros`.
 
 - [ ] **Step 6: Verify free-tier safeguards**
 
