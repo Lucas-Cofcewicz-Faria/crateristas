@@ -2,6 +2,9 @@ import { createNeonAuth } from '@neondatabase/auth/next/server';
 
 type NeonAuth = ReturnType<typeof createNeonAuth>;
 type AuthHandlers = ReturnType<NeonAuth['handler']>;
+type AuthFacade = Pick<NeonAuth, 'getSession' | 'signOut' | 'handler' | 'middleware'> & {
+  signIn: Pick<NeonAuth['signIn'], 'email'>;
+};
 interface AuthEnvironment {
   [key: string]: string | undefined;
   NEON_AUTH_BASE_URL?: string;
@@ -46,30 +49,12 @@ function getNeonAuth(): NeonAuth {
   return singleton;
 }
 
-function bindAuthPath(path: PropertyKey[]): unknown {
-  return new Proxy(
-    function lazyAuthCall() {},
-    {
-      apply(_target, _thisArgument, argumentsList) {
-        let receiver: unknown = getNeonAuth();
+const lazyGetSession: NeonAuth['getSession'] = (...args) => getNeonAuth().getSession(...args);
 
-        for (const property of path.slice(0, -1)) {
-          receiver = Reflect.get(Object(receiver), property);
-        }
+const lazySignInEmail: NeonAuth['signIn']['email'] = (...args) =>
+  getNeonAuth().signIn.email(...args);
 
-        const callable = Reflect.get(Object(receiver), path.at(-1)!);
-        if (typeof callable !== 'function') {
-          throw new TypeError('O método solicitado não existe no Neon Auth.');
-        }
-
-        return Reflect.apply(callable, receiver, argumentsList);
-      },
-      get(_target, property) {
-        return bindAuthPath([...path, property]);
-      },
-    },
-  );
-}
+const lazySignOut: NeonAuth['signOut'] = (...args) => getNeonAuth().signOut(...args);
 
 const lazyHandler: NeonAuth['handler'] = () => ({
   GET: (...args: Parameters<AuthHandlers['GET']>) => getNeonAuth().handler().GET(...args),
@@ -85,14 +70,17 @@ const lazyMiddleware: NeonAuth['middleware'] = (middlewareConfig) => {
 };
 
 /**
- * Fachada singleton do Neon Auth. A instancia real só é criada no primeiro uso
+ * Fachada singleton do Neon Auth. A instância real só é criada no primeiro uso
  * em runtime, permitindo testes e builds sem credenciais; qualquer operação
  * continua falhando imediatamente quando a configuração obrigatória é inválida.
+ * A superfície fica restrita aos métodos usados pelo aplicativo.
  */
-export const auth = new Proxy({} as NeonAuth, {
-  get(_target, property) {
-    if (property === 'handler') return lazyHandler;
-    if (property === 'middleware') return lazyMiddleware;
-    return bindAuthPath([property]);
-  },
-});
+export const auth = Object.freeze({
+  getSession: lazyGetSession,
+  signIn: Object.freeze({
+    email: lazySignInEmail,
+  }),
+  signOut: lazySignOut,
+  handler: lazyHandler,
+  middleware: lazyMiddleware,
+}) satisfies AuthFacade;
