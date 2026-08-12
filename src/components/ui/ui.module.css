@@ -1,0 +1,245 @@
+.button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.button.primary {
+  border-color: var(--ember);
+  background: var(--ember);
+  color: var(--canvas);
+}
+
+.button.primary:not(:disabled):hover {
+  border-color: var(--ember-bright);
+  background: var(--ember-bright);
+}
+
+.button.secondary {
+  border-color: var(--line);
+  background: var(--surface-raised);
+  color: var(--ink);
+}
+
+.button.secondary:not(:disabled):hover {
+  border-color: var(--ember);
+  color: var(--ember-bright);
+}
+
+.button.danger {
+  border-color: var(--danger);
+  background: transparent;
+  color: var(--danger);
+}
+
+.button.danger:not(:disabled):hover {
+  background: var(--danger);
+  color: var(--canvas);
+}
+
+.button.small {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 0.78rem;
+}
+
+.button.regular {
+  padding: 0 20px;
+  font-size: 0.88rem;
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.label {
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.description,
+.error {
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.description {
+  color: var(--ink-muted);
+}
+
+.error {
+  color: var(--danger);
+}
+
+.input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.input::placeholder {
+  color: var(--ink-muted);
+  opacity: 0.72;
+}
+
+.input:hover {
+  border-color: color-mix(in srgb, var(--line), var(--ink-muted) 35%);
+}
+
+.input:focus {
+  border-color: var(--ember-bright);
+  background: var(--surface-raised);
+}
+
+.input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.badge.neutral {
+  background: var(--surface-raised);
+  color: var(--ink-muted);
+}
+
+.badge.pending {
+  border-color: var(--ember);
+  background: var(--surface-raised);
+  color: var(--ember-bright);
+}
+
+.badge.success {
+  border-color: var(--success);
+  background: var(--surface-raised);
+  color: var(--success);
+}
+
+.badge.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.scoreRing {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.scoreRing.small {
+  width: 84px;
+  height: 84px;
+}
+
+.scoreRing.large {
+  width: 132px;
+  height: 132px;
+}
+
+.scoreGraphic {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+}
+
+.scoreTrack,
+.scoreProgress {
+  stroke-width: 1.8;
+}
+
+.scoreTrack {
+  stroke: var(--line);
+}
+
+.scoreProgress {
+  stroke: var(--ember-bright);
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+
+.scoreValue,
+.scoreLabel {
+  position: absolute;
+  text-align: center;
+}
+
+.scoreValue {
+  margin-top: -8px;
+  color: var(--ink);
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: 1.3rem;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.large .scoreValue {
+  margin-top: -12px;
+  font-size: 2rem;
+}
+
+.scoreLabel {
+  max-width: 66%;
+  margin-top: 28px;
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.large .scoreLabel {
+  margin-top: 42px;
+  font-size: 0.66rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .input {
+    transition: none;
+  }
+}

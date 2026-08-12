@@ -1,11 +1,20 @@
 import type { Metadata } from "next";
+import { Manrope, Newsreader } from "next/font/google";
 import "./globals.css";
 
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  variable: "--font-editorial",
+});
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-interface",
+});
+
 export const metadata: Metadata = {
-  title: "Crateristas | Gourmet Restaurant Reviews",
-  description: "An exclusive space for culinary enthusiasts to explore, review, and log exceptional gourmet dining experiences.",
-  keywords: ["gourmet", "restaurant reviews", "fine dining", "crateristas", "threejs", "nextjs"],
-  authors: [{ name: "Crateristas Culinary Club" }],
+  title: "Crateristas | Livro de Registros",
+  description: "Avaliações coletivas dos restaurantes visitados pelos Crateristas.",
 };
 
 export default function RootLayout({
@@ -14,10 +23,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>
-        {children}
-      </body>
+    <html lang="pt-BR" className={`${newsreader.variable} ${manrope.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }
