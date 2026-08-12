@@ -146,6 +146,7 @@ export interface SubmissionResult {
   publicationState: PublicationState;
   publicationReason: PublicationReason;
   participantCount: number;
+  aggregate: ReviewAggregate;
   publicationChanged: boolean;
 }
 

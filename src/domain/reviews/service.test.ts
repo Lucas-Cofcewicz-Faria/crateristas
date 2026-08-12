@@ -145,6 +145,10 @@ class InMemoryReviewRepository implements ReviewRepository {
   async submitScorecardAtomically(input: AtomicScorecardSubmissionInput): Promise<SubmissionResult> {
     await this.upsertScorecard(input.visitId, input.memberId, input.scorecard);
     const participantCount = await this.countScorecards(input.visitId);
+    const aggregate = aggregateScorecards(
+      [...this.scorecards.values()]
+        .filter((scorecard) => scorecard.visitId === input.visitId),
+    );
     const next = participantCount >= input.quorum
       ? input.transitionAtQuorum
       : { state: this.visit.publicationState, reason: this.visit.publicationReason };
@@ -163,6 +167,7 @@ class InMemoryReviewRepository implements ReviewRepository {
       publicationState: this.visit.publicationState,
       publicationReason: this.visit.publicationReason,
       participantCount,
+      aggregate,
       publicationChanged: changed,
     };
   }
@@ -340,7 +345,15 @@ describe('createReviewService', () => {
 
     const result = await service.submitScorecard(members[5], visitId, validScorecard);
 
-    expect(result).toMatchObject({ publicationState: 'published', participantCount: 6 });
+    expect(result).toMatchObject({
+      publicationState: 'published',
+      participantCount: 6,
+      aggregate: {
+        participantCount: 6,
+        averages: { food: 8, service: 8, ambience: 8, value: 8, access: 8, waitTime: 8 },
+        overall: 8,
+      },
+    });
     const publicVisit = await repository.getPublicVisitBySlug('casa-teste');
     expect(publicVisit).not.toHaveProperty('scorecards');
     expect(publicVisit?.comments[0]).not.toHaveProperty('food');
@@ -359,7 +372,14 @@ describe('createReviewService', () => {
       comment: 'Mudei de opinião depois da sobremesa.',
     });
 
-    expect(result.participantCount).toBe(6);
+    expect(result).toMatchObject({
+      participantCount: 6,
+      aggregate: {
+        participantCount: 6,
+        averages: { food: 7.2, service: 8, ambience: 8, value: 8, access: 8, waitTime: 8 },
+        overall: 7.9,
+      },
+    });
     expect(repository.scorecards.get(`${visitId}:${members[0].id}`)).toMatchObject({
       memberId: members[0].id,
       food: 3,
@@ -373,11 +393,33 @@ describe('createReviewService', () => {
     repository.visit.publicationReason = 'quorum';
     const service = createReviewService(repository);
 
-    const seventh = await service.submitScorecard(members[6], visitId, validScorecard);
-    const eighth = await service.submitScorecard(members[7], visitId, validScorecard);
+    const seventh = await service.submitScorecard(members[6], visitId, {
+      ...validScorecard,
+      food: 2,
+    });
+    const eighth = await service.submitScorecard(members[7], visitId, {
+      ...validScorecard,
+      food: 10,
+    });
 
-    expect(seventh).toMatchObject({ publicationState: 'published', participantCount: 7 });
-    expect(eighth).toMatchObject({ publicationState: 'published', participantCount: 8 });
+    expect(seventh).toMatchObject({
+      publicationState: 'published',
+      participantCount: 7,
+      aggregate: {
+        participantCount: 7,
+        averages: { food: 7.1, service: 8, ambience: 8, value: 8, access: 8, waitTime: 8 },
+        overall: 7.9,
+      },
+    });
+    expect(eighth).toMatchObject({
+      publicationState: 'published',
+      participantCount: 8,
+      aggregate: {
+        participantCount: 8,
+        averages: { food: 7.5, service: 8, ambience: 8, value: 8, access: 8, waitTime: 8 },
+        overall: 7.9,
+      },
+    });
     expect(repository.events).toHaveLength(0);
   });
 

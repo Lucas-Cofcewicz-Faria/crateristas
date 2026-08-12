@@ -338,11 +338,24 @@ function photoFromRow(row: Row): PhotoRecord {
 }
 
 function submissionFromRow(row: Row): SubmissionResult {
+  const participantCount = numberValue(row.participant_count, 'participant_count');
   return {
     visitId: requiredString(row.visit_id, 'visit_id'),
     publicationState: publicationState(row.publication_state),
     publicationReason: nullablePublicationReason(row.publication_reason),
-    participantCount: numberValue(row.participant_count, 'participant_count'),
+    participantCount,
+    aggregate: {
+      participantCount,
+      averages: participantCount === 0 ? null : {
+        food: numberValue(row.average_food, 'average_food'),
+        service: numberValue(row.average_service, 'average_service'),
+        ambience: numberValue(row.average_ambience, 'average_ambience'),
+        value: numberValue(row.average_value, 'average_value'),
+        access: numberValue(row.average_access, 'average_access'),
+        waitTime: numberValue(row.average_wait_time, 'average_wait_time'),
+      },
+      overall: participantCount === 0 ? null : numberValue(row.overall, 'overall'),
+    },
     publicationChanged: booleanValue(row.publication_changed),
   };
 }
@@ -352,16 +365,10 @@ function submissionFromRow(row: Row): SubmissionResult {
 // scorecard branch mirrors resolvePublication's only automatic transition:
 // private -> published when the post-upsert participant count reaches quorum.
 const ATOMIC_SCORECARD_SQL = `
-WITH existing_scorecard AS MATERIALIZED (
-  SELECT EXISTS (
-    SELECT 1 FROM scorecards WHERE visit_id = $1 AND member_id = $2
-  ) AS existed
-),
-saved AS (
+WITH saved AS (
   INSERT INTO scorecards
     (visit_id, member_id, food, service, ambience, value, access, wait_time, comment)
-  SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9
-  FROM existing_scorecard
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
   ON CONFLICT (visit_id, member_id) DO UPDATE SET
     food = EXCLUDED.food,
     service = EXCLUDED.service,
@@ -379,12 +386,26 @@ visit_context AS MATERIALIZED (
   JOIN saved s ON s.visit_id = v.id
   FOR UPDATE OF v
 ),
-score_count AS (
-  SELECT (
-    COUNT(*) + CASE WHEN (SELECT existed FROM existing_scorecard) THEN 0 ELSE 1 END
-  )::int AS participant_count
+post_upsert_scores AS MATERIALIZED (
+  SELECT s.food, s.service, s.ambience, s.value, s.access, s.wait_time
   FROM scorecards s
-  WHERE s.visit_id = (SELECT id FROM visit_context)
+  WHERE s.visit_id = $1
+    AND s.member_id <> $2
+  UNION ALL
+  SELECT $3::int, $4::int, $5::int, $6::int, $7::int, $8::int
+),
+score_aggregate AS (
+  SELECT
+    COUNT(*)::int AS participant_count,
+    ROUND(AVG(food)::numeric, 1)::float8 AS average_food,
+    ROUND(AVG(service)::numeric, 1)::float8 AS average_service,
+    ROUND(AVG(ambience)::numeric, 1)::float8 AS average_ambience,
+    ROUND(AVG(value)::numeric, 1)::float8 AS average_value,
+    ROUND(AVG(access)::numeric, 1)::float8 AS average_access,
+    ROUND(AVG(wait_time)::numeric, 1)::float8 AS average_wait_time,
+    ROUND(AVG((food + service + ambience + value + access + wait_time) / 6.0)::numeric, 1)::float8
+      AS overall
+  FROM post_upsert_scores
 ),
 transition AS (
   UPDATE visits v
@@ -394,17 +415,17 @@ transition AS (
       published_by = CASE WHEN $12 = 'published' THEN NULL ELSE v.published_by END,
       updated_at = NOW(),
       version = v.version + 1
-  FROM visit_context vc, score_count sc
+  FROM visit_context vc, score_aggregate aggregate
   WHERE v.id = vc.id
     AND vc.publication_state = $10
     AND vc.publication_state <> $12
-    AND sc.participant_count >= $11
+    AND aggregate.participant_count >= $11
   RETURNING v.publication_state, v.publication_reason
 ),
 event AS (
   INSERT INTO publication_events (visit_id, actor_id, action, participant_count)
-  SELECT vc.id, NULL, 'quorum_publish', sc.participant_count
-  FROM visit_context vc, score_count sc, transition t
+  SELECT vc.id, NULL, 'quorum_publish', aggregate.participant_count
+  FROM visit_context vc, score_aggregate aggregate, transition t
   RETURNING id
 )
 SELECT
@@ -412,10 +433,17 @@ SELECT
   COALESCE(t.publication_state, vc.publication_state) AS publication_state,
   CASE WHEN t.publication_state IS NOT NULL THEN t.publication_reason ELSE vc.publication_reason END
     AS publication_reason,
-  sc.participant_count,
+  aggregate.participant_count,
+  aggregate.average_food,
+  aggregate.average_service,
+  aggregate.average_ambience,
+  aggregate.average_value,
+  aggregate.average_access,
+  aggregate.average_wait_time,
+  aggregate.overall,
   (t.publication_state IS NOT NULL) AS publication_changed
 FROM visit_context vc
-CROSS JOIN score_count sc
+CROSS JOIN score_aggregate aggregate
 LEFT JOIN transition t ON TRUE
 LEFT JOIN event e ON TRUE
 LIMIT 1`;

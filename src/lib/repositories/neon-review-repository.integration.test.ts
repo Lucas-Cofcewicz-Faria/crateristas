@@ -203,6 +203,13 @@ describe('NeonReviewRepository', () => {
       publication_state: 'published',
       publication_reason: 'quorum',
       participant_count: 6,
+      average_food: 7.5,
+      average_service: 7,
+      average_ambience: 8,
+      average_value: 6.5,
+      average_access: 5,
+      average_wait_time: 4.5,
+      overall: 6.4,
       publication_changed: true,
     }];
     const sql = {
@@ -224,6 +231,18 @@ describe('NeonReviewRepository', () => {
       publicationState: 'published',
       publicationReason: 'quorum',
       participantCount: 6,
+      aggregate: {
+        participantCount: 6,
+        averages: {
+          food: 7.5,
+          service: 7,
+          ambience: 8,
+          value: 6.5,
+          access: 5,
+          waitTime: 4.5,
+        },
+        overall: 6.4,
+      },
       publicationChanged: true,
     });
   });
@@ -244,6 +263,13 @@ describe('NeonReviewRepository', () => {
           publication_state: 'published',
           publication_reason: 'quorum',
           participant_count: 6,
+          average_food: 8,
+          average_service: 7,
+          average_ambience: 9,
+          average_value: 6,
+          average_access: 5,
+          average_wait_time: 4,
+          overall: 6.5,
           publication_changed: true,
         }]];
       },
@@ -760,7 +786,40 @@ describeIntegration('NeonReviewRepository database constraints', () => {
       publicationState: 'published',
       publicationReason: 'quorum',
       participantCount: 1,
+      aggregate: {
+        participantCount: 1,
+        averages: { food: 8, service: 7, ambience: 9, value: 6, access: 5, waitTime: 4 },
+        overall: 6.5,
+      },
       publicationChanged: true,
+    });
+
+    const updated = await repository.submitScorecardAtomically({
+      visitId: atomicVisitId,
+      memberId: atomicMemberId,
+      scorecard: {
+        ...scorecard,
+        food: 2,
+        service: 3,
+        ambience: 4,
+        value: 5,
+        access: 6,
+        waitTime: 7,
+      },
+      expectedPublicationState: 'published',
+      quorum: 1,
+      transitionAtQuorum: { state: 'published', reason: 'quorum' },
+    });
+
+    expect(updated).toMatchObject({
+      publicationState: 'published',
+      participantCount: 1,
+      aggregate: {
+        participantCount: 1,
+        averages: { food: 2, service: 3, ambience: 4, value: 5, access: 6, waitTime: 7 },
+        overall: 4.5,
+      },
+      publicationChanged: false,
     });
     const events = await sql.query(
       `SELECT COUNT(*)::int AS event_count
