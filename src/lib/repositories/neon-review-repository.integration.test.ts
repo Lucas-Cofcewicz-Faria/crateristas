@@ -398,6 +398,87 @@ describe('NeonReviewRepository', () => {
     })).resolves.toBeUndefined();
   });
 
+  it('retries only the slot constraint after a concurrent insert leaves position five free', async () => {
+    let attempts = 0;
+    const slotConflict = Object.assign(new Error('duplicate visit photo position'), {
+      code: '23505',
+      constraint: 'visit_photos_visit_id_position_key',
+    });
+    const sql = {
+      query: async () => {
+        throw new Error('Mutação executada fora da transação.');
+      },
+      transaction: async () => {
+        attempts += 1;
+        if (attempts === 1) throw slotConflict;
+        return [[{ visit_id: 'visit-1', id: 'photo-position-5' }]];
+      },
+    } as unknown as ReviewSqlClient;
+    const repository = createNeonReviewRepository(sql);
+
+    await expect(repository.attachPhoto('visit-1', 'member-1', {
+      url: 'https://images.example.com/position-5.webp',
+      pathname: 'visits/visit-1/position-5.webp',
+      contentType: 'image/webp',
+      sizeBytes: 100_000,
+    })).resolves.toBeUndefined();
+    expect(attempts).toBe(2);
+  });
+
+  it('converts a retried slot collision into the canonical capacity error when all slots are full', async () => {
+    let attempts = 0;
+    const sql = {
+      query: async () => {
+        throw new Error('Mutação executada fora da transação.');
+      },
+      transaction: async () => {
+        attempts += 1;
+        if (attempts === 1) {
+          throw Object.assign(new Error('duplicate visit photo position'), {
+            code: '23505',
+            constraint: 'visit_photos_visit_id_position_key',
+          });
+        }
+        return [[{ visit_id: 'visit-1', id: null }]];
+      },
+    } as unknown as ReviewSqlClient;
+    const repository = createNeonReviewRepository(sql);
+
+    await expect(repository.attachPhoto('visit-1', 'member-1', {
+      url: 'https://images.example.com/full.webp',
+      pathname: 'visits/visit-1/full.webp',
+      contentType: 'image/webp',
+      sizeBytes: 100_000,
+    })).rejects.toThrow('A visita já possui o máximo de cinco fotos.');
+    expect(attempts).toBe(2);
+  });
+
+  it('does not retry a pathname unique violation', async () => {
+    let attempts = 0;
+    const pathnameConflict = Object.assign(new Error('duplicate photo pathname'), {
+      code: '23505',
+      constraint: 'visit_photos_pathname_key',
+    });
+    const sql = {
+      query: async () => {
+        throw new Error('Mutação executada fora da transação.');
+      },
+      transaction: async () => {
+        attempts += 1;
+        throw pathnameConflict;
+      },
+    } as unknown as ReviewSqlClient;
+    const repository = createNeonReviewRepository(sql);
+
+    await expect(repository.attachPhoto('visit-1', 'member-1', {
+      url: 'https://images.example.com/duplicate.webp',
+      pathname: 'visits/visit-1/duplicate.webp',
+      contentType: 'image/webp',
+      sizeBytes: 100_000,
+    })).rejects.toBe(pathnameConflict);
+    expect(attempts).toBe(1);
+  });
+
   it('reuses the first free position after a photo is deleted', async () => {
     const sql = {
       query: async () => {
@@ -688,6 +769,10 @@ describeIntegration('NeonReviewRepository database constraints', () => {
   const photoMemberId = randomUUID();
   const photoRestaurantId = randomUUID();
   const photoVisitId = randomUUID();
+  const photoRaceMemberId = randomUUID();
+  const photoRaceRestaurantId = randomUUID();
+  const photoRaceVisitWithThreeId = randomUUID();
+  const photoRaceVisitWithFourId = randomUUID();
   const concurrentMemberA = randomUUID();
   const concurrentMemberB = randomUUID();
   const concurrentRestaurantId = randomUUID();
@@ -886,6 +971,96 @@ describeIntegration('NeonReviewRepository database constraints', () => {
     expect(positions[1]).toMatchObject({ position: 2, pathname: `test/${photoVisitId}/replacement.webp` });
   });
 
+  it('allocates concurrent fourth/fifth slots and turns the sixth attempt into capacity', async () => {
+    if (!sql) throw new Error('TEST_DATABASE_URL ausente.');
+    const suffix = photoRaceMemberId.slice(0, 8);
+    await sql.transaction((transaction) => [
+      transaction.query(
+        `INSERT INTO members
+          (id, auth_user_id, email, slug, display_name, member_number)
+         VALUES ($1, $2, $3, $4, $5, 3)`,
+        [
+          photoRaceMemberId,
+          `photo-race-auth-${suffix}`,
+          `photo-race-${suffix}@example.com`,
+          `photo-race-member-${suffix}`,
+          'Teste Corrida de Fotos',
+        ],
+      ),
+      transaction.query(
+        `INSERT INTO restaurants (id, slug, name, cuisine, neighborhood)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [photoRaceRestaurantId, `photo-race-restaurant-${suffix}`, 'Fotos Concorrentes', 'Teste', 'Teste'],
+      ),
+      transaction.query(
+        `INSERT INTO visits (id, slug, restaurant_id, created_by, visited_at)
+         VALUES ($1, $2, $3, $4, $5), ($6, $7, $3, $4, $5)`,
+        [
+          photoRaceVisitWithThreeId,
+          `photo-race-three-${suffix}`,
+          photoRaceRestaurantId,
+          photoRaceMemberId,
+          '2026-08-11',
+          photoRaceVisitWithFourId,
+          `photo-race-four-${suffix}`,
+        ],
+      ),
+      transaction.query(
+        `INSERT INTO visit_photos
+          (visit_id, uploaded_by, url, pathname, content_type, size_bytes, position)
+         SELECT $1, $2, 'https://images.example.com/three-' || position || '.webp',
+                'test/' || $1 || '/three-' || position || '.webp', 'image/webp', 100000, position
+         FROM generate_series(1, 3) AS position`,
+        [photoRaceVisitWithThreeId, photoRaceMemberId],
+      ),
+      transaction.query(
+        `INSERT INTO visit_photos
+          (visit_id, uploaded_by, url, pathname, content_type, size_bytes, position)
+         SELECT $1, $2, 'https://images.example.com/four-' || position || '.webp',
+                'test/' || $1 || '/four-' || position || '.webp', 'image/webp', 100000, position
+         FROM generate_series(1, 4) AS position`,
+        [photoRaceVisitWithFourId, photoRaceMemberId],
+      ),
+    ]);
+    const repository = createNeonReviewRepository(sql);
+
+    const fromThree = await Promise.allSettled(['a', 'b'].map((suffixName) => (
+      repository.attachPhoto(photoRaceVisitWithThreeId, photoRaceMemberId, {
+        url: `https://images.example.com/from-three-${suffixName}.webp`,
+        pathname: `test/${photoRaceVisitWithThreeId}/from-three-${suffixName}.webp`,
+        contentType: 'image/webp',
+        sizeBytes: 100_000,
+      })
+    )));
+    expect(fromThree.map((result) => result.status)).toEqual(['fulfilled', 'fulfilled']);
+
+    const fromFour = await Promise.allSettled(['a', 'b'].map((suffixName) => (
+      repository.attachPhoto(photoRaceVisitWithFourId, photoRaceMemberId, {
+        url: `https://images.example.com/from-four-${suffixName}.webp`,
+        pathname: `test/${photoRaceVisitWithFourId}/from-four-${suffixName}.webp`,
+        contentType: 'image/webp',
+        sizeBytes: 100_000,
+      })
+    )));
+    expect(fromFour.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    const rejected = fromFour.find((result) => result.status === 'rejected');
+    expect(rejected).toMatchObject({
+      status: 'rejected',
+      reason: expect.objectContaining({
+        message: 'A visita já possui o máximo de cinco fotos.',
+      }),
+    });
+
+    const counts = await sql.query(
+      `SELECT visit_id, COUNT(*)::int AS photo_count
+       FROM visit_photos
+       WHERE visit_id IN ($1, $2)
+       GROUP BY visit_id`,
+      [photoRaceVisitWithThreeId, photoRaceVisitWithFourId],
+    );
+    expect(counts.map((row) => Number(row.photo_count)).sort()).toEqual([5, 5]);
+  });
+
   it('retries concurrent scorecards and records a single quorum event', async () => {
     if (!sql) throw new Error('TEST_DATABASE_URL ausente.');
     const suffix = concurrentVisitId.slice(0, 8);
@@ -964,14 +1139,18 @@ describeIntegration('NeonReviewRepository database constraints', () => {
       transaction.query('DELETE FROM visits WHERE id = $1', [visitId]),
       transaction.query('DELETE FROM visits WHERE id = $1', [atomicVisitId]),
       transaction.query('DELETE FROM visits WHERE id = $1', [photoVisitId]),
+      transaction.query('DELETE FROM visits WHERE id = $1', [photoRaceVisitWithThreeId]),
+      transaction.query('DELETE FROM visits WHERE id = $1', [photoRaceVisitWithFourId]),
       transaction.query('DELETE FROM visits WHERE id = $1', [concurrentVisitId]),
       transaction.query('DELETE FROM restaurants WHERE id = $1', [restaurantId]),
       transaction.query('DELETE FROM restaurants WHERE id = $1', [atomicRestaurantId]),
       transaction.query('DELETE FROM restaurants WHERE id = $1', [photoRestaurantId]),
+      transaction.query('DELETE FROM restaurants WHERE id = $1', [photoRaceRestaurantId]),
       transaction.query('DELETE FROM restaurants WHERE id = $1', [concurrentRestaurantId]),
       transaction.query('DELETE FROM members WHERE id = $1', [memberId]),
       transaction.query('DELETE FROM members WHERE id = $1', [atomicMemberId]),
       transaction.query('DELETE FROM members WHERE id = $1', [photoMemberId]),
+      transaction.query('DELETE FROM members WHERE id = $1', [photoRaceMemberId]),
       transaction.query('DELETE FROM members WHERE id = $1', [concurrentMemberA]),
       transaction.query('DELETE FROM members WHERE id = $1', [concurrentMemberB]),
     ]);

@@ -15,7 +15,7 @@ function bitmap(width: number, height: number): FakeBitmap {
   } as unknown as FakeBitmap;
 }
 
-function installCanvas(encodedSizes: number[]) {
+function installCanvas(encodedSizes: number[], encodedType?: string) {
   const qualities: number[] = [];
   const drawImage = vi.fn();
   const canvas = {
@@ -25,7 +25,9 @@ function installCanvas(encodedSizes: number[]) {
     toBlob: vi.fn((callback: BlobCallback, type?: string, quality?: number) => {
       qualities.push(quality ?? -1);
       const size = encodedSizes.shift();
-      callback(size === undefined ? null : new Blob([new Uint8Array(size)], { type }));
+      callback(size === undefined
+        ? null
+        : new Blob([new Uint8Array(size)], { type: encodedType ?? type }));
     }),
   } as unknown as HTMLCanvasElement;
   vi.spyOn(document, 'createElement').mockReturnValue(canvas);
@@ -154,6 +156,16 @@ describe('compressVisitImage', () => {
 
     await expect(compressVisitImage(inputFile()))
       .rejects.toThrow('Não foi possível codificar a imagem em WebP.');
+    expect(source.close).toHaveBeenCalledOnce();
+  });
+
+  it('rejeita bytes que o canvas devolve como PNG em vez de WebP e fecha o bitmap', async () => {
+    const source = bitmap(1000, 500);
+    vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue(source));
+    installCanvas([100_000], 'image/png');
+
+    await expect(compressVisitImage(inputFile()))
+      .rejects.toThrow('O navegador não conseguiu codificar a foto em WebP.');
     expect(source.close).toHaveBeenCalledOnce();
   });
 

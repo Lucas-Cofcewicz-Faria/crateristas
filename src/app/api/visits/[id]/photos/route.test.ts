@@ -307,6 +307,82 @@ describe('POST /api/visits/[id]/photos', () => {
     });
   });
 
+  it.each([
+    {
+      label: 'host não oficial',
+      uploaded: {
+        ...blob('host-invalido-random'),
+        url: `https://arquivos.example.com/${photoPath('host-invalido-random')}`,
+      },
+      headOverride: null,
+      shouldCleanup: false,
+    },
+    {
+      label: 'URL e pathname divergentes no callback',
+      uploaded: {
+        ...blob('callback-path-random'),
+        url: `https://arquivos.public.blob.vercel-storage.com/${photoPath('outro-path-random')}`,
+      },
+      headOverride: null,
+      shouldCleanup: false,
+    },
+    {
+      label: 'contentType não WebP no callback',
+      uploaded: { ...blob('callback-png-random'), contentType: 'image/png' },
+      headOverride: null,
+      shouldCleanup: true,
+    },
+    {
+      label: 'pathname divergente no head',
+      uploaded: blob('head-path-random'),
+      headOverride: { pathname: photoPath('outro-head-path-random') },
+      shouldCleanup: true,
+    },
+    {
+      label: 'MIME divergente no head',
+      uploaded: blob('head-png-random'),
+      headOverride: { contentType: 'image/png' },
+      shouldCleanup: true,
+    },
+    {
+      label: 'tamanho zero no head',
+      uploaded: blob('head-zero-random'),
+      headOverride: { size: 0 },
+      shouldCleanup: true,
+    },
+    {
+      label: 'tamanho acima de 750.000 bytes no head',
+      uploaded: blob('head-grande-random'),
+      headOverride: { size: 750_001 },
+      shouldCleanup: true,
+    },
+  ] as Array<{
+    label: string;
+    uploaded: PutBlobResult;
+    headOverride: Partial<HeadBlobResult> | null;
+    shouldCleanup: boolean;
+  }>)(
+    'rejeita $label sem persistir e limpa somente um alvo Blob seguro',
+    async ({ uploaded, headOverride, shouldCleanup }) => {
+      const harness = makeHarness();
+      if (headOverride) {
+        harness.dependencies.head = vi.fn(async () => ({
+          ...headResult(uploaded),
+          ...headOverride,
+        }));
+      }
+
+      const response = await harness.POST(
+        jsonRequest('POST', completedBody(uploaded)),
+        { params: Promise.resolve({ id: visitId }) },
+      );
+
+      expect(response.status).toBe(400);
+      expect(harness.repository.photos.size).toBe(0);
+      expect(harness.deleted).toEqual(shouldCleanup ? [uploaded.url] : []);
+    },
+  );
+
   it('apaga o Blob órfão quando o membro assinado não existe ou perdeu autorização', async () => {
     const missingHarness = makeHarness();
     const missingBlob = blob('membro-ausente-random');

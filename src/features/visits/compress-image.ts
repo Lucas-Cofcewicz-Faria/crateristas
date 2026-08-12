@@ -27,6 +27,10 @@ function encodeWebp(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
         reject(new Error('Não foi possível codificar a imagem em WebP.'));
         return;
       }
+      if (blob.type !== 'image/webp') {
+        reject(new Error('O navegador não conseguiu codificar a foto em WebP.'));
+        return;
+      }
       resolve(blob);
     }, 'image/webp', quality);
   });

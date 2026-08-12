@@ -30,17 +30,27 @@ type Row = QueryRows<false>[number];
 type TransactionFactory = (
   transaction: NeonQueryFunctionInTransaction<false, false>,
 ) => NeonQueryInTransaction[];
+type TransactionRetryPredicate = (error: unknown) => boolean;
+
+const VISIT_PHOTO_POSITION_UNIQUE_CONSTRAINT = 'visit_photos_visit_id_position_key';
+
+function isVisitPhotoPositionConflict(error: unknown): boolean {
+  return isRecord(error)
+    && error.code === '23505'
+    && error.constraint === VISIT_PHOTO_POSITION_UNIQUE_CONSTRAINT;
+}
 
 async function serializableTransaction(
   sql: ReviewSqlClient,
   factory: TransactionFactory,
+  retryWhen: TransactionRetryPredicate = () => false,
 ): Promise<QueryRows<false>[]> {
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
       return await sql.transaction(factory, { isolationLevel: 'Serializable' });
     } catch (error) {
       const serializationFailure = isRecord(error) && error.code === '40001';
-      if (!serializationFailure || attempt === 3) throw error;
+      if ((!serializationFailure && !retryWhen(error)) || attempt === 3) throw error;
     }
   }
   throw new Error('Não foi possível concluir a transação serializável.');
@@ -708,6 +718,7 @@ class NeonReviewRepository implements ReviewRepository {
         input.contentType,
         input.sizeBytes,
       ])],
+      isVisitPhotoPositionConflict,
     );
     const row = rows[0];
     if (!row || row.visit_id === null) throw new Error('Visita não encontrada.');
