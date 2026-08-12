@@ -189,7 +189,8 @@ export interface ReviewRepository {
   changePublicationAtomically(input: AtomicPublicationChangeInput): Promise<VisitRecord>;
   attachPhoto(visitId: string, actorId: string, input: PhotoInput): Promise<void>;
   findPhotoById(photoId: string): Promise<PhotoRecord | null>;
-  deletePhoto(visitId: string, photoId: string, actorId: string): Promise<PhotoRecord>;
+  findPhotoByPathname(pathname: string): Promise<PhotoRecord | null>;
+  deletePhoto(visitId: string, photoId: string, actorId: string): Promise<PhotoRecord | null>;
   countVisitPhotos(visitId: string): Promise<number>;
   listPublicVisits(filters: PublicVisitFilters): Promise<PublicVisitSummary[]>;
   getPublicVisitBySlug(slug: string): Promise<PublicVisitDetail | null>;

@@ -199,10 +199,14 @@ class InMemoryReviewRepository implements ReviewRepository {
     return this.photos.get(photoId) ?? null;
   }
 
+  async findPhotoByPathname(pathname: string) {
+    return [...this.photos.values()].find((photo) => photo.pathname === pathname) ?? null;
+  }
+
   async deletePhoto(id: string, photoId: string, actorId: string) {
     void actorId;
     const photo = this.photos.get(photoId);
-    if (!photo || photo.visitId !== id) throw new Error('Foto não encontrada.');
+    if (!photo || photo.visitId !== id) return null;
     this.photos.delete(photoId);
     return photo;
   }
@@ -283,17 +287,37 @@ describe('createReviewService', () => {
     expect(result.visitedAt).toBe('2026-08-10');
   });
 
-  it('attaches a photo using the authenticated actor as uploader', async () => {
+  it('attaches a photo only when the authenticated actor created the visit', async () => {
     const repository = repositoryWithScores(0);
     const service = createReviewService(repository);
 
-    await service.attachPhoto(members[2], visitId, validPhoto);
+    await service.attachPhoto(members[0], visitId, validPhoto);
 
     expect(repository.photos.get('photo-1')).toMatchObject({
       visitId,
-      uploadedBy: members[2].id,
+      uploadedBy: members[0].id,
       position: 1,
     });
+  });
+
+  it('rejects photo attachment by a member who did not create the visit', async () => {
+    const repository = repositoryWithScores(0);
+    const service = createReviewService(repository);
+
+    await expect(service.attachPhoto(members[2], visitId, validPhoto))
+      .rejects.toThrow('Apenas o criador da visita ou um administrador pode gerenciar fotos.');
+    expect(repository.photos.size).toBe(0);
+  });
+
+  it('authorizes an upload token only for creator/admin while capacity remains', async () => {
+    const repository = repositoryWithScores(0);
+    const service = createReviewService(repository);
+    const admin = member('member-8', 'admin');
+
+    await expect(service.authorizePhotoUpload(members[0], visitId)).resolves.toBeUndefined();
+    await expect(service.authorizePhotoUpload(admin, visitId)).resolves.toBeUndefined();
+    await expect(service.authorizePhotoUpload(members[2], visitId))
+      .rejects.toThrow('Apenas o criador da visita ou um administrador pode gerenciar fotos.');
   });
 
   it('rejects a sixth photo without creating a position above five', async () => {
@@ -306,24 +330,24 @@ describe('createReviewService', () => {
       });
     }
 
-    await expect(service.attachPhoto(members[1], visitId, {
+    await expect(service.attachPhoto(members[0], visitId, {
       ...validPhoto,
       pathname: 'visits/visit-1/photo-6.webp',
     })).rejects.toThrow('A visita já possui o máximo de cinco fotos.');
     expect(repository.photos.size).toBe(5);
   });
 
-  it('rejects photo removal by someone other than its uploader or an admin', async () => {
+  it('rejects photo removal by an unrelated member even when that member uploaded it', async () => {
     const repository = repositoryWithScores(0);
     await repository.attachPhoto(visitId, members[1].id, validPhoto);
     const service = createReviewService(repository);
 
-    await expect(service.removePhoto(members[2], visitId, 'photo-1'))
-      .rejects.toThrow('Apenas o autor da foto ou um administrador pode removê-la.');
+    await expect(service.removePhoto(members[1], visitId, 'photo-1'))
+      .rejects.toThrow('Apenas o criador da visita ou um administrador pode gerenciar fotos.');
     expect(repository.photos.has('photo-1')).toBe(true);
   });
 
-  it('allows the uploader and an admin to remove photos', async () => {
+  it('allows the visit creator and an admin to remove photos', async () => {
     const repository = repositoryWithScores(0);
     await repository.attachPhoto(visitId, members[1].id, validPhoto);
     await repository.attachPhoto(visitId, members[2].id, {
@@ -333,10 +357,23 @@ describe('createReviewService', () => {
     const admin = member('member-8', 'admin');
     const service = createReviewService(repository);
 
-    await service.removePhoto(members[1], visitId, 'photo-1');
+    await service.removePhoto(members[0], visitId, 'photo-1');
     await service.removePhoto(admin, visitId, 'photo-2');
 
     expect(repository.photos.size).toBe(0);
+  });
+
+  it('returns the trusted pathname before deletion and makes metadata removal idempotent', async () => {
+    const repository = repositoryWithScores(0);
+    await repository.attachPhoto(visitId, members[0].id, validPhoto);
+    const service = createReviewService(repository);
+
+    await expect(service.preparePhotoRemoval(members[0], visitId, 'photo-1'))
+      .resolves.toMatchObject({ pathname: validPhoto.pathname });
+    await expect(service.removePhoto(members[0], visitId, 'photo-1'))
+      .resolves.toMatchObject({ pathname: validPhoto.pathname });
+    await expect(service.removePhoto(members[0], visitId, 'photo-1'))
+      .resolves.toBeNull();
   });
 
   it('publishes the sixth scorecard and keeps individual scores private', async () => {

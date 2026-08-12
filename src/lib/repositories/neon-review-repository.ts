@@ -724,20 +724,30 @@ class NeonReviewRepository implements ReviewRepository {
     return rows[0] ? photoFromRow(rows[0]) : null;
   }
 
-  async deletePhoto(visitId: string, photoId: string, actorId: string): Promise<PhotoRecord> {
+  async findPhotoByPathname(pathname: string): Promise<PhotoRecord | null> {
+    const rows = await this.sql.query(
+      `SELECT id, visit_id, uploaded_by, url, pathname, content_type, size_bytes, position
+       FROM visit_photos
+       WHERE pathname = $1`,
+      [pathname],
+    );
+    return rows[0] ? photoFromRow(rows[0]) : null;
+  }
+
+  async deletePhoto(visitId: string, photoId: string, actorId: string): Promise<PhotoRecord | null> {
     const rows = await this.sql.query(
       `DELETE FROM visit_photos photo
-       USING members actor
+       USING visits visit, members actor
        WHERE photo.id = $2
          AND photo.visit_id = $1
+         AND visit.id = photo.visit_id
          AND actor.id = $3
-         AND (photo.uploaded_by = $3 OR actor.role = 'admin')
+         AND (visit.created_by = $3 OR actor.role = 'admin')
        RETURNING photo.id, photo.visit_id, photo.uploaded_by, photo.url, photo.pathname,
                  photo.content_type, photo.size_bytes, photo.position`,
       [visitId, photoId, actorId],
     );
-    if (!rows[0]) throw new Error('Foto não encontrada ou remoção não autorizada.');
-    return photoFromRow(rows[0]);
+    return rows[0] ? photoFromRow(rows[0]) : null;
   }
 
   async countVisitPhotos(visitId: string): Promise<number> {
