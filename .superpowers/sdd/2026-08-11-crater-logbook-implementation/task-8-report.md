@@ -145,3 +145,79 @@ PASS.
 - Os cards já apontam para o contrato canônico `/restaurantes/<visit-slug>` exigido
   pelo brief; a página de detalhe correspondente pertence à Task 9 e ainda não faz
   parte deste commit.
+
+## Fix Round 1 — arquivo público sem configuração Auth
+
+### Validação do finding
+
+O finding foi reproduzido contra as classes e o fluxo lazy reais. `auth.getSession()`
+invoca `getNeonAuth()`, que chama `readNeonAuthConfig(process.env)` e lança
+sincronamente `AuthConfigurationError` quando a configuração Neon Auth está ausente.
+Como `findOptionalMember()` não distinguia esse caso, a rejeição entrava no
+`Promise.all` de `/registros` e substituía o arquivo público pelo error boundary mesmo
+quando a consulta pública ao banco podia funcionar.
+
+### TDD
+
+Antes do código de produção, a primeira tentativa de RED foi descartada: o mock parcial
+carregou o SDK externo e o Vitest falhou ao resolver `next/headers`, portanto nenhum
+comportamento da aplicação foi exercitado. A infraestrutura foi corrigida mockando
+somente a fábrica externa `createNeonAuth`; `AuthConfigurationError` continuou sendo a
+classe real exportada por `src/lib/auth/server.ts`.
+
+RED válido observado:
+
+```text
+npm test -- src/lib/auth/access.test.ts src/app/registros/page.test.tsx
+FAIL: 1 teste falhou; 12 passaram.
+AssertionError: promise rejected "AuthConfigurationError: NEON_AUTH_BASE_URL..."
+instead of resolving para null.
+```
+
+O mesmo comando já provou no RED que uma falha operacional genérica continuava sendo
+propagada; somente o comportamento específico de configuração ausente falhou.
+
+GREEN mínimo observado após o catch estreito:
+
+```text
+npm test -- src/lib/auth/access.test.ts src/app/registros/page.test.tsx
+PASS: 2 arquivos; 13 testes.
+```
+
+### Implementação e auto-revisão
+
+- `findOptionalMember()` envolve apenas `auth.getSession()` no `try/catch`.
+- Somente `error instanceof AuthConfigurationError` retorna `null`; qualquer outra
+  exceção é relançada, e erros do repository ficam fora do catch.
+- `requireMember()` e `requireAdmin()` não foram alterados.
+- A importação continua lazy: a classe de erro e a fachada não criam o cliente Auth no
+  import, e o build sem env concluiu novamente.
+- Nenhum TSX mudou. O checklist React confirmou que `/registros` continua Server
+  Component, mantém repository/sessão em paralelo, não adiciona client boundary,
+  hooks, fetch ou serialização de dados de membro.
+
+### Verificação fresca
+
+```text
+npm test -- src/lib/auth/access.test.ts src/app/registros/page.test.tsx
+PASS: 2 arquivos; 13 testes.
+
+npm test
+PASS: 22 arquivos; 212 testes; 17 integrações condicionais ignoradas.
+
+npx tsc --noEmit
+PASS.
+
+npx eslint src/lib/auth/access.ts src/lib/auth/access.test.ts \
+  src/app/registros/page.tsx src/app/registros/page.test.tsx
+PASS.
+
+npm run build
+PASS: compilação, TypeScript e 11 páginas; /registros permanece dinâmica.
+
+git diff --check 070b7bc
+PASS.
+```
+
+Concerns do round: permanecem apenas os dois warnings conhecidos de Vitest/Turbopack;
+nenhum warning novo foi introduzido.

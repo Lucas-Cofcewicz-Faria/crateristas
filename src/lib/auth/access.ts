@@ -1,5 +1,5 @@
 import type { MemberRecord } from '@/domain/reviews/repository';
-import { auth } from '@/lib/auth/server';
+import { AuthConfigurationError, auth } from '@/lib/auth/server';
 import { createNeonReviewRepository } from '@/lib/repositories/neon-review-repository';
 
 export class AuthenticationError extends Error {
@@ -17,7 +17,15 @@ export class AuthorizationError extends Error {
 }
 
 export async function findOptionalMember(): Promise<MemberRecord | null> {
-  const { data } = await auth.getSession();
+  let session;
+  try {
+    session = await auth.getSession();
+  } catch (error) {
+    if (error instanceof AuthConfigurationError) return null;
+    throw error;
+  }
+
+  const { data } = session;
   if (!data?.user?.id) return null;
 
   return createNeonReviewRepository().findMemberByAuthUserId(data.user.id);

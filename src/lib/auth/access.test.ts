@@ -6,9 +6,17 @@ const dependencies = vi.hoisted(() => ({
   findMemberByAuthUserId: vi.fn(),
 }));
 
-vi.mock('./server', () => ({
-  auth: { getSession: dependencies.getSession },
+vi.mock('@neondatabase/auth/next/server', () => ({
+  createNeonAuth: vi.fn(),
 }));
+
+vi.mock('./server', async (importOriginal) => {
+  const original = await importOriginal<typeof import('./server')>();
+  return {
+    ...original,
+    auth: { ...original.auth, getSession: dependencies.getSession },
+  };
+});
 
 vi.mock('@/lib/repositories/neon-review-repository', () => ({
   createNeonReviewRepository: () => ({
@@ -23,6 +31,7 @@ import {
   requireAdmin,
   requireMember,
 } from './access';
+import { AuthConfigurationError } from './server';
 
 const regularMember: MemberRecord = {
   id: 'member-1',
@@ -111,6 +120,22 @@ describe('controle de acesso dos membros', () => {
 
     await expect(findOptionalMember()).resolves.toBeNull();
     expect(dependencies.findMemberByAuthUserId).not.toHaveBeenCalled();
+  });
+
+  it('mantém a visita pública como visitante quando Neon Auth não está configurado', async () => {
+    dependencies.getSession.mockImplementation(() => {
+      throw new AuthConfigurationError('NEON_AUTH_BASE_URL não configurada.');
+    });
+
+    await expect(findOptionalMember()).resolves.toBeNull();
+    expect(dependencies.findMemberByAuthUserId).not.toHaveBeenCalled();
+  });
+
+  it('propaga falhas operacionais da leitura de sessão', async () => {
+    const sessionFailure = new Error('Neon Auth indisponível.');
+    dependencies.getSession.mockRejectedValue(sessionFailure);
+
+    await expect(findOptionalMember()).rejects.toBe(sessionFailure);
   });
 
   it('não concede UI de membro a um usuário autenticado ainda não provisionado', async () => {
