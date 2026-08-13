@@ -186,3 +186,126 @@ PASS: compilação, TypeScript e 11 páginas estáticas coletadas;
   Para não alargar a allowlist de fotos da visita sem um requisito de armazenamento de
   avatar, o componente mantém esses avatares sem otimização; uma política dedicada de
   avatar pode ser definida em uma iteração futura.
+
+## Fix Round 1 — estados públicos resilientes
+
+### Validação dos findings
+
+Os três findings foram conferidos contra o commit `1d77887` antes de qualquer mudança:
+
+1. `not-found.tsx` realmente fixava `viewer="visitor"`; portanto um membro
+   provisionado perdia a navegação de membro especificamente no 404.
+2. `CommentFragments` aceitava array irrestrito e usava `index % 8 + 1`; como a query
+   não corta a lista, o nono comentário recebia `fragment--1` e colidia com o primeiro.
+   Embora o domínio atual limite os membros válidos a oito, o componente exportado não
+   declarava essa fronteira.
+3. O segmento não continha `error.tsx`; falhas operacionais do Neon ou Auth propagadas
+   pela página terminavam na experiência padrão do framework, sem copy pt-BR nem retry.
+
+Os minors da revisão, o contrato de avatar e query/domínio não foram alterados nesta
+rodada.
+
+### TDD 1 — viewer do 404
+
+O teste usa `RestaurantNotFound` e `findOptionalMember()` reais. Somente a leitura de
+sessão e a busca externa do membro são substituídas por respostas completas e
+controladas.
+
+RED observado:
+
+```text
+npm test -- src/app/restaurantes/[slug]/not-found.test.tsx
+FAIL: 2 testes.
+- membro provisionado: link "Painel" ausente; recebeu "Entrar";
+- AuthConfigurationError: getSession recebeu 0 chamadas porque o resolver não era usado.
+```
+
+GREEN mínimo:
+
+```text
+npm test -- src/app/restaurantes/[slug]/not-found.test.tsx
+PASS: 1 arquivo; 2 testes.
+```
+
+`RestaurantNotFound` passou a ser Server Component async, aguarda
+`findOptionalMember()` e deriva somente `viewer`. A classe
+`AuthConfigurationError` continua tratada dentro do helper existente, sem conexão no
+import e sem duplicar regra de Auth no 404.
+
+### TDD 2 — limite explícito de comentários
+
+RED observado com nove comentários manuais:
+
+```text
+npm test -- src/features/restaurant/CommentFragments.test.tsx
+FAIL: 1; PASS: 3.
+Esperado: 8 listitems. Recebido: 9 listitems.
+```
+
+GREEN mínimo:
+
+```text
+npm test -- src/features/restaurant/CommentFragments.test.tsx
+PASS: 1 arquivo; 4 testes.
+```
+
+O componente agora copia os primeiros oito itens com `slice(0, 8)` e associa o slot
+por `index + 1`. A ordem do DOM e as chaves `memberId` são preservadas, o nono item não
+é renderizado e nenhum grid-area é reutilizado. Não foram inventados novos slots ou
+layout fora do produto.
+
+### TDD 3 — error boundary do detalhe
+
+RED observado:
+
+```text
+npm test -- src/app/restaurantes/[slug]/error.test.tsx
+FAIL: Failed to resolve import "./error".
+```
+
+GREEN mínimo:
+
+```text
+npm test -- src/app/restaurantes/[slug]/error.test.tsx
+PASS: 1 arquivo; 1 teste.
+```
+
+O novo `error.tsx` é Client Component conforme a convenção Next 16, mostra
+`Registro indisponível` e `Não foi possível abrir esta visita agora.` e chama o
+`reset()` fornecido pelo boundary ao acionar `Tentar novamente`. Ele reutiliza o CSS
+Module do feature, sem estado, efeito ou dependência de dados.
+
+### Revisão React e Next.js
+
+- O 404 permanece no servidor e faz uma única leitura opcional; não há waterfall,
+  fetch cliente ou inicialização de Neon no import.
+- O boundary é o único TSX novo com `'use client'`; não é async e recebe apenas
+  `Error` e `reset`, props definidos pelo próprio Next.
+- O limite de comentários é derivado durante a renderização, sem estado, efeito,
+  mutação da prop ou posição aleatória.
+- Renderização condicional e chaves estáveis existentes foram preservadas. Landing,
+  `/home`, `GourmetScene.tsx`, Three.js, query e domínio permanecem intocados.
+
+### Verificação fresca do round
+
+```text
+npm test -- src/features/restaurant src/app/restaurantes/[slug]
+PASS: 6 arquivos; 17 testes.
+
+npm test
+PASS: 28 arquivos; 229 testes; 17 integrações condicionais ignoradas.
+
+npx tsc --noEmit
+PASS.
+
+npx eslint src/app/restaurantes src/features/restaurant
+PASS.
+
+npm run build
+PASS: compilação, TypeScript e geração de 11 páginas;
+/restaurantes/[slug] permanece dinâmica.
+```
+
+Concerns do round: permanecem apenas os warnings preexistentes do loader ESM do
+Vitest e do root do Turbopack inferido por múltiplos lockfiles. Nenhum warning novo foi
+introduzido.

@@ -30,11 +30,13 @@ export function CommentFragments({ comments }: { comments: CommentFragment[] }):
     );
   }
 
+  const visibleComments = comments.slice(0, 8);
+
   return (
     <ol aria-label="Comentários dos crateristas" className={styles.commentList}>
-      {comments.map((comment, index) => {
+      {visibleComments.map((comment, index) => {
         const displayName = normalizeDisplayName(comment.displayName);
-        const slot = index % 8 + 1;
+        const slot = index + 1;
 
         return (
           <li

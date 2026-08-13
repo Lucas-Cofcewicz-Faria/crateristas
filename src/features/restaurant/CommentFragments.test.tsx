@@ -99,4 +99,38 @@ describe('CommentFragments', () => {
     expect(fragments.map((fragment) => fragment.querySelector('blockquote')?.textContent))
       .toEqual(eightComments.map(({ comment }) => comment));
   });
+
+  it('limita a composição aos oito primeiros comentários sem reutilizar slots', () => {
+    const nineComments: CommentFragment[] = [
+      ...comments,
+      {
+        memberId: 'member-7',
+        displayName: 'Fernanda Alves',
+        avatarUrl: null,
+        comment: 'O menu respeitou o ritmo de toda a mesa.',
+      },
+      {
+        memberId: 'member-8',
+        displayName: 'Gustavo Rocha',
+        avatarUrl: null,
+        comment: 'O último prato manteve o nível do primeiro.',
+      },
+      {
+        memberId: 'member-9',
+        displayName: 'Helena Costa',
+        avatarUrl: null,
+        comment: 'Este comentário excede o limite público da composição.',
+      },
+    ];
+
+    render(<CommentFragments comments={nineComments} />);
+
+    const fragments = screen.getAllByRole('listitem');
+    expect(fragments).toHaveLength(8);
+    expect(fragments.map((fragment) => fragment.querySelector('blockquote')?.textContent))
+      .toEqual(nineComments.slice(0, 8).map(({ comment }) => comment));
+    expect(screen.queryByText('Este comentário excede o limite público da composição.'))
+      .not.toBeInTheDocument();
+    expect(new Set(fragments.map((fragment) => fragment.className)).size).toBe(8);
+  });
 });

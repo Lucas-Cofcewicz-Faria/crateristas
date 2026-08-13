@@ -366,17 +366,25 @@
   color: var(--ink-muted);
 }
 
-.routeState a {
+.routeState a,
+.retryButton {
   margin-top: 24px;
   padding: 11px 18px;
   border: 1px solid var(--ember);
   border-radius: var(--radius-sm);
+  background: transparent;
   color: var(--ink);
+  font: inherit;
   font-size: 0.8rem;
   font-weight: 800;
 }
 
-.routeState a:hover {
+.retryButton {
+  cursor: pointer;
+}
+
+.routeState a:hover,
+.retryButton:hover {
   color: var(--ember-bright);
 }
 
