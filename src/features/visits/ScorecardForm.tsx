@@ -150,9 +150,7 @@ export function ScorecardForm({ visitId, initialValues, onSaved }: ScorecardForm
             <div>
               <strong>Avaliação salva.</strong>
               <p>{result.participantCount} de {CRATERISTAS_GROUP_SIZE} membros contribuíram.</p>
-              {result.aggregate.overall === null ? null : (
-                <p>Média coletiva: {scoreFormatter.format(result.aggregate.overall)} de 10.</p>
-              )}
+              <p>Média coletiva: {scoreFormatter.format(result.aggregate.overall)} de 10.</p>
             </div>
             <PublicationStatus state={result.publicationState} />
           </div>

@@ -149,6 +149,17 @@ export function createVisitPhotoRouteHandlers(
         const pathname = validateCompletedVisitPhotoPathname(visitId, rawPathname);
         const photo = await dependencies.repository.findPhotoByPathname(pathname);
         if (!photo) {
+          try {
+            await dependencies.head(pathname);
+          } catch (error) {
+            if (dependencies.isBlobNotFoundError(error)) {
+              return Response.json(
+                { error: 'O processamento da foto falhou. Envie novamente.' },
+                { status: 410, headers: { 'cache-control': 'no-store' } },
+              );
+            }
+            throw error;
+          }
           return Response.json(
             { photo: null },
             { status: 202, headers: { 'cache-control': 'no-store' } },

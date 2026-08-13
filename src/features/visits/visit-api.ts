@@ -4,7 +4,7 @@ import type { CreateVisitInput, ScorecardInput } from '@/domain/reviews/schemas'
 import {
   CRATERISTAS_GROUP_SIZE,
   type PublicationState,
-  type ReviewAggregate,
+  type ScoreValues,
 } from '@/domain/reviews/types';
 import type { GoogleMapsSuggestions } from './google-maps-types';
 
@@ -17,7 +17,11 @@ export interface CreatedVisitResponse {
 export interface SubmittedScorecardResponse {
   participantCount: number;
   publicationState: PublicationState;
-  aggregate: ReviewAggregate;
+  aggregate: {
+    participantCount: number;
+    averages: ScoreValues;
+    overall: number;
+  };
 }
 
 export type AdminPublicationCommand = 'publish_early' | 'hide' | 'republish';
@@ -37,7 +41,7 @@ const createdVisitResponseSchema = z.object({
   slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   publicationState: publicationStateSchema,
 });
-const participantCountSchema = z.number().int().min(0).max(CRATERISTAS_GROUP_SIZE);
+const participantCountSchema = z.number().int().min(1).max(CRATERISTAS_GROUP_SIZE);
 const aggregateScoreSchema = z.number().finite().min(0).max(10);
 const scoreAveragesSchema = z.object({
   food: aggregateScoreSchema,
@@ -52,8 +56,8 @@ const submittedScorecardResponseSchema = z.object({
   publicationState: publicationStateSchema,
   aggregate: z.object({
     participantCount: participantCountSchema,
-    averages: scoreAveragesSchema.nullable(),
-    overall: aggregateScoreSchema.nullable(),
+    averages: scoreAveragesSchema,
+    overall: aggregateScoreSchema,
   }),
 }).refine((result) => result.participantCount === result.aggregate.participantCount);
 const confirmedPhotoResponseSchema = z.object({
@@ -165,24 +169,35 @@ function waitForPollInterval(intervalMs: number, signal: AbortSignal): Promise<v
   });
 }
 
+const PHOTO_CONFIRMATION_DELAYS_MS = [250, 500, 1_000, 2_000] as const;
+type PollWait = (delayMs: number, signal: AbortSignal) => Promise<void>;
+
+export class PhotoProcessingFailedError extends Error {
+  constructor() {
+    super('photo_processing_failed');
+    this.name = 'PhotoProcessingFailedError';
+  }
+}
+
 export async function confirmUploadedPhoto(
   visitId: string,
   pathname: string,
   signal: AbortSignal,
-  options: { attempts?: number; intervalMs?: number } = {},
+  options: { wait?: PollWait } = {},
 ): Promise<PublicPhoto> {
-  const attempts = options.attempts ?? 4;
-  const intervalMs = options.intervalMs ?? 250;
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+  const wait = options.wait ?? waitForPollInterval;
+  for (let attempt = 0; attempt <= PHOTO_CONFIRMATION_DELAYS_MS.length; attempt += 1) {
     const response = await fetch(
       `/api/visits/${encodeURIComponent(visitId)}/photos?pathname=${encodeURIComponent(pathname)}`,
       { cache: 'no-store', method: 'GET', signal },
     );
     if (response.status === 202) {
-      if (attempt === attempts) break;
-      await waitForPollInterval(intervalMs, signal);
+      const delayMs = PHOTO_CONFIRMATION_DELAYS_MS[attempt];
+      if (delayMs === undefined) break;
+      await wait(delayMs, signal);
       continue;
     }
+    if (response.status === 410) throw new PhotoProcessingFailedError();
     if (!response.ok) throw new Error('confirm_photo_failed');
     const result = await parseResponse(
       response,

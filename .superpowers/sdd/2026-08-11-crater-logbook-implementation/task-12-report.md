@@ -413,6 +413,90 @@ usam `fireEvent.change`, enquanto click, teclado, foco e todas as asserções co
 com `userEvent`. Não houve aumento de timeout nem redução global de paralelismo. O
 `npm test` exato passou 53/53 depois do ajuste.
 
+## Review Round 2
+
+Os dois findings do re-review foram validados contra `5d970a3`. O SQL atômico de
+scorecard calcula o agregado sobre `post_upsert_scores`, que sempre contém a ficha
+recém-inserida/atualizada; `submissionFromRow` usa uma única contagem e materializa as
+seis médias e `overall`. Já no upload, o callback pode falhar e apagar o Blob depois
+que `upload()` retornou, enquanto o client Round 1 conservava indefinidamente o
+pathname como se ainda estivesse pendente.
+
+### I1 — contrato pós-upsert do scorecard
+
+```text
+npm test -- src/features/visits/visit-api.test.ts
+RED: 1 arquivo; 3 falhas esperadas; 13 testes passaram — o client aceitou count zero,
+averages null com count positivo e overall null com count positivo.
+
+npm test -- src/features/visits/visit-api.test.ts src/features/visits/ScorecardForm.test.tsx src/features/visits/ReviewWorkspace.test.tsx
+GREEN: 3 arquivos; 21 testes.
+```
+
+`SubmittedScorecardResponse` e seu schema agora exigem count inteiro 1–8, contagem
+igual no agregado, seis médias finitas 0–10 e `overall` finito 0–10. O consumidor
+renderiza a média pós-upsert diretamente, sem um ramo `null` impossível.
+
+### I2 — callback terminal e polling limitado
+
+```text
+npm test -- src/app/api/visits/[id]/photos/route.test.ts src/features/visits/visit-api.test.ts src/features/visits/PhotoUploader.test.tsx
+RED: 3 arquivos; 5 falhas esperadas; 50 testes passaram — GET não inspecionava Blob,
+410 era tratado como timeout/reconciliação e o polling usava quatro intervalos fixos.
+
+npm test -- src/app/api/visits/[id]/photos/route.test.ts src/features/visits/visit-api.test.ts src/features/visits/PhotoUploader.test.tsx
+GREEN: 3 arquivos; 55 testes.
+```
+
+Após autenticação, validação do pathname e miss no repository, o GET chama
+`head(pathname)` usando somente o pathname trusted. Blob existente retorna 202;
+`BlobNotFoundError` retorna 410 com mensagem genérica allowlisted; qualquer outra
+falha vira o 500 genérico existente. Um hit no repository retorna a foto allowlisted
+sem `head`. Não há delete, cancelamento do callback ou reupload automático nessa
+consulta.
+
+O client distingue 410 com um erro tipado, redefine somente o item/pathname terminal
+para `uploadedPathname: null`, conserva o `File`, limpa o input nativo e permite novo
+envio manual. Esse novo clique faz um novo upload e, depois da confirmação, continua
+a fila seguinte. Em contraste, esgotar respostas 202 conserva o pathname e oferece
+somente reconciliação, sem reenviar bytes.
+
+O backoff real faz no máximo cinco consultas, separadas por 250, 500, 1.000 e 2.000
+ms (3,75 s totais); tanto `fetch` quanto esperas recebem o mesmo `AbortSignal`. No
+pior caso de callback ainda não persistido são até cinco queries DB e cinco `head`
+Blob por foto; qualquer hit DB encerra sem `head`. Os testes de componente injetam
+somente a espera para não alongar a suíte, enquanto o teste unitário prova os quatro
+intervalos literais e o limite de cinco GETs.
+
+Durante o GREEN, o fake de `head` retornou 500 porque aceitava apenas URL absoluta,
+apesar da assinatura instalada aceitar URL ou pathname. A investigação sistemática
+localizou `new URL(pathname)` no double; ele foi alinhado à assinatura real, sem mudar
+produção. A espera imediata do teste também precisou ser controlável no caso que
+observa a fila entre dois 202, preservando a asserção da corrida sem espera real.
+
+### Review Round 2 — verificação
+
+```text
+npm test -- src/app/api/visits/[id]/photos/route.test.ts src/features/visits/visit-api.test.ts src/features/visits/PhotoUploader.test.tsx src/features/visits/ScorecardForm.test.tsx src/features/visits/ReviewWorkspace.test.tsx
+PASS: 5 arquivos; 60 testes.
+
+npm test
+PASS: 53 arquivos; 370 testes; 18 integrações condicionais ignoradas.
+
+npx tsc --noEmit
+PASS.
+
+npx eslint src/app/api/visits/[id]/photos src/features/visits/visit-api.ts src/features/visits/visit-api.test.ts src/features/visits/PhotoUploader.tsx src/features/visits/PhotoUploader.test.tsx src/features/visits/ScorecardForm.tsx
+PASS.
+
+npm run build
+PASS: compilação, TypeScript e 12 páginas estáticas; a rota de fotos e as páginas
+Task 12 permanecem dinâmicas.
+
+git diff --check 5d970a3596029fab186cb21304c16f94f3cb6a48..HEAD
+PASS.
+```
+
 ## Limitações externas
 
 - As 18 integrações de repository continuam condicionais e foram ignoradas porque

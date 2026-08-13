@@ -209,8 +209,12 @@ function makeHarness(actor: MemberRecord = creator) {
         downloadUrl: `${uploaded.url}?download=1`,
         pathname: uploaded.pathname,
       });
-      const pathname = new URL(urlOrPathname).pathname.slice(1);
-      return headResult({ ...blob('temporaria'), url: urlOrPathname, pathname });
+      const isUrl = urlOrPathname.startsWith('https://');
+      const pathname = isUrl ? new URL(urlOrPathname).pathname.slice(1) : urlOrPathname;
+      const url = isUrl
+        ? urlOrPathname
+        : `https://arquivos.public.blob.vercel-storage.com/${pathname}`;
+      return headResult({ ...blob('temporaria'), url, pathname });
     }),
     del: vi.fn(async (target: string | string[]) => {
       deleted.push(...(Array.isArray(target) ? target : [target]));
@@ -612,6 +616,7 @@ describe('GET /api/visits/[id]/photos', () => {
 
     expect(response.status).toBe(401);
     expect(findPhoto).not.toHaveBeenCalled();
+    expect(harness.dependencies.head).not.toHaveBeenCalled();
   });
 
   it('rejeita pathname não concluído depois da autenticação e antes da query', async () => {
@@ -639,6 +644,7 @@ describe('GET /api/visits/[id]/photos', () => {
     expect(response.status).toBe(202);
     expect(response.headers.get('cache-control')).toBe('no-store');
     await expect(response.json()).resolves.toEqual({ photo: null });
+    expect(harness.dependencies.head).toHaveBeenCalledWith(persistedPathname);
   });
 
   it('retorna somente a foto persistida e confirma que pertence à visita', async () => {
@@ -664,6 +670,41 @@ describe('GET /api/visits/[id]/photos', () => {
         url: persisted.url,
         position: persisted.position,
       },
+    });
+    expect(harness.dependencies.head).not.toHaveBeenCalled();
+  });
+
+  it('retorna 410 genérico quando o Blob do callback ausente já foi removido', async () => {
+    const harness = makeHarness();
+    const notFound = new Error('pathname interno não existe');
+    notFound.name = 'BlobNotFoundError';
+    (harness.dependencies.head as ReturnType<typeof vi.fn>).mockRejectedValueOnce(notFound);
+
+    const response = await harness.GET(
+      confirmationRequest(persistedPathname),
+      { params: Promise.resolve({ id: visitId }) },
+    );
+
+    expect(response.status).toBe(410);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    await expect(response.json()).resolves.toEqual({
+      error: 'O processamento da foto falhou. Envie novamente.',
+    });
+  });
+
+  it('não expõe detalhes quando a inspeção do Blob falha', async () => {
+    const harness = makeHarness();
+    (harness.dependencies.head as ReturnType<typeof vi.fn>)
+      .mockRejectedValueOnce(new Error('token secreto e pathname interno'));
+
+    const response = await harness.GET(
+      confirmationRequest(persistedPathname),
+      { params: Promise.resolve({ id: visitId }) },
+    );
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      error: 'Não foi possível concluir a operação.',
     });
   });
 

@@ -92,11 +92,16 @@ describe('contratos de resposta do client de visitas', () => {
   });
 
   it.each([
+    ['zero participantes após upsert', {
+      participantCount: 0,
+      aggregate: { participantCount: 0, averages: null, overall: null },
+    }],
     ['participantes fracionários', { participantCount: 1.5 }],
     ['participantes acima do grupo', { participantCount: 9 }],
     ['estado inválido', { publicationState: 'draft' }],
     ['contagens divergentes', { aggregate: { ...validAggregate, participantCount: 5 } }],
     ['médias incompletas', { aggregate: { ...validAggregate, averages: { food: 8 } } }],
+    ['médias nulas com participante', { aggregate: { ...validAggregate, averages: null } }],
     ['média fora de 0..10', {
       aggregate: {
         ...validAggregate,
@@ -104,6 +109,7 @@ describe('contratos de resposta do client de visitas', () => {
       },
     }],
     ['overall fora de 0..10', { aggregate: { ...validAggregate, overall: -1 } }],
+    ['overall nulo com participante', { aggregate: { ...validAggregate, overall: null } }],
   ])('rejeita 2xx malformado do scorecard: %s', async (_label, replacement) => {
     const payload = {
       participantCount: 6,
@@ -129,7 +135,6 @@ describe('contratos de resposta do client de visitas', () => {
       visitId,
       `visits/${visitId}/foto-AbCd12.webp`,
       controller.signal,
-      { attempts: 4, intervalMs: 250 },
     );
 
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
@@ -138,5 +143,29 @@ describe('contratos de resposta do client de visitas', () => {
     await expect(confirmation).rejects.toThrow();
     await vi.runAllTimersAsync();
     expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('limita o polling a cinco consultas com backoff de 3,75 segundos', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ photo: null }), { status: 202 }),
+    );
+    const wait = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('fetch', fetchMock);
+    const controller = new AbortController();
+
+    await expect(confirmUploadedPhoto(
+      visitId,
+      `visits/${visitId}/foto-AbCd12.webp`,
+      controller.signal,
+      { wait },
+    )).rejects.toThrow('confirm_photo_failed');
+
+    expect(fetchMock).toHaveBeenCalledTimes(5);
+    expect(wait.mock.calls).toEqual([
+      [250, controller.signal],
+      [500, controller.signal],
+      [1_000, controller.signal],
+      [2_000, controller.signal],
+    ]);
   });
 });

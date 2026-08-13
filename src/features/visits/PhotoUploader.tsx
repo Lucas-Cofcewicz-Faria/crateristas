@@ -11,7 +11,7 @@ import {
   MAX_VISIT_PHOTOS,
   VISIT_PHOTO_CONTENT_TYPE,
 } from './photo-policy';
-import { confirmUploadedPhoto } from './visit-api';
+import { confirmUploadedPhoto, PhotoProcessingFailedError } from './visit-api';
 import styles from './review-workflow.module.css';
 
 export interface PhotoUploaderProps {
@@ -74,9 +74,11 @@ export function PhotoUploader({ visitId, initialPhotos, canManage }: PhotoUpload
     confirmationControllerRef.current?.abort();
     confirmationControllerRef.current = controller;
     let awaitingPathname: string | null = null;
+    let activeFile: File | null = null;
     const queue = selected;
     try {
       for (const pendingPhoto of queue) {
+        activeFile = pendingPhoto.file;
         awaitingPathname = pendingPhoto.uploadedPathname;
         if (!awaitingPathname) {
           const compressed = await compressVisitImage(pendingPhoto.file);
@@ -98,17 +100,30 @@ export function PhotoUploader({ visitId, initialPhotos, canManage }: PhotoUpload
         setAddedPhotos((current) => [...current, confirmed]);
         setSelected((current) => current.filter((item) => item.file !== pendingPhoto.file));
         awaitingPathname = null;
+        activeFile = null;
       }
       setSelected([]);
       if (inputRef.current) inputRef.current.value = '';
       setFeedback(queue.length === 1
         ? 'Foto enviada e confirmada.'
         : 'Fotos enviadas e confirmadas.');
-    } catch {
+    } catch (error) {
       setFailed(true);
-      setFeedback(awaitingPathname
-        ? 'Não foi possível confirmar a foto agora. Tente novamente.'
-        : 'Não foi possível enviar a foto. Tente novamente.');
+      if (error instanceof PhotoProcessingFailedError && awaitingPathname && activeFile) {
+        const failedPathname = awaitingPathname;
+        const failedFile = activeFile;
+        setSelected((current) => current.map((item) => (
+          item.file === failedFile && item.uploadedPathname === failedPathname
+            ? { ...item, uploadedPathname: null }
+            : item
+        )));
+        if (inputRef.current) inputRef.current.value = '';
+        setFeedback('O processamento da foto falhou. Envie novamente.');
+      } else {
+        setFeedback(awaitingPathname
+          ? 'Não foi possível confirmar a foto agora. Tente novamente.'
+          : 'Não foi possível enviar a foto. Tente novamente.');
+      }
     } finally {
       if (confirmationControllerRef.current === controller) {
         confirmationControllerRef.current = null;
