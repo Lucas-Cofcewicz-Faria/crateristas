@@ -679,6 +679,57 @@ describe('NeonReviewRepository', () => {
     });
   });
 
+  it('limits and maps the minimal recent publication projection at the SQL boundary', async () => {
+    let capturedSql = '';
+    let capturedParams: unknown[] = [];
+    const sql = {
+      query: async (text: string, params: unknown[]) => {
+        capturedSql = text;
+        capturedParams = params;
+        return [{
+          id: 'visit-newer',
+          slug: 'mesa-nova',
+          restaurant_name: 'Mesa Nova',
+          visited_at: new Date('2026-08-12T00:00:00.000Z'),
+          participant_count: 1,
+          published_at: new Date('2026-08-13T18:00:00.000Z'),
+        }, {
+          id: 'visit-older',
+          slug: 'mesa-anterior',
+          restaurant_name: 'Mesa Anterior',
+          visited_at: '2026-08-10',
+          participant_count: 6,
+          published_at: null,
+        }];
+      },
+      transaction: async () => {
+        throw new Error('Consulta recente não deve abrir transação.');
+      },
+    } as unknown as ReviewSqlClient;
+    const repository = createNeonReviewRepository(sql);
+
+    await expect(repository.listRecentPublishedVisits(6)).resolves.toEqual([{
+      id: 'visit-newer',
+      slug: 'mesa-nova',
+      restaurantName: 'Mesa Nova',
+      visitedAt: '2026-08-12T00:00:00.000Z',
+      participantCount: 1,
+      publishedAt: '2026-08-13T18:00:00.000Z',
+    }, {
+      id: 'visit-older',
+      slug: 'mesa-anterior',
+      restaurantName: 'Mesa Anterior',
+      visitedAt: '2026-08-10',
+      participantCount: 6,
+      publishedAt: null,
+    }]);
+    expect(capturedParams).toEqual([6]);
+    expect(capturedSql).toContain("WHERE v.publication_state = 'published'");
+    expect(capturedSql).toMatch(/ORDER BY v\.published_at DESC NULLS LAST,\s*v\.id/);
+    expect(capturedSql).toContain('LIMIT $1');
+    expect(capturedSql).not.toMatch(/average_|overall|visit_photos|cover_photo/i);
+  });
+
   it('lists public member profiles without email or authentication identifiers', async () => {
     const sql = {
       query: async () => [{
@@ -1212,6 +1263,59 @@ describeIntegration('NeonReviewRepository database constraints', () => {
       transaction.query('DELETE FROM members WHERE id = $1', [photoRaceMemberId]),
       transaction.query('DELETE FROM members WHERE id = $1', [concurrentMemberA]),
       transaction.query('DELETE FROM members WHERE id = $1', [concurrentMemberB]),
+    ]);
+  });
+});
+
+describeIntegration('NeonReviewRepository recent publication projection', () => {
+  const sql = integrationUrl ? neon(integrationUrl) : null;
+  const restaurantId = randomUUID();
+  const visitIds = [randomUUID(), randomUUID(), randomUUID()].sort();
+
+  beforeAll(async () => {
+    if (!sql) throw new Error('TEST_DATABASE_URL ausente.');
+    const suffix = restaurantId.slice(0, 8);
+    await sql.transaction((transaction) => [
+      transaction.query(
+        `INSERT INTO restaurants (id, slug, name, cuisine, neighborhood)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [restaurantId, `recent-restaurant-${suffix}`, 'Recentes', 'Teste', 'Teste'],
+      ),
+      transaction.query(
+        `INSERT INTO visits
+          (id, slug, restaurant_id, visited_at, publication_state, published_at)
+         VALUES
+          ($1, $2, $7, '2026-08-13', 'published', '9999-12-31 23:59:59+00'),
+          ($3, $4, $7, '2026-08-12', 'published', '9999-12-31 23:59:59+00'),
+          ($5, $6, $7, '2026-08-11', 'published', '9999-12-30 23:59:59+00')`,
+        [
+          visitIds[0],
+          `recent-a-${suffix}`,
+          visitIds[1],
+          `recent-b-${suffix}`,
+          visitIds[2],
+          `recent-c-${suffix}`,
+          restaurantId,
+        ],
+      ),
+    ]);
+  });
+
+  it('orders equal publication timestamps by id and applies the requested limit', async () => {
+    if (!sql) throw new Error('TEST_DATABASE_URL ausente.');
+    const repository = createNeonReviewRepository(sql);
+
+    const result = await repository.listRecentPublishedVisits(2);
+
+    expect(result.map((visit) => visit.id)).toEqual(visitIds.slice(0, 2));
+    expect(result).toHaveLength(2);
+  });
+
+  afterAll(async () => {
+    if (!sql) return;
+    await sql.transaction((transaction) => [
+      transaction.query('DELETE FROM visits WHERE restaurant_id = $1', [restaurantId]),
+      transaction.query('DELETE FROM restaurants WHERE id = $1', [restaurantId]),
     ]);
   });
 });

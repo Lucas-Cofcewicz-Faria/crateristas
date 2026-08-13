@@ -6,6 +6,7 @@ const dependencies = vi.hoisted(() => ({
   requireMember: vi.fn(),
   listPendingVisitsForMember: vi.fn(),
   listVisitsInFormationForMember: vi.fn(),
+  listRecentPublishedVisits: vi.fn(),
   listPublicVisits: vi.fn(),
 }));
 
@@ -17,6 +18,7 @@ vi.mock('@/lib/reviews/server', () => ({
   getReviewRepository: () => ({
     listPendingVisitsForMember: dependencies.listPendingVisitsForMember,
     listVisitsInFormationForMember: dependencies.listVisitsInFormationForMember,
+    listRecentPublishedVisits: dependencies.listRecentPublishedVisits,
     listPublicVisits: dependencies.listPublicVisits,
   }),
 }));
@@ -76,6 +78,14 @@ describe('página privada do painel', () => {
     dependencies.requireMember.mockResolvedValue(member);
     dependencies.listPendingVisitsForMember.mockResolvedValue([pending]);
     dependencies.listVisitsInFormationForMember.mockResolvedValue([]);
+    dependencies.listRecentPublishedVisits.mockResolvedValue([{
+      id: published.id,
+      slug: published.slug,
+      restaurantName: published.restaurant.name,
+      visitedAt: published.visitedAt,
+      participantCount: published.participantCount,
+      publishedAt: published.publishedAt,
+    }]);
     dependencies.listPublicVisits.mockResolvedValue([published]);
   });
 
@@ -83,11 +93,20 @@ describe('página privada do painel', () => {
     let authorize: (value: MemberRecord) => void = () => undefined;
     let releasePending: (value: PendingVisit[]) => void = () => undefined;
     let releaseForming: (value: PendingVisit[]) => void = () => undefined;
-    let releasePublic: (value: PublicVisitSummary[]) => void = () => undefined;
+    let releaseRecent: (value: Array<{
+      id: string;
+      slug: string;
+      restaurantName: string;
+      visitedAt: string;
+      participantCount: number;
+      publishedAt: string | null;
+    }>) => void = () => undefined;
     dependencies.requireMember.mockReturnValue(new Promise((resolve) => { authorize = resolve; }));
     dependencies.listPendingVisitsForMember.mockReturnValue(new Promise((resolve) => { releasePending = resolve; }));
     dependencies.listVisitsInFormationForMember.mockReturnValue(new Promise((resolve) => { releaseForming = resolve; }));
-    dependencies.listPublicVisits.mockReturnValue(new Promise((resolve) => { releasePublic = resolve; }));
+    dependencies.listRecentPublishedVisits.mockReturnValue(new Promise((resolve) => {
+      releaseRecent = resolve;
+    }));
 
     const pagePromise = DashboardPage();
     expect(dependencies.requireMember).toHaveBeenCalledOnce();
@@ -96,11 +115,20 @@ describe('página privada do painel', () => {
     await vi.waitFor(() => {
       expect(dependencies.listPendingVisitsForMember).toHaveBeenCalledWith(member.id);
       expect(dependencies.listVisitsInFormationForMember).toHaveBeenCalledWith(member.id);
-      expect(dependencies.listPublicVisits).toHaveBeenCalledWith({});
+      expect(dependencies.listRecentPublishedVisits).toHaveBeenCalledWith(6);
     });
+    expect(dependencies.listRecentPublishedVisits).toHaveBeenCalledOnce();
+    expect(dependencies.listPublicVisits).not.toHaveBeenCalled();
     releasePending([pending]);
     releaseForming([]);
-    releasePublic([published]);
+    releaseRecent([{
+      id: published.id,
+      slug: published.slug,
+      restaurantName: published.restaurant.name,
+      visitedAt: published.visitedAt,
+      participantCount: published.participantCount,
+      publishedAt: published.publishedAt,
+    }]);
 
     render(await pagePromise);
     expect(screen.getByRole('heading', { name: 'Seu painel' })).toBeInTheDocument();
@@ -115,6 +143,7 @@ describe('página privada do painel', () => {
     await expect(DashboardPage()).rejects.toThrow('Não autorizado');
     expect(dependencies.listPendingVisitsForMember).not.toHaveBeenCalled();
     expect(dependencies.listVisitsInFormationForMember).not.toHaveBeenCalled();
+    expect(dependencies.listRecentPublishedVisits).not.toHaveBeenCalled();
     expect(dependencies.listPublicVisits).not.toHaveBeenCalled();
   });
 });

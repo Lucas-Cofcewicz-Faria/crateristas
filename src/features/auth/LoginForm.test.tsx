@@ -63,8 +63,13 @@ describe('LoginForm', () => {
     const action: LoginAction = vi.fn(async () => ({
       error: 'E-mail ou senha inválidos.' as const,
     }));
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const consoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    const consoleSpies = [
+      vi.spyOn(console, 'log').mockImplementation(() => undefined),
+      vi.spyOn(console, 'error').mockImplementation(() => undefined),
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined),
+      vi.spyOn(console, 'info').mockImplementation(() => undefined),
+      vi.spyOn(console, 'debug').mockImplementation(() => undefined),
+    ];
     window.history.replaceState({}, '', '/entrar');
     render(<LoginForm action={action} />);
 
@@ -77,7 +82,8 @@ describe('LoginForm', () => {
     );
     expect(window.location.href).not.toContain(password);
     expect(document.body).not.toHaveTextContent(password);
-    expect(consoleError).not.toHaveBeenCalled();
-    expect(consoleLog).not.toHaveBeenCalled();
+    for (const consoleSpy of consoleSpies) {
+      expect(consoleSpy).not.toHaveBeenCalled();
+    }
   });
 });

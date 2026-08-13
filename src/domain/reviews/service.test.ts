@@ -221,6 +221,11 @@ class InMemoryReviewRepository implements ReviewRepository {
     return detail ? [detail] : [];
   }
 
+  async listRecentPublishedVisits(limit: number) {
+    void limit;
+    return [];
+  }
+
   async getPublicVisitBySlug(slug: string): Promise<PublicVisitDetail | null> {
     if (slug !== this.visit.slug || this.visit.publicationState !== 'published') return null;
     const scorecards = [...this.scorecards.values()];

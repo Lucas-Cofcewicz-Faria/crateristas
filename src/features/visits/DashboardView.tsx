@@ -2,7 +2,11 @@ import Link from 'next/link';
 import type { PendingVisit } from '@/domain/reviews/repository';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { PendingVisitList } from './PendingVisitList';
-import { formatDashboardCount, formatDashboardVisitDate } from './visit-formatters';
+import {
+  formatDashboardCount,
+  formatDashboardVisitDate,
+  formatEvaluationCount,
+} from './visit-formatters';
 import styles from './visits.module.css';
 
 export interface RecentDashboardVisit {
@@ -101,7 +105,7 @@ export function DashboardView({
                   <div>
                     <h3>{visit.restaurantName}</h3>
                     <p>
-                      {visit.participantCount} avaliações · visita em{' '}
+                      {formatEvaluationCount(visit.participantCount)} · visita em{' '}
                       <time dateTime={visit.visitedAt}>
                         {formatDashboardVisitDate(visit.visitedAt)}
                       </time>

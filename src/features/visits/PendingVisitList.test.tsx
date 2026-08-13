@@ -17,8 +17,8 @@ const visits: DashboardVisitItem[] = [{
   id: 'visit-2',
   restaurantName: 'Mesa Publicada',
   visitedAt: '2026-08-08T00:00:00.000Z',
-  participantCount: 6,
-  quorum: 6,
+  participantCount: 1,
+  quorum: 1,
   hasSubmitted: false,
   publicationState: 'published',
 }];
@@ -34,6 +34,7 @@ describe('PendingVisitList', () => {
       .toHaveAttribute('href', '/visitas/visit-1/avaliar');
 
     const published = screen.getByRole('listitem', { name: 'Visita à Mesa Publicada' });
+    expect(within(published).getByText('1 de 1 avaliação')).toBeInTheDocument();
     expect(within(published).getByText('Publicada')).toBeInTheDocument();
   });
 

@@ -8,6 +8,11 @@ de voltar a `/registros`; e `/painel` autoriza o membro no servidor antes de con
 as filas reais de avaliações pendentes, visitas privadas em formação e publicações
 recentes.
 
+Após a revisão independente Round 1, a seção recente usa uma projeção SQL dedicada,
+estreita e limitada antes de retornar ao painel; o loading preserva o shell de
+membro; as contagens flexionam `avaliação`; e o canário de segredo cobre todos os
+métodos usuais de `console`.
+
 ## Arquivos
 
 - `src/app/entrar/page.tsx` e teste: página pública de visitante, sem preflight de
@@ -20,15 +25,15 @@ recentes.
 - `src/components/shell/AppHeader.tsx`, `PublicShell.tsx` e teste afetado: contrato
   estreito `signOutAction` com Server Action real como default para todo shell de
   membro; removido o POST direto para `/api/auth/sign-out`.
-- `src/app/painel/page.tsx` e teste: autorização server-side antes das leituras,
-  consultas paralelas e adaptação para DTOs de apresentação.
-- `src/app/painel/loading.tsx` e `error.tsx`: estados locais pt-BR e error boundary
-  cliente com `reset()` sem revelar a exceção recebida.
+- `src/app/painel/page.tsx`, `loading.tsx`, `error.tsx` e testes: autorização
+  server-side antes das leituras, consultas paralelas, projeção recente limitada,
+  loading com shell de membro e error boundary cliente com `reset()`.
 - `src/features/visits/PendingVisitList.tsx`, `PublicationStatus.tsx`,
   `DashboardView.tsx`, `visit-formatters.ts`, `visits.module.css` e testes:
   apresentação modular das três seções, contagens, vazios, status e links reais.
 - `src/domain/reviews/repository.ts`, `src/lib/repositories/neon-review-repository.ts`
-  e teste: read model mínimo `listVisitsInFormationForMember(memberId)`.
+  e testes: read models mínimos `listVisitsInFormationForMember(memberId)` e
+  `listRecentPublishedVisits(limit)`.
 - `src/domain/reviews/service.test.ts`: double em memória atualizado para satisfazer
   a extensão do contrato, sem mudar o serviço nem a lógica de publicação.
 
@@ -55,7 +60,8 @@ recentes.
   `findOptionalMember()`; foi omitido por YAGNI, sem alterar `access.ts`.
 - `/painel` chama e aguarda `requireMember()` antes de instanciar o repository e
   iniciar qualquer query. Somente depois inicia, no mesmo `Promise.all`, pending,
-  formação e publicações. Não há API própria nem fetch cliente.
+  formação e a projeção recente limitada a seis linhas. Não há API própria nem
+  fetch cliente.
 - `listPendingVisitsForMember()` foi preservado: representa todas as visitas sem
   score do membro e não ganhou filtro de publicação. Portanto uma visita privada,
   publicada ou oculta ainda pode aparecer se estiver sem essa contribuição, de
@@ -68,9 +74,14 @@ recentes.
 - As duas primeiras filas podem conter a mesma visita por razões semânticas reais:
   uma visita privada abaixo do quórum também pode aguardar o score do membro. Não há
   duplicação fabricada nem reaproveitamento de cards públicos como dados privados.
-- Publicações recentes reutilizam `listPublicVisits({})`, já ordenada por
-  `published_at DESC, id`, e mostram as seis primeiras. A contagem é a quantidade
-  realmente apresentada, não um total inventado.
+- `listRecentPublishedVisits(limit)` retorna somente `id`, `slug`, nome do
+  restaurante, datas de visita/publicação e contagem de participantes. O SQL filtra
+  `publication_state = 'published'`, ordena por
+  `published_at DESC NULLS LAST, id` e aplica `LIMIT $1`; não calcula médias,
+  overall ou capa. A página chama exatamente essa leitura com `6`, sem `slice`.
+- A integração real desse read model coube no harness existente: fixtures próprias,
+  datas de publicação iguais para provar o desempate por `id`, limite dois e cleanup.
+  Ela é condicional a `TEST_DATABASE_URL`, como os demais testes de banco.
 - `PendingVisitList` recebe apenas campos locais e primitivos. Ele não é client, não
   conhece Neon nem `MemberRecord`, e aponta para `/visitas/<id>/avaliar`.
   `PublicationStatus` centraliza as labels e tones dos três estados.
@@ -166,6 +177,55 @@ PASS: 5 arquivos; 24 testes.
 
 A única correção foi adiar o import do facade até a execução da ação.
 
+### Round 1 — projeção recente limitada
+
+```text
+npm test -- src/app/painel/page.test.tsx src/lib/repositories/neon-review-repository.integration.test.ts
+RED: 2 arquivos falharam; 2 falhas esperadas; 20 testes passaram; 18 ignorados.
+- a página não chamava listRecentPublishedVisits(6);
+- o adapter ainda não implementava o método.
+
+npm test -- src/app/painel/page.test.tsx src/lib/repositories/neon-review-repository.integration.test.ts src/domain/reviews/service.test.ts
+GREEN: 3 arquivos; 39 testes; 18 integrações condicionais ignoradas.
+```
+
+O boundary controlado prova o array de parâmetros `[6]`, o mapeamento dos seis
+campos, o filtro publicado, `NULLS LAST`, desempate por `id`, `LIMIT $1` e ausência
+de médias, overall e fotos. O teste de banco real foi adicionado, mas não executou
+localmente por ausência de `TEST_DATABASE_URL`.
+
+### Round 1 — loading e flexão
+
+```text
+npm test -- src/app/painel/loading.test.tsx
+RED: 1 arquivo; 1 falha — loading mostrava Entrar em vez de Sair.
+GREEN: 1 arquivo; 1 teste.
+
+npm test -- src/features/visits/visit-formatters.test.ts src/features/visits/PendingVisitList.test.tsx src/features/visits/DashboardView.test.tsx
+RED: 3 arquivos; 5 falhas; 2 testes passaram.
+GREEN: 3 arquivos; 7 testes.
+```
+
+`formatEvaluationCount()` é o único ponto de flexão e cobre zero, singular e plural.
+`PendingVisitList` flexiona o quórum; publicações recentes flexionam participantes.
+
+### Round 1 — canário de segredo
+
+O produto já não emitia logs, portanto o reforço de teste não teria um RED natural.
+Foi feita uma mutação controlada e temporária que enviava a senha a `console.warn`:
+
+```text
+npm test -- src/features/auth/LoginForm.test.tsx
+MUTATION RED: 1 falha; 2 testes passaram; o spy mostrou a senha em warn.
+
+# mutação removida
+npm test -- src/features/auth/LoginForm.test.tsx
+GREEN: 1 arquivo; 3 testes.
+```
+
+O canário final observa `console.log`, `error`, `warn`, `info` e `debug`, além de URL,
+DOM e estado visível.
+
 ## Auto-revisão React e Next.js
 
 - `LoginForm` é a única ilha cliente da feature de login e usa somente
@@ -178,7 +238,7 @@ A única correção foi adiar o import do facade até a execução da ação.
 - Auth fica junto da mutação/leitura protegida. Proxy continua como filtro otimista,
   mas `requireMember()` é a barreira segura antes do banco privado.
 - Reads independentes usam `Promise.all`; não há API interna, waterfall ou fetching
-  cliente. A lista pública é reutilizada sem consulta por card.
+  cliente. A projeção recente é limitada no SQL e não faz consulta por card.
 - Imports são diretos, CSS é modular, listas têm keys estáveis, condicionais usam
   ternários/retornos antecipados, e não há memo/effect desnecessário.
 - Labels, autocomplete, `aria-live`, `role=status`, regiões nomeadas, contagens
@@ -191,8 +251,11 @@ A única correção foi adiar o import do facade até a execução da ação.
 npm test -- src/features/auth src/components/shell/AppHeader.test.tsx src/features/visits/PendingVisitList.test.tsx src/features/visits/DashboardView.test.tsx src/app/painel/page.test.tsx src/app/entrar/page.test.tsx src/lib/repositories/neon-review-repository.integration.test.ts
 PASS: 8 arquivos; 42 testes; 17 integrações condicionais ignoradas.
 
+npm test -- src/features/auth src/components/shell/AppHeader.test.tsx src/features/visits/PendingVisitList.test.tsx src/features/visits/DashboardView.test.tsx src/features/visits/visit-formatters.test.ts src/app/painel/page.test.tsx src/app/painel/loading.test.tsx src/app/entrar/page.test.tsx src/lib/repositories/neon-review-repository.integration.test.ts src/domain/reviews/service.test.ts
+ROUND 1 PASS: 11 arquivos; 64 testes; 18 integrações condicionais ignoradas.
+
 npm test
-PASS: 39 arquivos; 271 testes; 17 integrações condicionais ignoradas.
+ROUND 1 PASS: 41 arquivos; 276 testes; 18 integrações condicionais ignoradas.
 
 npx tsc --noEmit
 PASS.
@@ -205,14 +268,18 @@ PASS: compilação e TypeScript; 12 páginas estáticas geradas;
 /painel classificada como dinâmica e /entrar compilada sem credenciais.
 
 git diff --check 996c96c
-PASS.
+TASK 11 PASS.
+
+git diff --check 3e2fa62ea81998f149a189b10470e248274e51c1
+ROUND 1 PASS.
 ```
 
 ## Concerns
 
-- As 17 integrações condicionais do repository permanecem ignoradas porque
-  `TEST_DATABASE_URL` não está presente. O contrato SQL novo é exercitado com o
-  client controlado, incluindo `hasSubmitted` true/false, filtros e ordenação.
+- As 18 integrações condicionais do repository permanecem ignoradas porque
+  `TEST_DATABASE_URL` não está presente. A nova integração real de recentes fica
+  pronta no mesmo harness; o contrato SQL é exercitado sempre pelo client controlado,
+  incluindo parâmetros, mapeamento, filtros, ordenação e limite.
 - Permanece o warning preexistente do Vitest sobre o futuro loader nativo para
   `vitest.config.ts` em CommonJS.
 - Permanece o warning preexistente do Turbopack sobre múltiplos lockfiles entre o

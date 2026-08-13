@@ -118,6 +118,15 @@ export interface PendingVisit {
   publicationState: PublicationState;
 }
 
+export interface RecentPublishedVisit {
+  id: string;
+  slug: string;
+  restaurantName: string;
+  visitedAt: string;
+  participantCount: number;
+  publishedAt: string | null;
+}
+
 export interface PhotoInput {
   url: string;
   pathname: string;
@@ -193,6 +202,7 @@ export interface ReviewRepository {
   deletePhoto(visitId: string, photoId: string, actorId: string): Promise<PhotoRecord | null>;
   countVisitPhotos(visitId: string): Promise<number>;
   listPublicVisits(filters: PublicVisitFilters): Promise<PublicVisitSummary[]>;
+  listRecentPublishedVisits(limit: number): Promise<RecentPublishedVisit[]>;
   getPublicVisitBySlug(slug: string): Promise<PublicVisitDetail | null>;
   listPublicMembers(): Promise<PublicMemberSummary[]>;
   listPendingVisitsForMember(memberId: string): Promise<PendingVisit[]>;

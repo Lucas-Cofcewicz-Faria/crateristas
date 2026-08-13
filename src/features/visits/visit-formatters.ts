@@ -12,3 +12,7 @@ export function formatDashboardVisitDate(value: string): string {
 export function formatDashboardCount(count: number): string {
   return count === 1 ? '1 item' : `${count} itens`;
 }
+
+export function formatEvaluationCount(count: number): string {
+  return count === 1 ? '1 avaliação' : `${count} avaliações`;
+}

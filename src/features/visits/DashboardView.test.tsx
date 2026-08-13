@@ -20,7 +20,7 @@ const recent = [{
   slug: 'publicada',
   restaurantName: 'Mesa Publicada',
   visitedAt: '2026-08-09',
-  participantCount: 6,
+  participantCount: 1,
 }];
 
 describe('DashboardView', () => {
@@ -44,6 +44,7 @@ describe('DashboardView', () => {
     expect(within(formingSection).getByLabelText('0 itens')).toBeInTheDocument();
     expect(within(recentSection).getByLabelText('1 item')).toBeInTheDocument();
     expect(formingSection).toHaveTextContent('Nenhuma visita está em formação.');
+    expect(within(recentSection).getByText(/1 avaliação · visita em/)).toBeInTheDocument();
     expect(within(recentSection).getByRole('link', { name: 'Abrir Mesa Publicada' }))
       .toHaveAttribute('href', '/restaurantes/publicada');
     expect(screen.queryByText(/administrador|administração/i)).not.toBeInTheDocument();

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { PublicationState } from '@/domain/reviews/types';
 import { PublicationStatus } from './PublicationStatus';
-import { formatDashboardVisitDate } from './visit-formatters';
+import { formatDashboardVisitDate, formatEvaluationCount } from './visit-formatters';
 import styles from './visits.module.css';
 
 export interface DashboardVisitItem {
@@ -36,7 +36,7 @@ export function PendingVisitList({ visits, emptyMessage }: PendingVisitListProps
           <div className={styles.cardHeader}>
             <PublicationStatus state={visit.publicationState} />
             <span className={styles.quorum}>
-              {visit.participantCount} de {visit.quorum} avaliações
+              {visit.participantCount} de {formatEvaluationCount(visit.quorum)}
             </span>
           </div>
           <h3>{visit.restaurantName}</h3>

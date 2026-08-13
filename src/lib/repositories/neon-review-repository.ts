@@ -17,6 +17,7 @@ import type {
   PublicPhoto,
   PublicVisitDetail,
   PublicVisitSummary,
+  RecentPublishedVisit,
   ReviewRepository,
   SubmissionResult,
   VisitRecord,
@@ -219,6 +220,17 @@ function publicVisitSummaryFromRow(row: Row): PublicVisitSummary {
     },
     overall: nullableNumber(row.overall, 'overall'),
     coverPhotoUrl: nullableString(row.cover_photo_url, 'cover_photo_url'),
+  };
+}
+
+function recentPublishedVisitFromRow(row: Row): RecentPublishedVisit {
+  return {
+    id: requiredString(row.id, 'id'),
+    slug: requiredString(row.slug, 'slug'),
+    restaurantName: requiredString(row.restaurant_name, 'restaurant_name'),
+    visitedAt: dateString(row.visited_at, 'visited_at'),
+    participantCount: numberValue(row.participant_count, 'participant_count'),
+    publishedAt: nullableDateString(row.published_at, 'published_at'),
   };
 }
 
@@ -817,6 +829,30 @@ class NeonReviewRepository implements ReviewRepository {
       [filters.busca ?? null, filters.culinaria ?? null, filters.bairro ?? null],
     );
     return rows.map(publicVisitSummaryFromRow);
+  }
+
+  async listRecentPublishedVisits(limit: number): Promise<RecentPublishedVisit[]> {
+    const rows = await this.sql.query(
+      `SELECT
+         v.id,
+         v.slug,
+         r.name AS restaurant_name,
+         v.visited_at,
+         participants.participant_count,
+         v.published_at
+       FROM visits v
+       JOIN restaurants r ON r.id = v.restaurant_id
+       LEFT JOIN LATERAL (
+         SELECT COUNT(s.id)::int AS participant_count
+         FROM scorecards s
+         WHERE s.visit_id = v.id
+       ) participants ON TRUE
+       WHERE v.publication_state = 'published'
+       ORDER BY v.published_at DESC NULLS LAST, v.id
+       LIMIT $1`,
+      [limit],
+    );
+    return rows.map(recentPublishedVisitFromRow);
   }
 
   async getPublicVisitBySlug(slug: string): Promise<PublicVisitDetail | null> {
