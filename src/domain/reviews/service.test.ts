@@ -270,6 +270,10 @@ class InMemoryReviewRepository implements ReviewRepository {
     void memberId;
     return [];
   }
+
+  async getVisitReviewWorkspace() {
+    return null;
+  }
 }
 
 function repositoryWithScores(count: number) {

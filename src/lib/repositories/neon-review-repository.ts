@@ -21,6 +21,7 @@ import type {
   ReviewRepository,
   SubmissionResult,
   VisitRecord,
+  VisitReviewWorkspace,
 } from '@/domain/reviews/repository';
 import type { CreateVisitInput, ScorecardInput } from '@/domain/reviews/schemas';
 import { SCORE_KEYS, type PublicationReason, type PublicationState, type PublicVisitFilters } from '@/domain/reviews/types';
@@ -260,6 +261,32 @@ function pendingVisitFromRow(row: Row): PendingVisit {
     quorum: numberValue(row.quorum, 'quorum'),
     hasSubmitted: booleanValue(row.has_submitted),
     publicationState: publicationState(row.publication_state),
+  };
+}
+
+function visitReviewWorkspaceFromRow(row: Row): VisitReviewWorkspace {
+  const ownScorecard = row.own_food === null || row.own_food === undefined ? null : {
+    food: numberValue(row.own_food, 'own_food'),
+    service: numberValue(row.own_service, 'own_service'),
+    ambience: numberValue(row.own_ambience, 'own_ambience'),
+    value: numberValue(row.own_value, 'own_value'),
+    access: numberValue(row.own_access, 'own_access'),
+    waitTime: numberValue(row.own_wait_time, 'own_wait_time'),
+    comment: requiredString(row.own_comment, 'own_comment'),
+  };
+  return {
+    id: requiredString(row.id, 'id'),
+    restaurantName: requiredString(row.restaurant_name, 'restaurant_name'),
+    cuisine: requiredString(row.cuisine, 'cuisine'),
+    neighborhood: requiredString(row.neighborhood, 'neighborhood'),
+    city: requiredString(row.city, 'city'),
+    visitedAt: dateString(row.visited_at, 'visited_at'),
+    participantCount: numberValue(row.participant_count, 'participant_count'),
+    quorum: numberValue(row.quorum, 'quorum'),
+    publicationState: publicationState(row.publication_state),
+    createdBy: nullableString(row.created_by, 'created_by'),
+    ownScorecard,
+    photos: publicPhotos(row.photos),
   };
 }
 
@@ -1001,6 +1028,55 @@ class NeonReviewRepository implements ReviewRepository {
       [memberId],
     );
     return rows.map(pendingVisitFromRow);
+  }
+
+  async getVisitReviewWorkspace(
+    visitId: string,
+    memberId: string,
+  ): Promise<VisitReviewWorkspace | null> {
+    const rows = await this.sql.query(
+      `SELECT
+         v.id,
+         r.name AS restaurant_name,
+         r.cuisine,
+         r.neighborhood,
+         r.city,
+         v.visited_at,
+         v.quorum,
+         v.publication_state,
+         v.created_by,
+         participants.participant_count,
+         own.food AS own_food,
+         own.service AS own_service,
+         own.ambience AS own_ambience,
+         own.value AS own_value,
+         own.access AS own_access,
+         own.wait_time AS own_wait_time,
+         own.comment AS own_comment,
+         COALESCE(photos.items, '[]'::jsonb) AS photos
+       FROM visits v
+       JOIN restaurants r ON r.id = v.restaurant_id
+       LEFT JOIN scorecards own
+         ON own.visit_id = v.id
+        AND own.member_id = $2
+       LEFT JOIN LATERAL (
+         SELECT COUNT(score.id)::int AS participant_count
+         FROM scorecards score
+         WHERE score.visit_id = v.id
+       ) participants ON TRUE
+       LEFT JOIN LATERAL (
+         SELECT jsonb_agg(jsonb_build_object(
+           'id', p.id,
+           'url', p.url,
+           'position', p.position
+         ) ORDER BY p.position) AS items
+         FROM visit_photos p
+         WHERE p.visit_id = v.id
+       ) photos ON TRUE
+       WHERE v.id = $1`,
+      [visitId, memberId],
+    );
+    return rows[0] ? visitReviewWorkspaceFromRow(rows[0]) : null;
   }
 }
 

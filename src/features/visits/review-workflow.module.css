@@ -1,0 +1,439 @@
+.workflowPage {
+  width: min(calc(100% - 96px), var(--page-max));
+  margin: 0 auto;
+  padding: 64px 0 96px;
+}
+
+.workflowHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 48px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--line);
+}
+
+.eyebrow {
+  margin-bottom: 12px;
+  color: var(--ember-bright);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.workflowHeader h1,
+.routeState h1 {
+  color: var(--ink);
+  font-weight: 560;
+  letter-spacing: -0.03em;
+}
+
+.workflowHeader h1 {
+  font-size: clamp(2.6rem, 4vw, 4.1rem);
+}
+
+.lead,
+.visitSummary,
+.routeState p {
+  color: var(--ink-muted);
+}
+
+.lead {
+  margin-top: 14px;
+}
+
+.visitSummary {
+  display: grid;
+  justify-items: end;
+  gap: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.formCard {
+  display: grid;
+  gap: 28px;
+  margin-top: 36px;
+  padding: 32px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.mapsImporter {
+  display: grid;
+  gap: 18px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--line);
+}
+
+.mapsImporter h2 {
+  color: var(--ink);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.mapsImporter p {
+  margin-top: 6px;
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.importRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 16px;
+}
+
+.fieldGroup {
+  display: grid;
+  gap: 8px;
+}
+
+.fieldGroup label {
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.fieldGroup select {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.formError {
+  color: var(--danger);
+  font-size: 0.82rem;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.scorecardSection {
+  margin-top: 36px;
+  padding: 32px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.sectionIntro h2 {
+  color: var(--ink);
+  font-size: 1.8rem;
+  font-weight: 580;
+}
+
+.sectionIntro > p:last-child {
+  margin-top: 8px;
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+}
+
+.scorecardForm {
+  display: grid;
+  gap: 28px;
+  margin-top: 28px;
+}
+
+.scoreGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.scoreControl {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+}
+
+.scoreHeading,
+.commentHeading,
+.saveStatus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.scoreHeading label,
+.commentHeading label {
+  color: var(--ink);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.scoreHeading output {
+  color: var(--ember-bright);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.scoreControl input {
+  width: 100%;
+  accent-color: var(--ember);
+}
+
+.scoreControl p,
+.commentHeading span,
+.saveStatus p {
+  color: var(--ink-muted);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.commentField {
+  display: grid;
+  gap: 10px;
+}
+
+.commentField textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.6;
+}
+
+.commentField textarea:focus {
+  border-color: var(--ember-bright);
+}
+
+.commentField textarea[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.saveStatus {
+  padding: 16px 18px;
+  border: 1px solid var(--success);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+}
+
+.saveStatus strong {
+  color: var(--ink);
+}
+
+.photoSection {
+  margin-top: 28px;
+  padding: 32px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.photoEmpty {
+  margin-top: 24px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.photoGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.photoCard {
+  display: grid;
+  gap: 10px;
+}
+
+.photoCard img {
+  width: 100%;
+  height: 150px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
+.photoActions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px 18px;
+  margin-top: 24px;
+}
+
+.photoActions label,
+.photoActions p {
+  grid-column: 1 / -1;
+}
+
+.photoActions label {
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.photoActions input {
+  min-height: 44px;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--ink);
+}
+
+.photoActions p,
+.photoSection > [role='status'],
+.photoSection > [role='alert'] {
+  color: var(--ink-muted);
+  font-size: 0.76rem;
+}
+
+.photoSection > [role='status'],
+.photoSection > [role='alert'] {
+  margin-top: 16px;
+}
+
+.photoSection > [role='alert'] {
+  color: var(--danger);
+}
+
+.adminSection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  margin-top: 28px;
+  padding: 28px 32px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.adminSection h2 {
+  color: var(--ink);
+  font-size: 1.45rem;
+  font-weight: 580;
+}
+
+.adminSection > div > p:last-child,
+.confirmDialog > p {
+  margin-top: 8px;
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.dialogBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 32px;
+  border: 0;
+  color: inherit;
+  background: color-mix(in srgb, var(--canvas), transparent 18%);
+}
+
+.confirmDialog {
+  width: min(100%, 520px);
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-panel);
+}
+
+.confirmDialog h3 {
+  color: var(--ink);
+  font-size: 1.55rem;
+  font-weight: 600;
+}
+
+.partialNotice {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid var(--ember);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+}
+
+.partialNotice p {
+  margin-top: 5px;
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.routeState {
+  width: min(calc(100% - 96px), var(--page-max));
+  min-height: 620px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  margin: 0 auto;
+  padding: 80px;
+  text-align: center;
+}
+
+.routeState h1 {
+  font-size: 2.2rem;
+}
+
+.routeState p {
+  max-width: 520px;
+  margin-top: 10px;
+}
+
+.retryButton {
+  min-height: 44px;
+  margin-top: 24px;
+  padding: 0 20px;
+  border: 1px solid var(--ember);
+  border-radius: var(--radius-sm);
+  background: var(--ember);
+  color: var(--canvas);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.retryButton:hover {
+  border-color: var(--ember-bright);
+  background: var(--ember-bright);
+}

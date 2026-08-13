@@ -1003,6 +1003,9 @@ git commit -m "feat: add member login and dashboard"
 - Create: `src/features/visits/AdminPublicationControls.tsx`
 - Create: `src/features/visits/ScorecardForm.test.tsx`
 - Create: `src/features/visits/AdminPublicationControls.test.tsx`
+- Replace: `src/app/api/parse-maps/route.ts`
+- Create: `src/features/visits/google-maps-import.ts`
+- Create: `src/features/visits/GoogleMapsImporter.tsx`
 
 **Interfaces:**
 - Consumes: Tasks 5-6 APIs and shared fields/buttons.
@@ -1014,7 +1017,9 @@ Use `userEvent` to fill six numeric controls and a comment. Assert live characte
 
 - [ ] **Step 2: Implement create-visit form**
 
-Fields: restaurant name, cuisine, neighborhood, city, optional address, price band and visit date. On success redirect to `/visitas/<id>/avaliar`. Do not restore the Google Maps scraping route in this version.
+Fields: restaurant name, cuisine, neighborhood, city, optional address, price band and visit date. On success redirect to `/visitas/<id>/avaliar`.
+
+Preserve Google Maps import only as optional assisted filling inside this authenticated create-review workflow. Replace the legacy parser instead of reusing it: authenticate before reading the body; accept only HTTPS URLs on an exact allowlist of official Google Maps/share hosts; reject credentials, non-default ports and malformed/non-Maps paths; manually follow at most five redirects while revalidating every destination; use a timeout and a strict response-size ceiling; do not query fallback search engines; validate and return only the narrow editable restaurant fields. Never expose upstream HTML, URLs, stack traces or parser errors. The imported values are suggestions and every field remains editable before visit creation.
 
 - [ ] **Step 3: Implement accessible score inputs**
 
@@ -1058,7 +1063,7 @@ git commit -m "feat: complete collective review workflow"
 - Replace: `src/app/add-restaurant/page.tsx`
 - Replace: `src/app/restaurant/[id]/page.tsx`
 - Delete: `src/app/api/reviews/route.ts`
-- Delete: `src/app/api/parse-maps/route.ts`
+- Preserve: the authenticated, constrained `src/app/api/parse-maps/route.ts` from Task 12
 - Delete: `src/components/AddReviewModal.tsx`
 - Delete: `src/components/Navbar.tsx`
 - Modify: `crateristas_context.md`

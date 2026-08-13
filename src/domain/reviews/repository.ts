@@ -127,6 +127,21 @@ export interface RecentPublishedVisit {
   publishedAt: string | null;
 }
 
+export interface VisitReviewWorkspace {
+  id: string;
+  restaurantName: string;
+  cuisine: string;
+  neighborhood: string;
+  city: string;
+  visitedAt: string;
+  participantCount: number;
+  quorum: number;
+  publicationState: PublicationState;
+  createdBy: string | null;
+  ownScorecard: ScorecardInput | null;
+  photos: PublicPhoto[];
+}
+
 export interface PhotoInput {
   url: string;
   pathname: string;
@@ -207,4 +222,5 @@ export interface ReviewRepository {
   listPublicMembers(): Promise<PublicMemberSummary[]>;
   listPendingVisitsForMember(memberId: string): Promise<PendingVisit[]>;
   listVisitsInFormationForMember(memberId: string): Promise<PendingVisit[]>;
+  getVisitReviewWorkspace(visitId: string, memberId: string): Promise<VisitReviewWorkspace | null>;
 }
