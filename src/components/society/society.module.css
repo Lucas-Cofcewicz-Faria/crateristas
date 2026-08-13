@@ -1,0 +1,57 @@
+.fragment {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+}
+
+.markButton {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 0.64rem;
+  font-weight: 780;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 160ms ease;
+}
+
+.markButton:hover,
+.markButton:focus-visible {
+  color: var(--ember-bright);
+}
+
+.mark {
+  width: 24px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 24px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  color: var(--ember-bright);
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.fragmentText {
+  max-width: 390px;
+  padding-left: 33px;
+  color: var(--ink-muted);
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .markButton {
+    transition: none;
+  }
+}
