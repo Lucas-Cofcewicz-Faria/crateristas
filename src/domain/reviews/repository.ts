@@ -196,4 +196,5 @@ export interface ReviewRepository {
   getPublicVisitBySlug(slug: string): Promise<PublicVisitDetail | null>;
   listPublicMembers(): Promise<PublicMemberSummary[]>;
   listPendingVisitsForMember(memberId: string): Promise<PendingVisit[]>;
+  listVisitsInFormationForMember(memberId: string): Promise<PendingVisit[]>;
 }

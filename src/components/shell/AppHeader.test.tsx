@@ -1,9 +1,20 @@
-import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+const dependencies = vi.hoisted(() => ({
+  logoutAction: vi.fn(async () => undefined),
+}));
+
+vi.mock('@/features/auth/actions', () => ({
+  logoutAction: dependencies.logoutAction,
+}));
 import { AppHeader } from './AppHeader';
 import { PublicShell } from './PublicShell';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  dependencies.logoutAction.mockClear();
+});
 
 describe('AppHeader', () => {
   it('oferece a navegação pública e a entrada para visitantes', () => {
@@ -25,14 +36,31 @@ describe('AppHeader', () => {
     }
   });
 
-  it('troca a entrada pelo painel e por uma ação de saída para membros', () => {
-    render(<AppHeader viewer="member" />);
+  it('troca a entrada pelo painel e invoca o contrato de saída recebido', async () => {
+    const signOutAction = vi.fn(async () => undefined);
+    render(<AppHeader viewer="member" signOutAction={signOutAction} />);
 
     expect(screen.getByRole('link', { name: 'Painel' }))
       .toHaveAttribute('href', '/painel');
-    expect(screen.getByRole('button', { name: 'Sair' }))
-      .toHaveAttribute('type', 'submit');
+    const button = screen.getByRole('button', { name: 'Sair' });
+    expect(button).toHaveAttribute('type', 'submit');
     expect(screen.queryByRole('link', { name: 'Entrar' })).not.toBeInTheDocument();
+
+    fireEvent.submit(button.closest('form')!);
+    await waitFor(() => expect(signOutAction).toHaveBeenCalledOnce());
+  });
+
+  it('faz todo shell de membro usar a ação real de logout por padrão', async () => {
+    render(
+      <PublicShell viewer="member">
+        <h1>Painel privado</h1>
+      </PublicShell>,
+    );
+
+    const button = screen.getByRole('button', { name: 'Sair' });
+    fireEvent.submit(button.closest('form')!);
+
+    await waitFor(() => expect(dependencies.logoutAction).toHaveBeenCalledOnce());
   });
 
   it('compõe os marcos compartilhados sem acoplar a sessão ao shell', () => {

@@ -745,6 +745,65 @@ describe('NeonReviewRepository', () => {
       publicationState: 'private',
     }]);
   });
+
+  it('lists private visits below quorum and projects the member submission state', async () => {
+    let capturedSql = '';
+    const sql = {
+      query: async (text: string, params: unknown[]) => {
+        capturedSql = text;
+        return params[0] === 'member-1' ? [{
+          id: 'visit-formation-1',
+          slug: 'casa-em-formacao',
+          restaurant_name: 'Casa em Formação',
+          visited_at: '2026-08-11',
+          participant_count: 4,
+          quorum: 6,
+          publication_state: 'private',
+          has_submitted: true,
+        }, {
+          id: 'visit-formation-2',
+          slug: 'mesa-sem-contribuicao',
+          restaurant_name: 'Mesa sem Contribuição',
+          visited_at: '2026-08-10',
+          participant_count: 2,
+          quorum: 6,
+          publication_state: 'private',
+          has_submitted: false,
+        }] : [];
+      },
+      transaction: async () => {
+        throw new Error('Consulta de formação não deve abrir transação.');
+      },
+    } as unknown as ReviewSqlClient;
+    const repository = createNeonReviewRepository(sql);
+
+    await expect(repository.listVisitsInFormationForMember('member-1')).resolves.toEqual([
+      {
+        id: 'visit-formation-1',
+        slug: 'casa-em-formacao',
+        restaurantName: 'Casa em Formação',
+        visitedAt: '2026-08-11',
+        participantCount: 4,
+        quorum: 6,
+        hasSubmitted: true,
+        publicationState: 'private',
+      },
+      {
+        id: 'visit-formation-2',
+        slug: 'mesa-sem-contribuicao',
+        restaurantName: 'Mesa sem Contribuição',
+        visitedAt: '2026-08-10',
+        participantCount: 2,
+        quorum: 6,
+        hasSubmitted: false,
+        publicationState: 'private',
+      },
+    ]);
+    expect(capturedSql).toContain("v.publication_state = 'private'");
+    expect(capturedSql).toMatch(/HAVING COUNT\(s\.id\) < v\.quorum/);
+    expect(capturedSql).toContain('COALESCE(BOOL_OR(own.member_id = $1), FALSE)');
+    expect(capturedSql).not.toContain('NOT EXISTS');
+  });
 });
 
 const integrationUrl = process.env.TEST_DATABASE_URL;

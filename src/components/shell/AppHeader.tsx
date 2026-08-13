@@ -1,16 +1,17 @@
 import Link from 'next/link';
+import { logoutAction } from '@/features/auth/actions';
 import styles from './shell.module.css';
 
 export type HeaderViewer = 'visitor' | 'member';
 
 export interface AppHeaderProps {
   viewer: HeaderViewer;
-  signOutPath?: string;
+  signOutAction?: () => Promise<void>;
 }
 
 export function AppHeader({
   viewer,
-  signOutPath = '/api/auth/sign-out',
+  signOutAction = logoutAction,
 }: AppHeaderProps) {
   return (
     <header className={styles.header}>
@@ -29,7 +30,7 @@ export function AppHeader({
           {viewer === 'member' ? (
             <>
               <Link className={styles.navLink} href="/painel">Painel</Link>
-              <form action={signOutPath} method="post">
+              <form action={signOutAction}>
                 <button className={styles.signOut} type="submit">Sair</button>
               </form>
             </>

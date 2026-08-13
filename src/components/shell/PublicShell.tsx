@@ -6,16 +6,16 @@ import styles from './shell.module.css';
 export interface PublicShellProps {
   children: ReactNode;
   viewer: HeaderViewer;
-  signOutPath?: string;
+  signOutAction?: () => Promise<void>;
 }
 
-export function PublicShell({ children, viewer, signOutPath }: PublicShellProps) {
+export function PublicShell({ children, viewer, signOutAction }: PublicShellProps) {
   return (
     <div className="desktop-frame">
       <a className={styles.skipLink} href="#conteudo-principal">
         Ir para o conteúdo
       </a>
-      <AppHeader viewer={viewer} signOutPath={signOutPath} />
+      <AppHeader viewer={viewer} signOutAction={signOutAction} />
       <main className={styles.main} id="conteudo-principal">
         {children}
       </main>

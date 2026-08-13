@@ -260,6 +260,11 @@ class InMemoryReviewRepository implements ReviewRepository {
     void memberId;
     return [];
   }
+
+  async listVisitsInFormationForMember(memberId: string): Promise<PendingVisit[]> {
+    void memberId;
+    return [];
+  }
 }
 
 function repositoryWithScores(count: number) {

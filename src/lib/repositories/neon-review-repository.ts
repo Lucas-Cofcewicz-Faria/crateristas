@@ -940,6 +940,32 @@ class NeonReviewRepository implements ReviewRepository {
     );
     return rows.map(pendingVisitFromRow);
   }
+
+  async listVisitsInFormationForMember(memberId: string): Promise<PendingVisit[]> {
+    const rows = await this.sql.query(
+      `SELECT
+         v.id,
+         v.slug,
+         r.name AS restaurant_name,
+         v.visited_at,
+         v.quorum,
+         v.publication_state,
+         COUNT(s.id)::int AS participant_count,
+         COALESCE(BOOL_OR(own.member_id = $1), FALSE) AS has_submitted
+       FROM visits v
+       JOIN restaurants r ON r.id = v.restaurant_id
+       LEFT JOIN scorecards s ON s.visit_id = v.id
+       LEFT JOIN scorecards own
+         ON own.visit_id = v.id
+        AND own.member_id = $1
+       WHERE v.publication_state = 'private'
+       GROUP BY v.id, r.name
+       HAVING COUNT(s.id) < v.quorum
+       ORDER BY v.visited_at DESC, v.id`,
+      [memberId],
+    );
+    return rows.map(pendingVisitFromRow);
+  }
 }
 
 export function createNeonReviewRepository(sql: ReviewSqlClient = getDb()): ReviewRepository {
