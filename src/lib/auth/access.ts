@@ -16,6 +16,13 @@ export class AuthorizationError extends Error {
   }
 }
 
+export async function findOptionalMember(): Promise<MemberRecord | null> {
+  const { data } = await auth.getSession();
+  if (!data?.user?.id) return null;
+
+  return createNeonReviewRepository().findMemberByAuthUserId(data.user.id);
+}
+
 export async function requireMember(): Promise<MemberRecord> {
   const { data } = await auth.getSession();
   if (!data?.user?.id) throw new AuthenticationError();

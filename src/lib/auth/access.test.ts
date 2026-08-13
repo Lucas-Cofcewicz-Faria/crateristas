@@ -19,6 +19,7 @@ vi.mock('@/lib/repositories/neon-review-repository', () => ({
 import {
   AuthenticationError,
   AuthorizationError,
+  findOptionalMember,
   requireAdmin,
   requireMember,
 } from './access';
@@ -103,6 +104,27 @@ describe('controle de acesso dos membros', () => {
     );
 
     await expect(requireMember()).resolves.toEqual(regularMember);
+  });
+
+  it('resolve uma visita pública sem sessão como visitante', async () => {
+    dependencies.getSession.mockResolvedValue({ data: null, error: null });
+
+    await expect(findOptionalMember()).resolves.toBeNull();
+    expect(dependencies.findMemberByAuthUserId).not.toHaveBeenCalled();
+  });
+
+  it('não concede UI de membro a um usuário autenticado ainda não provisionado', async () => {
+    dependencies.getSession.mockResolvedValue(authenticatedSession('auth-desconhecido'));
+    dependencies.findMemberByAuthUserId.mockResolvedValue(null);
+
+    await expect(findOptionalMember()).resolves.toBeNull();
+  });
+
+  it('identifica opcionalmente uma sessão provisionada sem usar erro como controle', async () => {
+    dependencies.getSession.mockResolvedValue(authenticatedSession('auth-user-1'));
+    dependencies.findMemberByAuthUserId.mockResolvedValue(regularMember);
+
+    await expect(findOptionalMember()).resolves.toEqual(regularMember);
   });
 
   it('impede um membro comum de executar uma operacao administrativa', async () => {

@@ -1,0 +1,286 @@
+.archive {
+  width: min(calc(100% - 96px), var(--page-max));
+  margin: 0 auto;
+  padding: 72px 0 96px;
+}
+
+.archiveHeader {
+  max-width: 830px;
+  margin-bottom: 40px;
+}
+
+.eyebrow {
+  margin-bottom: 12px;
+  color: var(--ember-bright);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.archiveTitle {
+  color: var(--ink);
+  font-size: clamp(2.8rem, 4vw, 4.6rem);
+  font-weight: 560;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+}
+
+.archiveLead {
+  max-width: 720px;
+  margin-top: 18px;
+  color: var(--ink-muted);
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: minmax(300px, 1.4fr) minmax(200px, 0.8fr) minmax(200px, 0.8fr) auto;
+  align-items: end;
+  gap: 18px;
+  margin-bottom: 44px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.filterActions {
+  min-width: 178px;
+  display: grid;
+  gap: 8px;
+}
+
+.clearFilters {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+  font-weight: 750;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 4px;
+}
+
+.clearFilters:hover {
+  color: var(--ember-bright);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+}
+
+.card {
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.cardImage {
+  position: relative;
+  height: 248px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-raised);
+}
+
+.cardImage img {
+  object-fit: cover;
+}
+
+.imagePlaceholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  color: var(--ink-muted);
+}
+
+.imagePlaceholder span {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--ember-bright);
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: 1.7rem;
+}
+
+.imagePlaceholder p {
+  font-size: 0.76rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cardBody {
+  min-height: 245px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px;
+}
+
+.cardCopy {
+  min-width: 0;
+}
+
+.recordMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ember-bright);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cardTitle {
+  margin-top: 11px;
+  color: var(--ink);
+  font-size: 1.72rem;
+  font-weight: 580;
+  letter-spacing: -0.025em;
+  line-height: 1.12;
+}
+
+.visitDate,
+.contribution {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+}
+
+.visitDate {
+  margin-top: 10px;
+}
+
+.contribution {
+  margin-top: 18px;
+}
+
+.cardLink {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 20px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.cardLink:hover {
+  border-color: var(--ember);
+  color: var(--ember-bright);
+}
+
+.emptyState,
+.routeState {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+}
+
+.emptyState {
+  min-height: 340px;
+  padding: 48px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.emptyState span {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 18px;
+  border: 1px solid var(--ember);
+  border-radius: 50%;
+  color: var(--ember-bright);
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: 1.5rem;
+}
+
+.emptyState h2,
+.routeState h1 {
+  color: var(--ink);
+  font-weight: 580;
+}
+
+.emptyState h2 {
+  font-size: 1.75rem;
+}
+
+.emptyState p,
+.routeState p {
+  max-width: 520px;
+  margin-top: 10px;
+  color: var(--ink-muted);
+}
+
+.routeState {
+  width: min(calc(100% - 96px), var(--page-max));
+  min-height: 620px;
+  margin: 0 auto;
+  padding: 80px;
+}
+
+.routeState h1 {
+  font-size: 2.2rem;
+}
+
+.retryButton {
+  min-height: 44px;
+  margin-top: 24px;
+  padding: 0 20px;
+  border: 1px solid var(--ember);
+  border-radius: var(--radius-sm);
+  background: var(--ember);
+  color: var(--canvas);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.retryButton:hover {
+  border-color: var(--ember-bright);
+  background: var(--ember-bright);
+}
+
+@media (max-width: 1280px) {
+  .filters {
+    grid-template-columns: minmax(260px, 1.2fr) repeat(2, minmax(180px, 0.8fr)) 178px;
+    gap: 14px;
+    padding: 20px;
+  }
+
+  .cardBody {
+    padding: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cardLink,
+  .clearFilters,
+  .retryButton {
+    transition: none;
+  }
+}
