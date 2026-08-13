@@ -13,6 +13,24 @@ function htmlResponse(html: string, init: ResponseInit = {}): Response {
   });
 }
 
+function cancellableResponse(
+  status: number,
+  headers: HeadersInit = {},
+): { response: Response; wasCancelled(): boolean } {
+  let cancelled = false;
+  return {
+    response: new Response(new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new Uint8Array([1]));
+      },
+      cancel() {
+        cancelled = true;
+      },
+    }), { status, headers }),
+    wasCancelled: () => cancelled,
+  };
+}
+
 afterEach(() => vi.useRealTimers());
 
 describe('política de importação do Google Maps', () => {
@@ -53,23 +71,39 @@ describe('política de importação do Google Maps', () => {
   });
 
   it('revalida cada redirect e nunca busca o destino não permitido', async () => {
-    const fetchImpl = vi.fn().mockResolvedValueOnce(new Response(null, {
-      status: 302,
-      headers: { location: 'https://metadata.internal/latest' },
-    }));
+    const redirect = cancellableResponse(302, {
+      location: 'https://metadata.internal/latest',
+    });
+    const fetchImpl = vi.fn().mockResolvedValueOnce(redirect.response);
 
     await expect(importGoogleMapsSuggestions('https://maps.app.goo.gl/abc', { fetchImpl }))
       .rejects.toBeInstanceOf(GoogleMapsInputError);
     expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(redirect.wasCancelled()).toBe(true);
+  });
+
+  it('cancela o corpo do redirect permitido antes de buscar o próximo salto', async () => {
+    const redirect = cancellableResponse(302, { location: '/maps/place/Mesa+Final' });
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(redirect.response)
+      .mockResolvedValueOnce(htmlResponse(
+        '<meta property="og:title" content="Mesa Final · Rua Um, 8 - Centro, São Paulo - SP">',
+      ));
+
+    await expect(importGoogleMapsSuggestions(
+      'https://www.google.com/maps/place/Mesa',
+      { fetchImpl },
+    )).resolves.toMatchObject({ name: 'Mesa Final' });
+    expect(redirect.wasCancelled()).toBe(true);
   });
 
   it('resolve redirect relativo seguro e limita a cinco redirects', async () => {
     const fetchImpl = vi.fn();
+    const redirects: Array<ReturnType<typeof cancellableResponse>> = [];
     for (let index = 1; index <= 6; index += 1) {
-      fetchImpl.mockResolvedValueOnce(new Response(null, {
-        status: 302,
-        headers: { location: `/maps/place/Etapa-${index}` },
-      }));
+      const redirect = cancellableResponse(302, { location: `/maps/place/Etapa-${index}` });
+      redirects.push(redirect);
+      fetchImpl.mockResolvedValueOnce(redirect.response);
     }
 
     await expect(importGoogleMapsSuggestions(
@@ -77,22 +111,36 @@ describe('política de importação do Google Maps', () => {
       { fetchImpl },
     )).rejects.toBeInstanceOf(GoogleMapsUpstreamError);
     expect(fetchImpl).toHaveBeenCalledTimes(6);
+    expect(redirects.every((redirect) => redirect.wasCancelled())).toBe(true);
   });
 
   it('rejeita redirect sem Location e share.google que não termina em Maps permitido', async () => {
-    const missingLocation = vi.fn().mockResolvedValue(new Response(null, { status: 302 }));
+    const missing = cancellableResponse(302);
+    const missingLocation = vi.fn().mockResolvedValue(missing.response);
     await expect(importGoogleMapsSuggestions(
       'https://maps.app.goo.gl/abc',
       { fetchImpl: missingLocation },
     )).rejects.toBeInstanceOf(GoogleMapsUpstreamError);
+    expect(missing.wasCancelled()).toBe(true);
 
-    const unresolvedShare = vi.fn().mockResolvedValue(htmlResponse(
-      '<meta property="og:title" content="Não deveria ser usado">',
-    ));
+    const share = cancellableResponse(200);
+    const unresolvedShare = vi.fn().mockResolvedValue(share.response);
     await expect(importGoogleMapsSuggestions(
       'https://share.google/abc',
       { fetchImpl: unresolvedShare },
     )).rejects.toBeInstanceOf(GoogleMapsUpstreamError);
+    expect(share.wasCancelled()).toBe(true);
+  });
+
+  it('cancela corpo de resposta upstream não-ok antes de falhar', async () => {
+    const upstream = cancellableResponse(503);
+    const fetchImpl = vi.fn().mockResolvedValue(upstream.response);
+
+    await expect(importGoogleMapsSuggestions(
+      'https://www.google.com/maps/place/Mesa',
+      { fetchImpl },
+    )).rejects.toBeInstanceOf(GoogleMapsUpstreamError);
+    expect(upstream.wasCancelled()).toBe(true);
   });
 
   it('aborta a requisição no timeout configurado', async () => {

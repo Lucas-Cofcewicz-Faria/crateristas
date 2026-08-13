@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { CRATERISTAS_GROUP_SIZE, type PublicationState } from '@/domain/reviews/types';
 import {
@@ -49,22 +49,40 @@ export interface AdminPublicationControlsProps {
   visitId: string;
   isAdmin: boolean;
   participantCount: number;
-  initialState: PublicationState;
+  publicationState: PublicationState;
+  onChanged(result: Awaited<ReturnType<typeof changePublication>>): void;
 }
 
 export function AdminPublicationControls({
   visitId,
   isAdmin,
   participantCount,
-  initialState,
+  publicationState,
+  onChanged,
 }: AdminPublicationControlsProps) {
-  const [state, setState] = useState(initialState);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const cancelButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
-  if (!isAdmin || (state === 'private' && participantCount < 1)) return null;
-  const action = ACTIONS[state];
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (dialogOpen) {
+      if (!dialog.open) dialog.showModal();
+      cancelButtonRef.current?.focus();
+      return;
+    }
+    if (dialog.open) dialog.close();
+    const previousFocus = previousFocusRef.current;
+    if (previousFocus?.isConnected) previousFocus.focus();
+    previousFocusRef.current = null;
+  }, [dialogOpen]);
+
+  if (!isAdmin || (publicationState === 'private' && participantCount < 1)) return null;
+  const action = ACTIONS[publicationState];
 
   async function confirmAction() {
     if (pending) return;
@@ -72,7 +90,7 @@ export function AdminPublicationControls({
     setError(null);
     try {
       const result = await changePublication(visitId, action.command);
-      setState(result.publicationState);
+      onChanged(result);
       setDialogOpen(false);
     } catch {
       setError('Não foi possível alterar a publicação. Tente novamente.');
@@ -88,53 +106,52 @@ export function AdminPublicationControls({
         <h2 id="admin-publication-title">Estado do registro</h2>
         <p>As regras finais de publicação são validadas novamente pelo servidor.</p>
       </div>
-      <Button onClick={() => {
+      <Button onClick={(event) => {
         setError(null);
+        previousFocusRef.current = event.currentTarget;
         setDialogOpen(true);
       }} variant={action.variant}>
         {action.label}
       </Button>
 
-      {dialogOpen ? (
-        <dialog
-          aria-describedby="publication-dialog-description"
-          aria-labelledby="publication-dialog-title"
-          aria-modal="true"
-          className={styles.dialogBackdrop}
-          onCancel={(event) => {
-            event.preventDefault();
-            if (!pending) setDialogOpen(false);
-          }}
-          open
-        >
-          <div className={styles.confirmDialog}>
-            <h3 id="publication-dialog-title">{action.dialogTitle}</h3>
-            <p id="publication-dialog-description">{action.description}</p>
-            {action.command === 'publish_early' ? (
-              <div className={styles.partialNotice}>
-                <strong>
-                  {participantCount} de {CRATERISTAS_GROUP_SIZE} membros{' '}
-                  {participantCount === 1 ? 'contribuiu' : 'contribuíram'}
-                </strong>
-                <p>A média ainda é parcial.</p>
-              </div>
-            ) : null}
-            {error ? <p className={styles.formError} role="alert">{error}</p> : null}
-            <div className={styles.dialogActions}>
-              <Button
-                disabled={pending}
-                onClick={() => setDialogOpen(false)}
-                variant="secondary"
-              >
-                Cancelar
-              </Button>
-              <Button disabled={pending} onClick={confirmAction} variant={action.variant}>
-                {pending ? 'Confirmando...' : action.confirmLabel}
-              </Button>
+      <dialog
+        aria-describedby="publication-dialog-description"
+        aria-labelledby="publication-dialog-title"
+        className={styles.dialogBackdrop}
+        onCancel={(event) => {
+          event.preventDefault();
+          if (!pending) setDialogOpen(false);
+        }}
+        ref={dialogRef}
+      >
+        <div className={styles.confirmDialog}>
+          <h3 id="publication-dialog-title">{action.dialogTitle}</h3>
+          <p id="publication-dialog-description">{action.description}</p>
+          {action.command === 'publish_early' ? (
+            <div className={styles.partialNotice}>
+              <strong>
+                {participantCount} de {CRATERISTAS_GROUP_SIZE} membros{' '}
+                {participantCount === 1 ? 'contribuiu' : 'contribuíram'}
+              </strong>
+              <p>A média ainda é parcial.</p>
             </div>
+          ) : null}
+          {error ? <p className={styles.formError} role="alert">{error}</p> : null}
+          <div className={styles.dialogActions}>
+            <Button
+              disabled={pending}
+              onClick={() => setDialogOpen(false)}
+              ref={cancelButtonRef}
+              variant="secondary"
+            >
+              Cancelar
+            </Button>
+            <Button disabled={pending} onClick={confirmAction} variant={action.variant}>
+              {pending ? 'Confirmando...' : action.confirmLabel}
+            </Button>
           </div>
-        </dialog>
-      ) : null}
+        </div>
+      </dialog>
     </section>
   );
 }

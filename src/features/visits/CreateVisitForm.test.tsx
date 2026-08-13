@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -17,7 +17,7 @@ describe('criação manual de visita', () => {
 
   it('envia os campos do domínio e navega para a avaliação retornada pela API', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      id: 'visit-42',
+      id: '11111111-1111-4111-8111-111111111111',
       slug: 'mesa-manual-2026-08-10',
       publicationState: 'private',
     }), { status: 201, headers: { 'content-type': 'application/json' } }));
@@ -25,13 +25,19 @@ describe('criação manual de visita', () => {
     const user = userEvent.setup();
     render(<CreateVisitForm />);
 
-    await user.type(screen.getByLabelText('Nome do restaurante'), 'Mesa Manual');
-    await user.type(screen.getByLabelText('Culinária'), 'Brasileira');
-    await user.type(screen.getByLabelText('Bairro'), 'Centro');
-    await user.type(screen.getByLabelText('Cidade'), 'São Paulo');
-    await user.type(screen.getByLabelText('Endereço (opcional)'), 'Rua da Cratera, 8');
+    fireEvent.change(screen.getByLabelText('Nome do restaurante'), {
+      target: { value: 'Mesa Manual' },
+    });
+    fireEvent.change(screen.getByLabelText('Culinária'), { target: { value: 'Brasileira' } });
+    fireEvent.change(screen.getByLabelText('Bairro'), { target: { value: 'Centro' } });
+    fireEvent.change(screen.getByLabelText('Cidade'), { target: { value: 'São Paulo' } });
+    fireEvent.change(screen.getByLabelText('Endereço (opcional)'), {
+      target: { value: 'Rua da Cratera, 8' },
+    });
     await user.selectOptions(screen.getByLabelText('Faixa de preço (opcional)'), '$$');
-    await user.type(screen.getByLabelText('Data da visita'), '2026-08-10');
+    fireEvent.change(screen.getByLabelText('Data da visita'), {
+      target: { value: '2026-08-10' },
+    });
     await user.click(screen.getByRole('button', { name: 'Criar visita' }));
 
     expect(fetchMock).toHaveBeenCalledOnce();
@@ -49,7 +55,9 @@ describe('criação manual de visita', () => {
       priceBand: '$$',
       visitedAt: '2026-08-10',
     });
-    expect(navigation.push).toHaveBeenCalledWith('/visitas/visit-42/avaliar');
+    expect(navigation.push).toHaveBeenCalledWith(
+      '/visitas/11111111-1111-4111-8111-111111111111/avaliar',
+    );
   });
 
   it('preserva todos os campos e mostra erro genérico quando a criação falha', async () => {
@@ -60,11 +68,13 @@ describe('criação manual de visita', () => {
     render(<CreateVisitForm />);
 
     const name = screen.getByLabelText('Nome do restaurante');
-    await user.type(name, 'Mesa Persistente');
-    await user.type(screen.getByLabelText('Culinária'), 'Italiana');
-    await user.type(screen.getByLabelText('Bairro'), 'Pinheiros');
-    await user.type(screen.getByLabelText('Cidade'), 'São Paulo');
-    await user.type(screen.getByLabelText('Data da visita'), '2026-08-11');
+    fireEvent.change(name, { target: { value: 'Mesa Persistente' } });
+    fireEvent.change(screen.getByLabelText('Culinária'), { target: { value: 'Italiana' } });
+    fireEvent.change(screen.getByLabelText('Bairro'), { target: { value: 'Pinheiros' } });
+    fireEvent.change(screen.getByLabelText('Cidade'), { target: { value: 'São Paulo' } });
+    fireEvent.change(screen.getByLabelText('Data da visita'), {
+      target: { value: '2026-08-11' },
+    });
     await user.click(screen.getByRole('button', { name: 'Criar visita' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(

@@ -1,9 +1,6 @@
 import { notFound } from 'next/navigation';
 import { PublicShell } from '@/components/shell/PublicShell';
-import { AdminPublicationControls } from '@/features/visits/AdminPublicationControls';
-import { PublicationStatus } from '@/features/visits/PublicationStatus';
-import { PhotoUploader } from '@/features/visits/PhotoUploader';
-import { ScorecardForm } from '@/features/visits/ScorecardForm';
+import { ReviewWorkspace } from '@/features/visits/ReviewWorkspace';
 import styles from '@/features/visits/review-workflow.module.css';
 import { requireMember } from '@/lib/auth/access';
 import { getReviewRepository } from '@/lib/reviews/server';
@@ -24,29 +21,19 @@ export default async function EvaluateVisitPage({ params }: EvaluateVisitPagePro
   return (
     <PublicShell viewer="member">
       <section className={styles.workflowPage}>
-        <header className={styles.workflowHeader}>
-          <div>
-            <p className={styles.eyebrow}>Contribuição reservada</p>
-            <h1>Avaliar {workspace.restaurantName}</h1>
-            <p className={styles.lead}>
-              {workspace.cuisine} · {workspace.neighborhood}, {workspace.city}
-            </p>
-          </div>
-          <div className={styles.visitSummary}>
-            <PublicationStatus state={workspace.publicationState} />
-            <p>{workspace.participantCount} de {workspace.quorum} membros contribuíram</p>
-          </div>
-        </header>
-        <ScorecardForm initialValues={workspace.ownScorecard} visitId={workspace.id} />
-        <PhotoUploader
-          canManage={member.role === 'admin' || workspace.createdBy === member.id}
+        <ReviewWorkspace
+          canManagePhotos={member.role === 'admin' || workspace.createdBy === member.id}
+          city={workspace.city}
+          cuisine={workspace.cuisine}
+          initialParticipantCount={workspace.participantCount}
           initialPhotos={workspace.photos}
-          visitId={workspace.id}
-        />
-        <AdminPublicationControls
-          initialState={workspace.publicationState}
+          initialPublicationState={workspace.publicationState}
           isAdmin={member.role === 'admin'}
-          participantCount={workspace.participantCount}
+          key={`${workspace.id}:${workspace.participantCount}:${workspace.publicationState}`}
+          neighborhood={workspace.neighborhood}
+          ownScorecard={workspace.ownScorecard}
+          quorum={workspace.quorum}
+          restaurantName={workspace.restaurantName}
           visitId={workspace.id}
         />
       </section>

@@ -1,32 +1,59 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { useState } from 'react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PublicationState } from '@/domain/reviews/types';
 import { AdminPublicationControls } from './AdminPublicationControls';
+
+interface ControlledControlsProps {
+  initialState: PublicationState;
+  isAdmin?: boolean;
+  participantCount: number;
+}
+
+function ControlledControls({
+  initialState,
+  isAdmin = true,
+  participantCount,
+}: ControlledControlsProps) {
+  const [publicationState, setPublicationState] = useState(initialState);
+  return (
+    <AdminPublicationControls
+      isAdmin={isAdmin}
+      onChanged={(result) => setPublicationState(result.publicationState)}
+      participantCount={participantCount}
+      publicationState={publicationState}
+      visitId="visit-1"
+    />
+  );
+}
 
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+
+beforeEach(() => {
+  vi.spyOn(HTMLDialogElement.prototype, 'showModal');
+  vi.spyOn(HTMLDialogElement.prototype, 'close');
 });
 
 describe('controles administrativos de publicação', () => {
   it('não produz markup administrativo para membro comum ou para visita privada sem ficha', () => {
     const { container, rerender } = render(
-      <AdminPublicationControls
+      <ControlledControls
         initialState="private"
         isAdmin={false}
         participantCount={2}
-        visitId="visit-1"
       />,
     );
     expect(container).toBeEmptyDOMElement();
 
     rerender(
-      <AdminPublicationControls
+      <ControlledControls
         initialState="private"
-        isAdmin
         participantCount={0}
-        visitId="visit-1"
       />,
     );
     expect(container).toBeEmptyDOMElement();
@@ -37,17 +64,18 @@ describe('controles administrativos de publicação', () => {
     vi.stubGlobal('fetch', fetchMock);
     const user = userEvent.setup();
     render(
-      <AdminPublicationControls
+      <ControlledControls
         initialState="private"
-        isAdmin
         participantCount={2}
-        visitId="visit-1"
       />,
     );
 
     await user.click(screen.getByRole('button', { name: 'Publicar antecipadamente' }));
     const dialog = screen.getByRole('dialog', { name: 'Confirmar publicação antecipada' });
+    expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledOnce();
+    expect(dialog).toHaveProperty('open', true);
     expect(dialog).toHaveAttribute('aria-describedby', 'publication-dialog-description');
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toHaveFocus();
     expect(dialog).toHaveTextContent('2 de 8 membros contribuíram');
     expect(dialog).toHaveTextContent('A média ainda é parcial.');
     await user.click(screen.getByRole('button', { name: 'Cancelar' }));
@@ -59,11 +87,9 @@ describe('controles administrativos de publicação', () => {
   it('flexiona a contagem de uma única contribuição', async () => {
     const user = userEvent.setup();
     render(
-      <AdminPublicationControls
+      <ControlledControls
         initialState="private"
-        isAdmin
         participantCount={1}
-        visitId="visit-1"
       />,
     );
 
@@ -85,11 +111,9 @@ describe('controles administrativos de publicação', () => {
       vi.stubGlobal('fetch', fetchMock);
       const user = userEvent.setup();
       render(
-        <AdminPublicationControls
+        <ControlledControls
           initialState={initialState}
-          isAdmin
           participantCount={2}
-          visitId="visit-1"
         />,
       );
 
@@ -121,11 +145,9 @@ describe('controles administrativos de publicação', () => {
     }), { status: 409 })));
     const user = userEvent.setup();
     render(
-      <AdminPublicationControls
+      <ControlledControls
         initialState="published"
-        isAdmin
         participantCount={6}
-        visitId="visit-1"
       />,
     );
 
@@ -139,5 +161,40 @@ describe('controles administrativos de publicação', () => {
     expect(screen.getByRole('dialog', { name: 'Confirmar ocultação' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(screen.getByRole('button', { name: 'Ocultar' })).toBeInTheDocument();
+  });
+
+  it('fecha no cancel nativo/Escape e restaura foco no acionador', async () => {
+    const user = userEvent.setup();
+    render(<ControlledControls initialState="published" participantCount={6} />);
+    const trigger = screen.getByRole('button', { name: 'Ocultar' });
+
+    await user.click(trigger);
+    const dialog = screen.getByRole('dialog', { name: 'Confirmar ocultação' });
+    fireEvent(dialog, new Event('cancel', { bubbles: false, cancelable: true }));
+
+    await vi.waitFor(() => expect(dialog).not.toHaveAttribute('open'));
+    expect(HTMLDialogElement.prototype.close).toHaveBeenCalledOnce();
+    expect(trigger).toHaveFocus();
+  });
+
+  it('ignora cancel nativo/Escape enquanto a confirmação está pendente', async () => {
+    let resolveRequest: (response: Response) => void = () => undefined;
+    vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise<Response>((resolve) => {
+      resolveRequest = resolve;
+    })));
+    const user = userEvent.setup();
+    render(<ControlledControls initialState="published" participantCount={6} />);
+
+    await user.click(screen.getByRole('button', { name: 'Ocultar' }));
+    const dialog = screen.getByRole('dialog', { name: 'Confirmar ocultação' });
+    await user.click(screen.getByRole('button', { name: 'Confirmar ocultação' }));
+    fireEvent(dialog, new Event('cancel', { bubbles: false, cancelable: true }));
+
+    expect(dialog).toHaveAttribute('open');
+    resolveRequest(new Response(JSON.stringify({
+      publicationState: 'hidden',
+      publicationReason: null,
+    }), { status: 200, headers: { 'content-type': 'application/json' } }));
+    await vi.waitFor(() => expect(dialog).not.toHaveAttribute('open'));
   });
 });

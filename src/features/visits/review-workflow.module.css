@@ -363,6 +363,10 @@
   background: color-mix(in srgb, var(--canvas), transparent 18%);
 }
 
+.dialogBackdrop:not([open]) {
+  display: none;
+}
+
 .confirmDialog {
   width: min(100%, 520px);
   padding: 28px;

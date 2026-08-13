@@ -139,6 +139,10 @@ async function readLimitedBody(response: Response): Promise<string> {
   }
 }
 
+async function cancelResponseBody(response: Response): Promise<void> {
+  if (response.body) await response.body.cancel();
+}
+
 function decodeSafeEntities(value: string): string {
   return value.replace(/&(amp|lt|gt|quot|#39|nbsp);/gi, (entity) => {
     switch (entity.toLowerCase()) {
@@ -247,6 +251,7 @@ export async function importGoogleMapsSuggestions(
         signal: controller.signal,
       });
       if (REDIRECT_STATUSES.has(response.status)) {
+        await cancelResponseBody(response);
         if (redirectCount >= MAX_REDIRECTS) throw new GoogleMapsUpstreamError();
         const location = response.headers.get('location');
         if (!location) throw new GoogleMapsUpstreamError();
@@ -255,6 +260,7 @@ export async function importGoogleMapsSuggestions(
         continue;
       }
       if (!response.ok || current.hostname === 'share.google') {
+        await cancelResponseBody(response);
         throw new GoogleMapsUpstreamError();
       }
       const html = await readLimitedBody(response);

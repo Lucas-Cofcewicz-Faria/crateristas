@@ -204,16 +204,129 @@ Além das três ações/estados, os testes cobrem ausência total para não-admi
 privada sem ficha, texto parcial, flexão singular, cancel sem fetch, request único,
 botão desabilitado e falha genérica sem mudança de estado.
 
+## Review Round 1
+
+Todos os findings foram relidos e validados contra `e3086e6` antes de alterar
+produção. O serviço/repository usa uma única contagem pós-upsert tanto no topo quanto
+em `aggregate.participantCount`, portanto igualdade entre elas faz parte do contrato.
+IDs criados pelo PostgreSQL são UUID e slugs reais são
+`<slugify(restaurante)>-AAAA-MM-DD[-N]`.
+
+### Important 1 — validação runtime dos clients
+
+```text
+npm test -- src/features/visits/visit-api.test.ts src/features/visits/CreateVisitForm.test.tsx
+RED: 2 arquivos; 11 falhas esperadas; 3 testes passaram.
+- create aceitou ID não UUID e slug vazio/inseguro;
+- score aceitou campos extras, count fracionário/>8, estado inválido, counts
+  divergentes, médias incompletas/fora de faixa e overall inválido.
+
+npm test -- src/features/visits/visit-api.test.ts src/features/visits/CreateVisitForm.test.tsx src/features/visits/ScorecardForm.test.tsx src/features/visits/AdminPublicationControls.test.tsx
+GREEN: 4 arquivos; 25 testes.
+```
+
+Schemas Zod locais agora validam e reduzem respostas 2xx. Create exige UUID e slug
+seguro não vazio; score exige contagem inteira 0–8, estado conhecido, mesma contagem
+no agregado, seis médias finitas 0–10 ou `null` e overall finito 0–10 ou `null`.
+Campos adicionais são removidos. Fixtures de criação passaram a usar UUID real.
+
+### Important 2 — coordenação cross-island
+
+```text
+npm test -- src/features/visits/ReviewWorkspace.test.tsx
+RED: módulo ReviewWorkspace inexistente; suíte não carregou.
+
+npm test -- src/features/visits/ReviewWorkspace.test.tsx src/app/visitas/[id]/avaliar/page.test.tsx
+GREEN: 2 arquivos; 5 testes.
+```
+
+`ReviewWorkspace` é um coordenador cliente estreito: mantém somente
+`participantCount`/`publicationState`, enquanto os estados de ficha, foto e diálogo
+continuam nos componentes próprios. `ScorecardForm.onSaved` propaga auto-publicação;
+`AdminPublicationControls` é controlled e propaga `onChanged`. O teste integrado
+prova score 5→6 mudando resumo/ação para Publicada/Ocultar e PATCH mudando ambos para
+Oculta/Republicar. A key da ilha inclui ID/count/state do loader para que refresh do
+servidor recrie o estado em vez de preservar initial props obsoletas.
+
+### Important 3 — modal e foco
+
+```text
+npm test -- src/features/visits/AdminPublicationControls.test.tsx
+RED: 1 arquivo; 3 falhas de 9 — showModal ausente, foco inicial ausente e dialog
+continuava open após cancel/sucesso.
+
+npm test -- src/features/visits/AdminPublicationControls.test.tsx src/features/visits/ReviewWorkspace.test.tsx
+GREEN: 2 arquivos; 10 testes.
+```
+
+O `<dialog>` fica montado fechado e um effect limitado ao estado visual chama
+`showModal()`/`close()`. Cancelar recebe foco explícito; o evento nativo `cancel`
+(emitido por Escape no browser) fecha somente fora de pending; e o foco retorna ao
+acionador. `Button` ganhou somente `forwardRef`, preservando sua API. Como JSDOM não
+implementa a top layer, `src/test/setup.ts` fornece um polyfill fiel restrito aos
+testes; spies provam que produção chama os métodos nativos, não apenas alterna
+atributo `open`.
+
+### Important 4 — confirmação persistida do Blob
+
+```text
+npm test -- src/app/api/visits/[id]/photos/route.test.ts
+RED servidor: 1 arquivo; 5 falhas esperadas; 22 testes passaram — GET inexistente.
+GREEN servidor: 1 arquivo; 27 testes.
+
+npm test -- src/features/visits/PhotoUploader.test.tsx
+RED cliente: 1 arquivo; 2 falhas esperadas; 5 testes passaram — upload removia a
+fila/anunciava sucesso sem consultar callback e não oferecia reconciliação sem reupload.
+
+npm test -- src/features/visits/PhotoUploader.test.tsx src/app/api/visits/[id]/photos/route.test.ts
+GREEN: 2 arquivos; 34 testes.
+```
+
+O GET aguarda `requireMember()` antes de validar/query, valida o pathname concluído
+para a visita, consulta `findPhotoByPathname`, rejeita visitId divergente e retorna
+somente `{ photo: { id, url, position } }`; ausência ainda em corrida retorna
+`202 { photo: null }`. Respostas e fetch usam `no-store`.
+
+Depois de `upload()`, o client conserva o File com o pathname retornado e faz no
+máximo quatro GETs, separados por 250 ms, com `AbortSignal` cancelado no unmount.
+Somente o 200 validado retira o item, adiciona o preview server-confirmado e anuncia
+sucesso. Timeout preserva “enviado aguardando confirmação” com botão próprio; o retry
+consulta novamente e nunca repete Blob upload. A corrida 202/202/200, timeout, sucesso
+parcial e callback ausente são simulados sem rede/Blob real. `router.refresh()` deixou
+de ser necessário para essa confirmação.
+
+### Minors — descarte de streams e input
+
+```text
+npm test -- src/features/visits/google-maps-import.test.ts
+RED Maps: 1 arquivo; 5 falhas; 23 testes passaram — bodies não cancelados em exits.
+
+npm test -- src/features/visits/google-maps-import.test.ts src/app/api/parse-maps/route.test.ts
+GREEN Maps: 2 arquivos; 35 testes.
+
+npm test -- src/features/visits/PhotoUploader.test.tsx
+RED input: 1 arquivo; 1 falha; 7 testes passaram — fakepath permaneceu após sucesso.
+
+npm test -- src/features/visits/PhotoUploader.test.tsx src/features/visits/google-maps-import.test.ts src/app/api/parse-maps/route.test.ts
+GREEN minors: 3 arquivos; 43 testes.
+```
+
+Todo redirect é cancelado antes de revalidar/continuar, inclusive destino inválido,
+Location ausente e limite excedido; `share.google` final e non-ok também são
+cancelados. O timer/signal só é limpo no `finally`, depois do cancel/read. O input de
+arquivo é limpo somente depois da confirmação persistida, permitindo selecionar o
+mesmo arquivo novamente.
+
 ## Auto-revisão React e Next.js
 
 - `/visitas/nova` e `/visitas/[id]/avaliar` são Server Components pequenos; somente
   forms/interações e error boundaries têm `use client`. Não há API interna chamada
   pelo loader nem redirect do Next capturado em `catch`.
 - A página nova renderiza `CreateVisitForm`, que compõe `GoogleMapsImporter`. A página
-  de avaliação renderiza realmente os quatro módulos com props derivadas no servidor:
-  `PublicationStatus`, `ScorecardForm`, `PhotoUploader` e
-  `AdminPublicationControls`. Testes de página exercitam essa composição, inclusive
-  papel admin, score próprio e permissão de foto.
+  de avaliação passa um DTO estreito ao `ReviewWorkspace`, que compõe realmente os
+  quatro módulos: `PublicationStatus`, `ScorecardForm`, `PhotoUploader` e
+  `AdminPublicationControls`. Testes de página/integração exercitam essa composição,
+  inclusive papel admin, score próprio, permissão de foto e mutações coordenadas.
 - Props cliente são strings, números, booleanos, objetos/arrays literais e `null`.
   Repository, sessão, classes de erro e funções server-only não cruzam a fronteira.
 - O módulo `google-maps-import.ts` começa com `import 'server-only'`. Os clients
@@ -225,15 +338,15 @@ botão desabilitado e falha genérica sem mudança de estado.
   o alias para `src/test/server-only.ts` vale apenas no runner, e a declaração local
   satisfaz o typecheck. O build Next passou usando o marcador real, sem alias e sem
   dependência explícita, confirmando a fronteira.
-- A fila de fotos deriva a lista ordenada diretamente das props do loader e de IDs
-  removidos localmente; não há effect para espelhar props. Uploads continuam
-  serializados com `await` no loop, e o refresh reconcilia itens confirmados no
-  servidor.
+- A fila de fotos deriva a lista ordenada das props do loader, fotos confirmadas pelo
+  GET e IDs removidos localmente; não há effect para espelhar props. Uploads e
+  confirmações continuam serializados com `await` no loop.
 - Não há `<img>` nos arquivos da Task 12. Previews usam `next/image`, com key estável,
   alt posicional, dimensões e `sizes`; nenhuma URL/Blob privado é fabricado.
-- Não há memoização, contexto ou biblioteca de formulário prematuros. Estado de
-  criação, score, foto e administração fica em ilhas separadas. CSS Module mantém
-  layout/apresentação fora dos loaders/actions/clients.
+- Não há memoização, contexto ou biblioteca de formulário prematuros. O coordenador
+  compartilha apenas os dois valores consumidos pelo resumo/score/admin; foto e os
+  demais estados ficam isolados. CSS Module mantém layout/apresentação fora dos
+  loaders/actions/clients.
 - Labels visíveis, descrições, outputs, `aria-live`, status/alert, botões nativos e
   `<dialog>` nomeado/descrito preservam teclado e leitores de tela. Cor nunca é o
   único sinal.
@@ -260,6 +373,45 @@ Maps foram classificadas como dinâmicas e o build não exigiu credenciais.
 git diff --check 736cdf3a037a5570d14b1367b241d54a4b0841b3..HEAD
 PASS.
 ```
+
+### Review Round 1 — verificação
+
+```text
+npm test -- src/features/visits src/app/visitas src/app/api/parse-maps src/app/api/visits/[id]/photos/route.test.ts src/lib/repositories/neon-review-workspace.test.ts src/components/ui
+PASS: 19 arquivos; 148 testes.
+
+npm test
+PASS: 53 arquivos; 363 testes; 18 integrações condicionais ignoradas.
+
+npx tsc --noEmit
+PASS.
+
+npx eslint src/app/api/visits/[id]/photos src/app/visitas/[id]/avaliar src/components/ui/Button.tsx src/features/visits src/test/setup.ts
+PASS.
+
+npm run build
+PASS: compilação, TypeScript e 12 páginas estáticas; rotas Task 12 dinâmicas e
+nenhuma credencial externa exigida.
+
+git diff --check e3086e6538255ff9bb036824198f5fcd581999f5..HEAD
+PASS.
+```
+
+Durante o GET GREEN, o fixture `sem-sufixo.webp` foi inesperadamente aceito. A
+investigação sistemática mostrou que `sufixo` tem seis caracteres e portanto satisfaz
+corretamente a regex da policy de sufixo Blob. O fixture foi trocado por
+`invalida-x.webp`, inequivocamente inválido; produção não mudou por esse incidente.
+
+Duas execuções finais de `npm test` também expuseram uma flake de concorrência: apenas
+os testes com digitação longa de `CreateVisitForm.test.tsx` e
+`ScorecardForm.test.tsx` excederam o timeout de 5 segundos (respectivamente 360 e 361
+testes passaram). Isolados, os dois arquivos passaram 6/6. A máquina oferece 24
+processadores lógicos e o Vitest 4 instalado abre por padrão 23 workers para 53
+arquivos JSDOM; o preenchimento caractere a caractere ficava sujeito à contenção de
+centenas de timers. O ajuste ficou restrito aos testes: preenchimentos extensos agora
+usam `fireEvent.change`, enquanto click, teclado, foco e todas as asserções continuam
+com `userEvent`. Não houve aumento de timeout nem redução global de paralelismo. O
+`npm test` exato passou 53/53 depois do ajuste.
 
 ## Limitações externas
 

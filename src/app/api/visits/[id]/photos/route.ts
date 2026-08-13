@@ -139,6 +139,39 @@ export function createVisitPhotoRouteHandlers(
   resolveDependencies: () => Promise<VisitPhotoRouteDependencies>,
 ) {
   return {
+    async GET(request: Request, context: RouteContext): Promise<Response> {
+      try {
+        const dependencies = await resolveDependencies();
+        await dependencies.requireMember();
+        const { id: rawVisitId } = await context.params;
+        const visitId = validatePhotoIdentifier(rawVisitId, 'O identificador da visita é inválido.');
+        const rawPathname = new URL(request.url).searchParams.get('pathname') ?? '';
+        const pathname = validateCompletedVisitPhotoPathname(visitId, rawPathname);
+        const photo = await dependencies.repository.findPhotoByPathname(pathname);
+        if (!photo) {
+          return Response.json(
+            { photo: null },
+            { status: 202, headers: { 'cache-control': 'no-store' } },
+          );
+        }
+        if (photo.visitId !== visitId || photo.pathname !== pathname) {
+          throw new Error('A confirmação da foto não corresponde à visita.');
+        }
+        return Response.json(
+          {
+            photo: {
+              id: photo.id,
+              url: photo.url,
+              position: photo.position,
+            },
+          },
+          { headers: { 'cache-control': 'no-store' } },
+        );
+      } catch (error) {
+        return photoErrorResponse(error);
+      }
+    },
+
     async POST(request: Request, context: RouteContext): Promise<Response> {
       try {
         const { id: rawVisitId } = await context.params;
@@ -248,6 +281,10 @@ async function resolveProductionDependencies(): Promise<VisitPhotoRouteDependenc
 }
 
 const productionHandlers = createVisitPhotoRouteHandlers(resolveProductionDependencies);
+
+export async function GET(request: Request, context: RouteContext): Promise<Response> {
+  return productionHandlers.GET(request, context);
+}
 
 export async function POST(request: Request, context: RouteContext): Promise<Response> {
   return productionHandlers.POST(request, context);

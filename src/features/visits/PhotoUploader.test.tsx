@@ -56,7 +56,32 @@ describe('fotos sequenciais da visita', () => {
 
   it('comprime e envia uma foto por vez com a assinatura instalada, sem inventar IDs locais', async () => {
     let resolveFirstUpload: (value: object) => void = () => undefined;
-    dependencies.upload.mockReturnValueOnce(new Promise((resolve) => { resolveFirstUpload = resolve; }));
+    const firstPathname = `visits/${visitId}/first-AbCd12.webp`;
+    const secondPathname = `visits/${visitId}/second-EfGh34.webp`;
+    dependencies.upload
+      .mockReturnValueOnce(new Promise((resolve) => { resolveFirstUpload = resolve; }))
+      .mockResolvedValueOnce({
+        url: `https://store.public.blob.vercel-storage.com/${secondPathname}`,
+        downloadUrl: `https://store.public.blob.vercel-storage.com/${secondPathname}?download=1`,
+        pathname: secondPathname,
+        contentType: 'image/webp',
+        contentDisposition: 'inline',
+      });
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        photo: {
+          id: '22222222-2222-4222-8222-222222222222',
+          url: `https://store.public.blob.vercel-storage.com/${firstPathname}`,
+          position: 1,
+        },
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        photo: {
+          id: '33333333-3333-4333-8333-333333333333',
+          url: `https://store.public.blob.vercel-storage.com/${secondPathname}`,
+          position: 2,
+        },
+      }), { status: 200 })));
     const user = userEvent.setup();
     render(<PhotoUploader canManage initialPhotos={[]} visitId={visitId} />);
     const first = new File(['one'], 'Primeira Foto.jpg', { type: 'image/jpeg' });
@@ -72,9 +97,9 @@ describe('fotos sequenciais da visita', () => {
     expect(dependencies.upload).toHaveBeenCalledTimes(1);
     expect(dependencies.compressVisitImage).toHaveBeenCalledWith(first);
     resolveFirstUpload({
-      url: 'https://store.public.blob.vercel-storage.com/first.webp',
-      downloadUrl: 'https://store.public.blob.vercel-storage.com/first.webp?download=1',
-      pathname: `${visitId}/first.webp`,
+      url: `https://store.public.blob.vercel-storage.com/${firstPathname}`,
+      downloadUrl: `https://store.public.blob.vercel-storage.com/${firstPathname}?download=1`,
+      pathname: firstPathname,
       contentType: 'image/webp',
       contentDisposition: 'inline',
     });
@@ -91,9 +116,138 @@ describe('fotos sequenciais da visita', () => {
         handleUploadUrl: `/api/visits/${visitId}/photos`,
       },
     );
-    await screen.findByText('Fotos enviadas. A lista está sendo atualizada.');
-    expect(dependencies.refresh).toHaveBeenCalledOnce();
-    expect(screen.queryAllByRole('img')).toHaveLength(0);
+    await screen.findByText('Fotos enviadas e confirmadas.');
+    expect(dependencies.refresh).not.toHaveBeenCalled();
+    expect(screen.queryAllByRole('img')).toHaveLength(2);
+  });
+
+  it('mantém a fila até o GET confirmar persistência após dois 202', async () => {
+    const completedPathname = `visits/${visitId}/foto-AbCd12.webp`;
+    dependencies.upload.mockResolvedValue({
+      url: `https://store.public.blob.vercel-storage.com/${completedPathname}`,
+      downloadUrl: `https://store.public.blob.vercel-storage.com/${completedPathname}?download=1`,
+      pathname: completedPathname,
+      contentType: 'image/webp',
+      contentDisposition: 'inline',
+    });
+    const persistedPhoto = {
+      id: '22222222-2222-4222-8222-222222222222',
+      url: `https://store.public.blob.vercel-storage.com/${completedPathname}`,
+      position: 1,
+    };
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ photo: null }), { status: 202 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ photo: null }), { status: 202 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ photo: persistedPhoto }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+    render(<PhotoUploader canManage initialPhotos={[]} visitId={visitId} />);
+
+    await user.upload(
+      screen.getByLabelText('Selecionar fotos'),
+      new File(['one'], 'foto.jpg', { type: 'image/jpeg' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Enviar 1 foto' }));
+
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      `/api/visits/${visitId}/photos?pathname=${encodeURIComponent(completedPathname)}`,
+      { cache: 'no-store', method: 'GET', signal: expect.any(AbortSignal) },
+    );
+    expect(screen.getByText('foto.jpg')).toBeInTheDocument();
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3), { timeout: 2_000 });
+    expect(await screen.findByAltText('Foto 1 da visita')).toHaveAttribute(
+      'src',
+      expect.stringContaining('foto-AbCd12.webp'),
+    );
+    expect(screen.queryByText('foto.jpg')).not.toBeInTheDocument();
+    expect(await screen.findByRole('status')).toHaveTextContent('Foto enviada e confirmada.');
+    expect(dependencies.refresh).not.toHaveBeenCalled();
+  });
+
+  it('em timeout mantém foto enviada para reconciliar sem repetir upload', async () => {
+    const completedPathname = `visits/${visitId}/pendente-XyZ789.webp`;
+    dependencies.upload.mockResolvedValue({
+      url: `https://store.public.blob.vercel-storage.com/${completedPathname}`,
+      downloadUrl: `https://store.public.blob.vercel-storage.com/${completedPathname}?download=1`,
+      pathname: completedPathname,
+      contentType: 'image/webp',
+      contentDisposition: 'inline',
+    });
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ photo: null }), { status: 202 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const user = userEvent.setup();
+    render(<PhotoUploader canManage initialPhotos={[]} visitId={visitId} />);
+
+    await user.upload(
+      screen.getByLabelText('Selecionar fotos'),
+      new File(['one'], 'pendente.jpg', { type: 'image/jpeg' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Enviar 1 foto' }));
+
+    expect(await screen.findByRole('alert', {}, { timeout: 2_000 })).toHaveTextContent(
+      'Não foi possível confirmar a foto agora. Tente novamente.',
+    );
+    expect(dependencies.upload).toHaveBeenCalledOnce();
+    expect(screen.getByText('pendente.jpg')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Confirmar foto enviada' })).toBeEnabled();
+
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({
+      photo: {
+        id: '33333333-3333-4333-8333-333333333333',
+        url: `https://store.public.blob.vercel-storage.com/${completedPathname}`,
+        position: 1,
+      },
+    }), { status: 200 }));
+    await user.click(screen.getByRole('button', { name: 'Confirmar foto enviada' }));
+
+    expect(await screen.findByAltText('Foto 1 da visita')).toBeInTheDocument();
+    expect(dependencies.upload).toHaveBeenCalledOnce();
+  });
+
+  it('limpa o input após confirmação para permitir selecionar o mesmo arquivo novamente', async () => {
+    let uploadNumber = 0;
+    dependencies.upload.mockImplementation(async () => {
+      uploadNumber += 1;
+      const pathname = `visits/${visitId}/repetida-${uploadNumber === 1 ? 'AbCd12' : 'EfGh34'}.webp`;
+      return {
+        url: `https://store.public.blob.vercel-storage.com/${pathname}`,
+        downloadUrl: `https://store.public.blob.vercel-storage.com/${pathname}?download=1`,
+        pathname,
+        contentType: 'image/webp',
+        contentDisposition: 'inline',
+      };
+    });
+    let confirmationNumber = 0;
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => {
+      confirmationNumber += 1;
+      return new Response(JSON.stringify({
+        photo: {
+          id: confirmationNumber === 1
+            ? '22222222-2222-4222-8222-222222222222'
+            : '33333333-3333-4333-8333-333333333333',
+          url: `https://store.public.blob.vercel-storage.com/confirmada-${confirmationNumber}.webp`,
+          position: confirmationNumber,
+        },
+      }), { status: 200 });
+    }));
+    const user = userEvent.setup();
+    render(<PhotoUploader canManage initialPhotos={[]} visitId={visitId} />);
+    const file = new File(['same'], 'repetida.jpg', { type: 'image/jpeg' });
+    const input = screen.getByLabelText('Selecionar fotos');
+
+    await user.upload(input, file);
+    await user.click(screen.getByRole('button', { name: 'Enviar 1 foto' }));
+    await screen.findByText('Foto enviada e confirmada.');
+
+    expect(input).toHaveValue('');
+    await user.upload(input, file);
+    await user.click(screen.getByRole('button', { name: 'Enviar 1 foto' }));
+    await vi.waitFor(() => expect(dependencies.upload).toHaveBeenCalledTimes(2));
   });
 
   it('isola falha da foto das notas e do comentário já digitados', async () => {
@@ -122,15 +276,23 @@ describe('fotos sequenciais da visita', () => {
   });
 
   it('reconcilia uploads já concluídos e mantém somente a fila restante após falha parcial', async () => {
+    const completedPathname = `visits/${visitId}/first-AbCd12.webp`;
     dependencies.upload
       .mockResolvedValueOnce({
-        url: 'https://store.public.blob.vercel-storage.com/first.webp',
-        downloadUrl: 'https://store.public.blob.vercel-storage.com/first.webp?download=1',
-        pathname: `${visitId}/first.webp`,
+        url: `https://store.public.blob.vercel-storage.com/${completedPathname}`,
+        downloadUrl: `https://store.public.blob.vercel-storage.com/${completedPathname}?download=1`,
+        pathname: completedPathname,
         contentType: 'image/webp',
         contentDisposition: 'inline',
       })
       .mockRejectedValueOnce(new Error('segundo upload falhou'));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      photo: {
+        id: '22222222-2222-4222-8222-222222222222',
+        url: `https://store.public.blob.vercel-storage.com/${completedPathname}`,
+        position: 1,
+      },
+    }), { status: 200 })));
     const user = userEvent.setup();
     render(<PhotoUploader canManage initialPhotos={[]} visitId={visitId} />);
     const first = new File(['one'], 'primeira.jpg', { type: 'image/jpeg' });
@@ -142,10 +304,14 @@ describe('fotos sequenciais da visita', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Não foi possível enviar a foto. Tente novamente.',
     );
-    expect(dependencies.refresh).toHaveBeenCalledOnce();
+    expect(dependencies.refresh).not.toHaveBeenCalled();
     expect(screen.queryByText(/primeira\.jpg/)).not.toBeInTheDocument();
     expect(screen.getByText('segunda.png')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Enviar 1 foto' })).toBeEnabled();
+    expect(screen.getByAltText('Foto 1 da visita')).toHaveAttribute(
+      'src',
+      expect.stringContaining('first-AbCd12.webp'),
+    );
   });
 
   it('exclui somente pelo ID recebido do loader e reconcilia a lista local', async () => {

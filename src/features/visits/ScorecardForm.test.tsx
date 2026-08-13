@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ScorecardInput } from '@/domain/reviews/schemas';
@@ -55,7 +55,9 @@ describe('ficha acessível de avaliação', () => {
     await user.keyboard('{ArrowRight}');
     expect(food).toHaveValue('1');
 
-    await user.type(screen.getByLabelText('Comentário'), 'x'.repeat(179));
+    fireEvent.change(screen.getByLabelText('Comentário'), {
+      target: { value: 'x'.repeat(179) },
+    });
     expect(screen.getByText('1 caractere restante')).toBeInTheDocument();
     await user.clear(screen.getByLabelText('Comentário'));
     await user.click(screen.getByRole('button', { name: 'Salvar avaliação' }));

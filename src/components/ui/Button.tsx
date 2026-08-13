@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from 'react';
+import { forwardRef, type ButtonHTMLAttributes } from 'react';
 import styles from './ui.module.css';
 
 type NativeButtonProps = Omit<
@@ -12,13 +12,13 @@ export interface ButtonProps extends NativeButtonProps {
   fullWidth?: boolean;
 }
 
-export function Button({
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button({
   variant = 'primary',
   size = 'regular',
   fullWidth = false,
   type = 'button',
   ...props
-}: ButtonProps) {
+}, ref) {
   const className = [
     styles.button,
     styles[variant],
@@ -26,5 +26,5 @@ export function Button({
     fullWidth ? styles.fullWidth : '',
   ].filter(Boolean).join(' ');
 
-  return <button {...props} className={className} type={type} />;
-}
+  return <button {...props} className={className} ref={ref} type={type} />;
+});

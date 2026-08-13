@@ -39,13 +39,14 @@ const scoreFormatter = new Intl.NumberFormat('pt-BR', {
 export interface ScorecardFormProps {
   visitId: string;
   initialValues: ScorecardInput | null;
+  onSaved?(result: SubmittedScorecardResponse): void;
 }
 
 function remainingLabel(count: number): string {
   return count === 1 ? '1 caractere restante' : `${count} caracteres restantes`;
 }
 
-export function ScorecardForm({ visitId, initialValues }: ScorecardFormProps) {
+export function ScorecardForm({ visitId, initialValues, onSaved }: ScorecardFormProps) {
   const [values, setValues] = useState<ScorecardInput>(initialValues ?? EMPTY_SCORECARD);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +81,9 @@ export function ScorecardForm({ visitId, initialValues }: ScorecardFormProps) {
     setPending(true);
     setError(null);
     try {
-      setResult(await submitScorecard(visitId, parsed.data));
+      const saved = await submitScorecard(visitId, parsed.data);
+      setResult(saved);
+      onSaved?.(saved);
     } catch {
       setError('Não foi possível salvar a avaliação. Tente novamente.');
     } finally {

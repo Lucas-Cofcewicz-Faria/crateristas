@@ -169,6 +169,12 @@ function jsonRequest(method: string, body: unknown): Request {
   });
 }
 
+function confirmationRequest(pathname: string): Request {
+  return new Request(
+    `http://localhost/api/visits/${visitId}/photos?pathname=${encodeURIComponent(pathname)}`,
+  );
+}
+
 function fakeHandleUpload(options: HandleUploadOptions) {
   if (options.body.type === 'blob.generate-client-token') {
     const { pathname, clientPayload, multipart } = options.body.payload;
@@ -586,5 +592,102 @@ describe('DELETE /api/visits/[id]/photos', () => {
     expect(retried.status).toBe(204);
     expect(harness.repository.photos.has(photo.id)).toBe(false);
     expect(harness.deleted).toEqual([photo.pathname, photo.pathname]);
+  });
+});
+
+describe('GET /api/visits/[id]/photos', () => {
+  const persistedPathname = photoPath('mesa-persistida-AbCd12');
+
+  it('autentica antes de consultar confirmação no repository', async () => {
+    const harness = makeHarness();
+    const authError = new Error('sessão ausente');
+    authError.name = 'AuthenticationError';
+    (harness.dependencies.requireMember as ReturnType<typeof vi.fn>).mockRejectedValue(authError);
+    const findPhoto = vi.spyOn(harness.repository, 'findPhotoByPathname');
+
+    const response = await harness.GET(
+      confirmationRequest(persistedPathname),
+      { params: Promise.resolve({ id: visitId }) },
+    );
+
+    expect(response.status).toBe(401);
+    expect(findPhoto).not.toHaveBeenCalled();
+  });
+
+  it('rejeita pathname não concluído depois da autenticação e antes da query', async () => {
+    const harness = makeHarness();
+    const findPhoto = vi.spyOn(harness.repository, 'findPhotoByPathname');
+
+    const response = await harness.GET(
+      confirmationRequest(photoPath('invalida-x')),
+      { params: Promise.resolve({ id: visitId }) },
+    );
+
+    expect(response.status).toBe(400);
+    expect(harness.dependencies.requireMember).toHaveBeenCalledOnce();
+    expect(findPhoto).not.toHaveBeenCalled();
+  });
+
+  it('retorna 202 enquanto o callback ainda não persistiu a foto', async () => {
+    const harness = makeHarness();
+
+    const response = await harness.GET(
+      confirmationRequest(persistedPathname),
+      { params: Promise.resolve({ id: visitId }) },
+    );
+
+    expect(response.status).toBe(202);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    await expect(response.json()).resolves.toEqual({ photo: null });
+  });
+
+  it('retorna somente a foto persistida e confirma que pertence à visita', async () => {
+    const harness = makeHarness();
+    await harness.repository.attachPhoto(visitId, creator.id, {
+      url: `https://arquivos.public.blob.vercel-storage.com/${persistedPathname}`,
+      pathname: persistedPathname,
+      contentType: 'image/webp',
+      sizeBytes: 120_000,
+    });
+    const persisted = [...harness.repository.photos.values()][0];
+
+    const response = await harness.GET(
+      confirmationRequest(persistedPathname),
+      { params: Promise.resolve({ id: visitId }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    await expect(response.json()).resolves.toEqual({
+      photo: {
+        id: persisted.id,
+        url: persisted.url,
+        position: persisted.position,
+      },
+    });
+  });
+
+  it('não expõe foto se o repository devolver visitId divergente', async () => {
+    const harness = makeHarness();
+    vi.spyOn(harness.repository, 'findPhotoByPathname').mockResolvedValue({
+      id: '00000000-0000-4000-8000-000000000001',
+      visitId: otherId,
+      uploadedBy: creator.id,
+      url: `https://arquivos.public.blob.vercel-storage.com/${persistedPathname}`,
+      pathname: persistedPathname,
+      contentType: 'image/webp',
+      sizeBytes: 120_000,
+      position: 1,
+    });
+
+    const response = await harness.GET(
+      confirmationRequest(persistedPathname),
+      { params: Promise.resolve({ id: visitId }) },
+    );
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      error: 'Não foi possível concluir a operação.',
+    });
   });
 });
