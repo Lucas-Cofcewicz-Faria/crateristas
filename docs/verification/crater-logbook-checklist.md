@@ -6,7 +6,7 @@ Base verificada: `9e3dda0` (`develop`)
 
 Estado: **migration e integração PostgreSQL verificadas na branch Neon `development`; autenticação, Blob e inspeção visual ainda pendentes**.
 
-Este documento separa evidência observada de tarefas que ainda dependem de infraestrutura. Em 20/08/2026, as migrations foram aplicadas somente na branch Neon não produtiva `development`; nenhuma conta, upload ou implantação de produção foi criada nesta rodada.
+Este documento separa evidência observada de tarefas que ainda dependem de infraestrutura. Em 20/08/2026, as migrations foram verificadas na branch Neon não produtiva `development` e o mesmo esquema-base vazio foi aplicado à `main`, de onde a integração cria branches isoladas de Preview. A Vercel Production continua sem conexão com o banco; nenhuma conta, upload ou implantação de produção foi criada nesta rodada.
 
 ## 1. Gates automatizados locais
 
@@ -52,6 +52,7 @@ Pré-requisito: configurar `DATABASE_URL` e `TEST_DATABASE_URL` com uma branch N
 - [ ] Ocultar a visita, editar uma ficha e confirmar que ela continua oculta.
 - [ ] Republicar e confirmar que a projeção pública reaparece.
 - [x] Executar novamente a suíte com `TEST_DATABASE_URL`: 394 testes aprovados e zero skips de integração PostgreSQL.
+- [x] Aplicar as migrations versionadas à Neon `main` somente como base vazia para as branches automáticas de Preview; os endpoints `main` e `development` foram validados como distintos e Production permanece desconectada na Vercel.
 
 ## 4. Autenticação, autorização e privacidade — pendente
 
