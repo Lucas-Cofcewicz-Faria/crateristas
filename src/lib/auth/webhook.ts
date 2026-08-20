@@ -69,12 +69,13 @@ function readWebhookConfig(environment: WebhookEnvironment): NeonWebhookConfig {
   const uniqueEmails = new Set(allowedEmails);
 
   if (
-    allowedEmails.length !== 8 ||
-    uniqueEmails.size !== 8 ||
+    allowedEmails.length < 1 ||
+    allowedEmails.length > 8 ||
+    uniqueEmails.size !== allowedEmails.length ||
     allowedEmails.some((email) => !EMAIL_PATTERN.test(email))
   ) {
     throw new NeonWebhookConfigurationError(
-      'NEON_AUTH_ALLOWED_EMAILS deve conter exatamente oito emails únicos e válidos.',
+      'NEON_AUTH_ALLOWED_EMAILS deve conter de um a oito emails únicos e válidos.',
     );
   }
 

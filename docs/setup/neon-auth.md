@@ -6,7 +6,9 @@ recuperação de conta. Essa guarda local não basta sozinha: por padrão, o Neo
 cadastros feitos diretamente na Auth URL, sem passar por `/api/auth` do aplicativo.
 
 A proteção principal é o webhook bloqueante `user.before_create`. Ele consulta uma allowlist
-server-side com exatamente oito e-mails antes de qualquer usuário ser gravado. A implementação
+server-side de um a oito e-mails antes de qualquer usuário ser gravado. Isso permite começar a
+homologação com uma pessoa e adicionar os demais integrantes gradualmente, sem ultrapassar os
+oito lugares da sociedade. A implementação
 segue a documentação oficial de [fluxo de autenticação](https://neon.com/docs/auth/authentication-flow)
 e [webhooks](https://neon.com/docs/auth/guides/webhooks).
 
@@ -34,9 +36,10 @@ NEON_AUTH_ALLOWED_EMAILS=membro01@example.com,membro02@example.com,membro03@exam
 - `NEON_AUTH_BASE_URL`: a Auth URL copiada do Neon Console; precisa usar HTTPS.
 - `NEON_AUTH_COOKIE_SECRET`: segredo exclusivo, com no mínimo 32 caracteres. Use o mesmo valor
   em todas as instâncias do mesmo ambiente e nunca o envie ao Git.
-- `NEON_AUTH_ALLOWED_EMAILS`: os oito e-mails autorizados, separados por vírgula. A aplicação
-  remove espaços e compara em minúsculas. A configuração falha fechada se houver menos ou mais
-  de oito valores, e-mail inválido ou duplicação após a normalização.
+- `NEON_AUTH_ALLOWED_EMAILS`: de um a oito e-mails autorizados, separados por vírgula. A aplicação
+  remove espaços e compara em minúsculas. A configuração falha fechada se a lista estiver vazia,
+  contiver mais de oito valores, e-mail inválido ou duplicação após a normalização. Ao adicionar
+  integrantes, atualize a variável antes de criar as novas contas.
 
 Para gerar um segredo no PowerShell:
 
@@ -81,19 +84,19 @@ curl.exe "https://console.neon.tech/api/v2/projects/{project_id}/branches/{branc
 O endpoint preserva o corpo bruto e valida a assinatura JWS destacada Ed25519 usando o `kid` e o
 JWKS publicado em `<NEON_AUTH_BASE_URL>/.well-known/jwks.json`. Também exige timestamp dentro de
 cinco minutos e confere `user.before_create` tanto no header quanto no corpo assinado. Só devolve
-`{"allowed":true}` para um dos oito e-mails. Configuração ausente ou inválida, JWKS indisponível,
+`{"allowed":true}` para um dos e-mails configurados. Configuração ausente ou inválida, JWKS indisponível,
 assinatura inválida, evento divergente e qualquer outro e-mail falham fechados.
 
 A decisão depende apenas do evento assinado e da allowlist, por isso uma repetição com o mesmo
 evento recebe a mesma resposta. Como o Neon rejeita todos os cadastros quando esse webhook fica
 indisponível, monitore o endpoint e mantenha o tempo de resposta abaixo do limite configurado.
 
-## 4. Criar as oito contas fechadas
+## 4. Criar as contas fechadas
 
 1. Acesse **Auth → Users** na mesma branch.
-2. Crie exatamente os oito usuários presentes em `NEON_AUTH_ALLOWED_EMAILS`, com nome e uma senha
-   inicial forte. Entregue cada senha apenas ao respectivo integrante e solicite sua troca por um
-   canal privado.
+2. Crie somente os usuários presentes em `NEON_AUTH_ALLOWED_EMAILS`, começando por uma conta de
+   homologação se necessário e chegando a no máximo oito. Use uma senha inicial forte, entregue-a
+   apenas ao respectivo integrante e solicite sua troca por um canal privado.
 3. Copie o ID de cada usuário. Esse é o valor que será gravado em `members.auth_user_id`.
 4. Não habilite OAuth, magic link, OTP, organizações, acesso anônimo ou outro plugin sem revisar
    as duas allowlists: a de endpoints do aplicativo e a de e-mails do webhook.
@@ -106,11 +109,11 @@ logout, sessão/tokens e os endpoints necessários de recuperação e verificaç
 de plugins recebem `404`, inclusive variantes com barras codificadas.
 
 Na Task 14, teste a proteção real pela Auth URL, e não apenas pela rota local. Uma tentativa com
-um dos oito e-mails deve ser autorizada durante o provisionamento; uma tentativa com um nono
-e-mail deve ser rejeitada em `POST <NEON_AUTH_BASE_URL>/sign-up/email`.
+um e-mail configurado deve ser autorizada durante o provisionamento; uma tentativa com qualquer
+outro e-mail deve ser rejeitada em `POST <NEON_AUTH_BASE_URL>/sign-up/email`.
 
 O papel administrativo do site vem de `members.role`, não do papel interno do Neon Auth. Uma
-única linha deve receber `admin`; as outras sete devem permanecer como `member`.
+única linha deve receber `admin`; todas as demais devem permanecer como `member`.
 
 ## 5. Vincular Auth e membros
 

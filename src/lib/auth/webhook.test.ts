@@ -105,6 +105,17 @@ function dependencies(...args: [allowedEmails?: string]) {
 }
 
 describe('webhook bloqueante de criação de usuários', () => {
+  it('autoriza o único email configurado durante a implantação gradual', async () => {
+    const webhook = signedWebhook(webhookPayload('  MEMBRO01@EXAMPLE.COM  '));
+
+    await expect(
+      authorizeNeonUserCreation({
+        ...webhook,
+        ...dependencies('membro01@example.com'),
+      }),
+    ).resolves.toEqual({ allowed: true });
+  });
+
   it('autoriza um dos oito emails após normalização e assinatura válida', async () => {
     const webhook = signedWebhook(webhookPayload('  MEMBRO01@EXAMPLE.COM  '));
 
@@ -123,7 +134,7 @@ describe('webhook bloqueante de criação de usuários', () => {
 
   it.each([
     ['variável ausente', undefined],
-    ['somente sete emails', ALLOWED_EMAILS.slice(0, 7).join(',')],
+    ['mais de oito emails', [...ALLOWED_EMAILS, 'membro09@example.com'].join(',')],
     ['nono item vazio', `${ALLOWED_EMAILS.join(',')},`],
     [
       'email duplicado após normalização',
