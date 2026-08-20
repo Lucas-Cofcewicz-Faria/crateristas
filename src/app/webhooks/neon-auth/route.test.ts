@@ -75,6 +75,8 @@ describe('POST /webhooks/neon-auth', () => {
   });
 
   it('falha fechado quando o corpo bruto não corresponde à assinatura', async () => {
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
     const response = await POST(signedRequest('membro01@example.com', true));
 
     expect(response.status).toBe(403);
@@ -82,6 +84,13 @@ describe('POST /webhooks/neon-auth', () => {
       allowed: false,
       error_message: 'Cadastro não autorizado.',
       error_code: 'SIGNUP_BLOCKED',
+    });
+    expect(errorLog).toHaveBeenCalledOnce();
+    expect(JSON.parse(String(errorLog.mock.calls[0][0]))).toEqual({
+      level: 'error',
+      message: 'Neon Auth webhook rejeitado',
+      errorName: 'NeonWebhookVerificationError',
+      errorMessage: 'Assinatura do webhook inválida.',
     });
   });
 

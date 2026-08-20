@@ -1,4 +1,8 @@
-import { authorizeNeonUserCreation } from '@/lib/auth/webhook';
+import {
+  authorizeNeonUserCreation,
+  NeonWebhookConfigurationError,
+  NeonWebhookVerificationError,
+} from '@/lib/auth/webhook';
 
 export const runtime = 'nodejs';
 
@@ -19,7 +23,18 @@ export async function POST(request: Request) {
 
     if (result.allowed) return Response.json({ allowed: true });
     return Response.json(blockedResponse);
-  } catch {
+  } catch (error) {
+    const knownError =
+      error instanceof NeonWebhookConfigurationError ||
+      error instanceof NeonWebhookVerificationError;
+    console.error(
+      JSON.stringify({
+        level: 'error',
+        message: 'Neon Auth webhook rejeitado',
+        errorName: knownError ? error.name : 'UnknownError',
+        errorMessage: knownError ? error.message : 'Falha inesperada.',
+      }),
+    );
     return Response.json(blockedResponse, { status: 403 });
   }
 }
