@@ -50,6 +50,8 @@ Configure valores reais somente em `.env.local` e na hospedagem; nunca faça com
 
 O provisionamento completo das oito contas, allowlist e webhook está em [docs/setup/neon-auth.md](docs/setup/neon-auth.md).
 
+O estado reproduzível dos testes locais e os passos ainda pendentes de banco, autenticação, Blob e inspeção desktop estão no [checklist de verificação](docs/verification/crater-logbook-checklist.md). Itens sem credenciais ou navegador real permanecem marcados como pendentes; não são tratados como aprovados por inferência.
+
 ## Banco e migrations
 
 `db/migrations/001_crater_logbook.sql` cria o domínio atual. `002_purge_legacy_reviews.sql` mantém a tabela antiga `reviews`, mas apaga suas linhas por decisão explícita de descarte do protótipo; a operação é guardada para a relação ausente e idempotente.
