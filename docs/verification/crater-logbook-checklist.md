@@ -2,24 +2,24 @@
 
 Última atualização local: **20 de agosto de 2026**
 
-Commit verificado: `2a77018` (`develop`)
+Base verificada: `9e3dda0` (`develop`)
 
-Estado: **verificação local concluída; homologação externa e inspeção visual pendentes**.
+Estado: **migration e integração PostgreSQL verificadas na branch Neon `development`; autenticação, Blob e inspeção visual ainda pendentes**.
 
-Este documento separa evidência observada de tarefas que ainda dependem de infraestrutura. Nenhuma migration, conta, upload, implantação ou outra escrita externa foi executada durante esta rodada.
+Este documento separa evidência observada de tarefas que ainda dependem de infraestrutura. Em 20/08/2026, as migrations foram aplicadas somente na branch Neon não produtiva `development`; nenhuma conta, upload ou implantação de produção foi criada nesta rodada.
 
 ## 1. Gates automatizados locais
 
 | Comando | Resultado observado em 20/08/2026 |
 | --- | --- |
-| `npm test` | PASS — 57 arquivos, 375 testes aprovados e 19 integrações condicionais ignoradas sem `TEST_DATABASE_URL` |
+| `node --env-file=.env.local ./node_modules/vitest/vitest.mjs run` | PASS — 57 arquivos e 394 testes aprovados; zero skips de integração PostgreSQL |
 | `npm run lint` | PASS — exit code 0; oito avisos preexistentes, sem erro |
 | `npx next typegen` | PASS — tipos de rota regenerados após a remoção das rotas legadas |
 | `npx tsc --noEmit` | PASS |
-| `npm run build` | PASS — build de produção gerado sem credenciais reais |
+| `npm run build` | PASS — build de produção gerado com a configuração local da branch de homologação |
 | `git diff --check` | PASS |
 
-Os skips não são evidência de integração com Neon: eles existem justamente para não acessar um banco quando `TEST_DATABASE_URL` não está configurada.
+O primeiro teste PostgreSQL real revelou que o fixture da corrida de fotos reutilizava `$1` como `uuid` e `text` sem casts explícitos. Após reproduzir o erro real, o fixture passou a tipar o parâmetro como `uuid` antes da conversão do pathname; a suíte focada fechou em 38/38 e a suíte completa em 394/394.
 
 ## 2. Navegação HTTP local
 
@@ -38,20 +38,20 @@ O servidor Next.js local respondeu aos seguintes smoke tests sem navegador:
 
 As páginas públicas dependentes do banco alcançam seus limites de erro sem `DATABASE_URL`. Isso confirma o comportamento local de falha, mas não substitui o teste com dados reais.
 
-## 3. Banco de dados e regras coletivas — pendente
+## 3. Banco de dados e regras coletivas — parcialmente verificado
 
 Pré-requisito: configurar `DATABASE_URL` e `TEST_DATABASE_URL` com uma branch Neon **descartável e não produtiva**. Não colar credenciais no chat nem usar valores de exemplo.
 
-- [ ] Confirmar no console que as duas URLs apontam para a branch de homologação.
-- [ ] Executar `npm run db:migrate` somente após essa confirmação.
-- [ ] Confirmar que `002_purge_legacy_reviews.sql` apagou somente as linhas de `reviews` e não removeu a tabela.
+- [x] Confirmar no console que as duas URLs apontam para a branch Neon `development`; validação local confirmou duas URLs Neon presentes e iguais sem exibir o segredo.
+- [x] Executar `npm run db:migrate` somente após essa confirmação; `001_crater_logbook.sql` e `002_purge_legacy_reviews.sql` foram aplicadas e a segunda execução foi idempotente pelo ledger.
+- [x] Confirmar em PostgreSQL real que `002_purge_legacy_reviews.sql` apaga somente as linhas de `reviews`, preserva a tabela e remove zero linhas adicionais no rerun.
 - [ ] Criar exatamente oito membros de teste e uma visita.
 - [ ] Enviar cinco fichas: a visita deve continuar privada.
 - [ ] Enviar a sexta ficha: a visita deve ser publicada automaticamente.
 - [ ] Enviar a sétima e a oitava fichas: médias e nota geral devem ser recalculadas.
 - [ ] Ocultar a visita, editar uma ficha e confirmar que ela continua oculta.
 - [ ] Republicar e confirmar que a projeção pública reaparece.
-- [ ] Executar novamente `npm test` com `TEST_DATABASE_URL` e exigir zero skips de integração PostgreSQL.
+- [x] Executar novamente a suíte com `TEST_DATABASE_URL`: 394 testes aprovados e zero skips de integração PostgreSQL.
 
 ## 4. Autenticação, autorização e privacidade — pendente
 

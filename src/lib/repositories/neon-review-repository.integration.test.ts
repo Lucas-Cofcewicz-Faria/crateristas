@@ -1118,16 +1118,16 @@ describeIntegration('NeonReviewRepository database constraints', () => {
       transaction.query(
         `INSERT INTO visit_photos
           (visit_id, uploaded_by, url, pathname, content_type, size_bytes, position)
-         SELECT $1, $2, 'https://images.example.com/three-' || position || '.webp',
-                'test/' || $1 || '/three-' || position || '.webp', 'image/webp', 100000, position
+         SELECT $1::uuid, $2::uuid, 'https://images.example.com/three-' || position || '.webp',
+                'test/' || ($1::uuid)::text || '/three-' || position || '.webp', 'image/webp', 100000, position
          FROM generate_series(1, 3) AS position`,
         [photoRaceVisitWithThreeId, photoRaceMemberId],
       ),
       transaction.query(
         `INSERT INTO visit_photos
           (visit_id, uploaded_by, url, pathname, content_type, size_bytes, position)
-         SELECT $1, $2, 'https://images.example.com/four-' || position || '.webp',
-                'test/' || $1 || '/four-' || position || '.webp', 'image/webp', 100000, position
+         SELECT $1::uuid, $2::uuid, 'https://images.example.com/four-' || position || '.webp',
+                'test/' || ($1::uuid)::text || '/four-' || position || '.webp', 'image/webp', 100000, position
          FROM generate_series(1, 4) AS position`,
         [photoRaceVisitWithFourId, photoRaceMemberId],
       ),
