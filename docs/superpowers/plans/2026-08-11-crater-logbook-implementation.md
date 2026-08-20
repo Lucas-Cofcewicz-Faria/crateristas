@@ -4,7 +4,7 @@
 
 **Goal:** Substituir o prototipo atual por um livro publico de avaliacoes coletivas, com oito contas fechadas, publicacao por quorum, controle administrativo e a landing Three.js preservada.
 
-**Architecture:** O App Router renderiza paginas publicas no servidor e usa Route Handlers finos para mutacoes autenticadas. Regras de media, publicacao e permissao ficam em modulos de dominio testaveis; Neon Postgres persiste o dominio, Neon Auth fornece sessoes e Vercel Blob armazena fotos. A migracao e aditiva e as telas antigas so sao removidas depois que as rotas novas estiverem verificadas.
+**Architecture:** O App Router renderiza paginas publicas no servidor e usa Route Handlers finos para mutacoes autenticadas. Regras de media, publicacao e permissao ficam em modulos de dominio testaveis; Neon Postgres persiste o dominio, Neon Auth fornece sessoes e Vercel Blob armazena fotos. O novo schema e aditivo; depois que as rotas novas estiverem verificadas, uma migracao explicita apaga somente as linhas do prototipo legado e as telas antigas sao removidas.
 
 **Tech Stack:** Next.js 16.2.7, React 19.2.4, TypeScript strict, Neon Serverless Postgres, Neon Auth, Vercel Blob, Zod, Vitest, Testing Library e CSS Modules/vanilla CSS.
 
@@ -25,7 +25,7 @@
 - Nao alterar o loop, camera, scroll, geometrias, materiais, luzes, particulas, eventos ou descarte de `GourmetScene.tsx`. Por autorizacao do usuario em 2026-08-11, sao permitidas somente correcoes comprovadamente nao funcionais exigidas pelo lint, como trocar uma variavel nunca reatribuida de `let` para `const`.
 - A unica mudanca funcional permitida na landing e trocar o destino final de `/home` para `/registros`.
 - Antes de editar recursos Next.js, ler os guias locais relevantes em `node_modules/next/dist/docs/01-app/` conforme `AGENTS.md`.
-- Preservar a tabela legada `reviews`; qualquer migracao de dados deve ser aditiva e recuperavel.
+- Nao dropar a tabela legada `reviews`; por decisao do usuario em 2026-08-13, a Task 13 apaga somente suas linhas, sem importa-las para o livro de registros.
 
 ## File Structure
 
@@ -40,7 +40,7 @@
 - `src/lib/db.ts`: cliente Neon sem criacao de schema durante requests.
 - `src/lib/repositories/neon-review-repository.ts`: implementacao SQL do contrato.
 - `db/migrations/001_crater_logbook.sql`: schema aditivo do dominio.
-- `db/migrations/002_legacy_reviews.sql`: conversao idempotente dos registros antigos.
+- `db/migrations/002_purge_legacy_reviews.sql`: limpeza idempotente das linhas do prototipo antigo.
 - `scripts/migrate.mjs`: executor explicito das migracoes.
 
 ### Autenticacao e APIs
@@ -315,7 +315,7 @@ CREATE INDEX IF NOT EXISTS scorecards_visit_idx ON scorecards (visit_id);
 CREATE INDEX IF NOT EXISTS scorecards_member_idx ON scorecards (member_id, visit_id);
 ```
 
-`visits.created_by` and the three upload metadata fields are nullable only so historical rows without a known actor or original file metadata can be preserved. Every new visit and upload must provide them through the authenticated service. A visit slug identifies the public review, not only the restaurant; generate it from restaurant name plus visit date, adding a deterministic numeric suffix on collision. The migration runner creates `schema_migrations(name TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())` before reading numbered files.
+`visits.created_by` and the three upload metadata fields remain nullable at the database boundary, but every new visit and upload must provide the authenticated actor and known file metadata through the service. A visit slug identifies the public review, not only the restaurant; generate it from restaurant name plus visit date, adding a deterministic numeric suffix on collision. The migration runner creates `schema_migrations(name TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())` before reading numbered files.
 
 - [ ] **Step 3: Replace request-time schema creation**
 
@@ -331,7 +331,7 @@ export function getDb() {
 }
 ```
 
-Remove `INITIAL_REVIEWS` and `initDatabase()`; do not delete the legacy table.
+Remove `INITIAL_REVIEWS` and `initDatabase()`; do not drop the legacy table. Its rows are purged explicitly only in Task 13.
 
 - [ ] **Step 4: Implement the migration runner**
 
@@ -456,7 +456,7 @@ All permission decisions happen before repository mutation. `submitScorecard` us
 
 - [ ] **Step 4: Implement explicit public SQL projections**
 
-`getPublicVisitBySlug()` must select aggregate columns and public comments with `members.display_name` and `members.avatar_url`; it must not select scorecard numeric columns into the returned comment objects. Filter `visits.publication_state = 'published'` in SQL, not after fetching. `listPublicMembers()` returns only display name, slug, avatar, society title, member number, bio, favorite cuisine and aggregate public contribution statistics. When `legacy_review_id` is present, return `legacy_payload` as an explicitly historical record; missing `access` and `waitTime` values render as `Não avaliado` and are excluded from its overall calculation rather than fabricated.
+`getPublicVisitBySlug()` must select aggregate columns and public comments with `members.display_name` and `members.avatar_url`; it must not select scorecard numeric columns into the returned comment objects. Filter `visits.publication_state = 'published'` in SQL, not after fetching. `listPublicMembers()` returns only display name, slug, avatar, society title, member number, bio, favorite cuisine and aggregate public contribution statistics.
 
 - [ ] **Step 5: Add conditional integration tests**
 
@@ -855,7 +855,7 @@ git commit -m "feat: build public restaurant archive"
 
 - [ ] **Step 1: Write failing privacy and layout tests**
 
-Render six comments and assert each shows avatar, member name and comment. Assert no member-level score label appears. Verify deterministic CSS slot classes `fragment--1` through `fragment--8` and fallback initials when avatar is absent. Add a historical-record fixture asserting `Acesso e localização` and `Tempo de espera` render as `Não avaliado`, the legacy overall ignores those missing categories and no artificial member scorecard is created.
+Render six comments and assert each shows avatar, member name and comment. Assert no member-level score label appears. Verify deterministic CSS slot classes `fragment--1` through `fragment--8` and fallback initials when avatar is absent.
 
 - [ ] **Step 2: Implement score labels in pt-BR**
 
@@ -1054,10 +1054,10 @@ git add src/app/visitas src/features/visits
 git commit -m "feat: complete collective review workflow"
 ```
 
-### Task 13: Legacy migration, route cutover and prototype removal
+### Task 13: Purge legacy rows, route cutover and prototype removal
 
 **Files:**
-- Create: `db/migrations/002_legacy_reviews.sql`
+- Create: `db/migrations/002_purge_legacy_reviews.sql`
 - Modify: `src/app/page.tsx`
 - Replace: `src/app/home/page.tsx`
 - Replace: `src/app/add-restaurant/page.tsx`
@@ -1071,15 +1071,15 @@ git commit -m "feat: complete collective review workflow"
 
 **Interfaces:**
 - Consumes: all new routes.
-- Produces: compatibility redirects, preserved legacy data and no active fallback prototype.
+- Produces: compatibility redirects, an idempotent purge of old rows and no active fallback prototype.
 
-- [ ] **Step 1: Write the idempotent legacy migration**
+- [ ] **Step 1: Write the idempotent legacy-row purge**
 
-If `reviews` exists, create one legacy restaurant/visit per unmapped row, generate a unique visit slug, mark the visit published by `admin_override`, copy image URLs into `visit_photos`, and store the original row in `legacy_payload` together with `legacy_review_id`. Preserve `reviews` unchanged. Map only fields that truly exist: `taste` to `Comida`, `service` to `Serviço`, `ambiance` to `Ambiente`, `cost_benefit` to `Custo-benefício` and `ux` to the clearly labeled historical `Experiência`; preserve the original overall score in the historical block. Do not invent `access` or `waitTime`: the renderer labels both as `Não avaliado`. Use null actor/upload metadata for legacy rows rather than attributing them to a real member. Running migration twice must insert zero duplicates.
+Create one guarded `DO $$` statement. If `to_regclass('reviews')` is null, succeed without changes; otherwise execute `DELETE FROM reviews` dynamically so PostgreSQL does not parse a missing relation. Do not drop the table and do not read or mutate any new-domain table. Running the statement twice removes zero additional rows on the second execution. Cover the source/migrator contract and keep a real PostgreSQL integration conditional on `TEST_DATABASE_URL`.
 
-- [ ] **Step 2: Run the legacy migration on a non-production branch and inspect counts**
+- [ ] **Step 2: Defer the external migration write**
 
-Run `npm run db:migrate`, then compare source count with `visits WHERE legacy_review_id IS NOT NULL`. Expected: counts match; source table still exists.
+Do not run `npm run db:migrate` during Task 13. It is an external write and remains deferred to Task 14, where a configured non-production `DATABASE_URL` must be verified before execution. Never use a placeholder or a production URL.
 
 - [ ] **Step 3: Cut over the landing destination only**
 
@@ -1087,7 +1087,7 @@ In `src/app/page.tsx`, change only `router.push('/home')` to `router.push('/regi
 
 - [ ] **Step 4: Replace old pages with permanent redirects**
 
-`/home` redirects to `/registros`, `/add-restaurant` to `/visitas/nova`, and `/restaurant/[id]` resolves the legacy mapping then redirects to the canonical `/restaurantes/[slug]` or calls `notFound()`.
+`/home` redirects to `/registros`, `/add-restaurant` to `/visitas/nova`, and `/restaurant/[id]` redirects to `/registros` because the old records were intentionally discarded. All three are Server Components using `permanentRedirect()`.
 
 ```ts
 import { permanentRedirect } from 'next/navigation';
@@ -1099,7 +1099,7 @@ export default function LegacyHomePage(): never {
 
 - [ ] **Step 5: Remove unused prototype code**
 
-Delete the legacy API routes and components only after `rg` confirms no imports or fetches remain. Remove `localStorage`, mock review seeds, database setup panels, Google Maps scraping and English deployment errors from active code.
+Delete the legacy API routes and components only after `rg` confirms no imports or fetches remain. Remove `localStorage`, mock review seeds, database setup panels and English deployment errors from active code. Preserve the authenticated, constrained Maps assistance in `/visitas/nova` and `/api/parse-maps`.
 
 - [ ] **Step 6: Update project documentation**
 
@@ -1110,13 +1110,14 @@ Document new routes, environment variable names, migration command, closed accou
 Run:
 
 ```powershell
-rg -n "mock_reviews|localStorage|api/reviews|api/parse-maps|router.push\('/home'\)" src
+rg -n "mock_reviews|localStorage|api/reviews|router.push\('/home'\)" src
+rg -n "api/parse-maps" src --glob '!app/api/parse-maps/**' --glob '!features/visits/**'
 npm test
 npm run lint
 npx tsc --noEmit
 ```
 
-Expected: `rg` returns no matches; tests, lint and types PASS.
+Expected: the first `rg` returns no matches; the second returns only the authenticated route/tests and Task-12 visit feature; tests, lint and types PASS.
 
 ```powershell
 git add db src README.md crateristas_context.md
@@ -1181,7 +1182,7 @@ git commit -m "docs: record crater logbook verification"
 - Admin early publication, hide and republish are covered by Tasks 1, 3, 5 and 12.
 - Closed Neon Auth accounts and server-side authorization are covered by Tasks 4-5 and 11.
 - Five-photo compression, Vercel Blob and free-tier protection are covered by Tasks 6, 12 and 14.
-- Additive legacy preservation and route compatibility are covered by Task 13.
+- Authorized legacy-row purge and route compatibility are covered by Task 13.
 - Error handling and full verification are covered by Tasks 5, 12 and 14.
 - The Three.js boundary is explicit globally and verified in Tasks 13-14.
 - Type names are consistent: `ScoreValues`, `ReviewAggregate`, `PublicationState`, `PublicationReason`, `PublicationCommand`, `ReviewRepository` and `createReviewService()`.

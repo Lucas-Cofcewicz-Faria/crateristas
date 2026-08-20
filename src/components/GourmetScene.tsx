@@ -1635,8 +1635,8 @@ export default function GourmetScene() {
 
     // 7. Animation & Interactive Loop
     let animationFrameId: number;
-    let currentZ = camera.position.z;
-    let targetZ = currentZ;
+    const currentZ = camera.position.z;
+    const targetZ = currentZ;
     let mouseX = 0;
     let mouseY = 0;
     let camTargetX = 0;

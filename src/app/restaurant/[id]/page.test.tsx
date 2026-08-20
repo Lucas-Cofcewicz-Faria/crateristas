@@ -9,16 +9,16 @@ const dependencies = vi.hoisted(() => ({
 
 vi.mock('next/navigation', () => ({
   permanentRedirect: dependencies.permanentRedirect,
-  useRouter: () => ({ push: vi.fn() }),
+  useParams: () => ({ id: 'legacy-review' }),
 }));
 
-import LegacyHomePage from './page';
+import LegacyRestaurantPage from './page';
 
 afterEach(cleanup);
 
-describe('/home compatibility redirect', () => {
-  it('permanently redirects old bookmarks to /registros', () => {
-    expect(() => render(<LegacyHomePage />)).toThrow('NEXT_PERMANENT_REDIRECT_TEST');
+describe('/restaurant/[id] compatibility redirect', () => {
+  it('permanently redirects discarded legacy records to /registros', () => {
+    expect(() => render(<LegacyRestaurantPage />)).toThrow('NEXT_PERMANENT_REDIRECT_TEST');
     expect(dependencies.permanentRedirect).toHaveBeenCalledWith('/registros');
   });
 });

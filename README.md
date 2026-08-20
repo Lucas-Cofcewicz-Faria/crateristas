@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Crateristas
 
-## Getting Started
+Livro de registros gastronômicos de um grupo fechado de oito crateristas. Cada visita reúne seis notas de `0` a `10` — comida, serviço, ambiente, custo-benefício, acesso/localização e tempo de espera — e um comentário de até 180 caracteres por integrante. A sexta ficha publica a visita automaticamente; o administrador também pode publicar antecipadamente, ocultar e republicar.
 
-First, run the development server:
+## Rotas
 
-```bash
+- `/`: landing Three.js; ao fim da descida, segue para `/registros`.
+- `/registros`: arquivo público filtrável das visitas publicadas.
+- `/restaurantes/[slug]`: detalhe público, médias coletivas, comentários e até cinco fotos.
+- `/membros`: diretório público sem e-mails, IDs de autenticação ou notas individuais.
+- `/entrar`: entrada das oito contas já provisionadas; não há cadastro público.
+- `/painel`: visitas em formação e publicações recentes do membro autenticado.
+- `/visitas/nova`: criação autenticada de visita, com assistência opcional do Google Maps.
+- `/visitas/[id]/avaliar`: ficha própria, fotos e controles administrativos autorizados.
+
+Bookmarks antigos continuam compatíveis: `/home` e `/restaurant/[id]` redirecionam para `/registros`; `/add-restaurant` redireciona para `/visitas/nova`. O endpoint antigo `/api/reviews` foi removido.
+
+## Regras e limites
+
+- Exatamente oito contas permitidas por uma allowlist server-side e webhook bloqueante `user.before_create`.
+- Quórum padrão de seis; cada membro envia ou edita somente uma ficha por visita.
+- A saída pública mostra médias coletivas e comentários atribuídos, nunca notas numéricas individuais.
+- Fotos são WebP, no máximo cinco por visita, até `1600 px` no maior lado e `750.000 bytes` por arquivo.
+- A importação do Google Maps é somente assistência autenticada em `/visitas/nova`: aceita hosts oficiais, valida redirecionamentos, limita tempo/tamanho e retorna sugestões editáveis. Não há scraper público.
+- Não existe fallback em `localStorage` nem dado mock publicado.
+
+## Desenvolvimento
+
+Requer Node.js compatível com Next.js 16 e um Postgres Neon configurado.
+
+```powershell
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm test
+npm run lint
+npx tsc --noEmit
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Variáveis de ambiente
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Configure valores reais somente em `.env.local` e na hospedagem; nunca faça commit de credenciais:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `DATABASE_URL`: conexão do Neon usada pela aplicação e pelo runner de migrations.
+- `TEST_DATABASE_URL`: branch/banco descartável que habilita as integrações PostgreSQL condicionais.
+- `NEON_AUTH_BASE_URL`: Auth URL HTTPS da branch Neon.
+- `NEON_AUTH_COOKIE_SECRET`: segredo de cookie com pelo menos 32 caracteres.
+- `NEON_AUTH_ALLOWED_EMAILS`: exatamente oito e-mails únicos, normalizados e separados por vírgula. O repositório não publica a lista real.
+- `BLOB_READ_WRITE_TOKEN`: token do Vercel Blob para uploads e limpeza server-side.
 
-## Learn More
+O provisionamento completo das oito contas, allowlist e webhook está em [docs/setup/neon-auth.md](docs/setup/neon-auth.md).
 
-To learn more about Next.js, take a look at the following resources:
+## Banco e migrations
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`db/migrations/001_crater_logbook.sql` cria o domínio atual. `002_purge_legacy_reviews.sql` mantém a tabela antiga `reviews`, mas apaga suas linhas por decisão explícita de descarte do protótipo; a operação é guardada para a relação ausente e idempotente.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```powershell
+npm run db:migrate
+```
 
-## Deploy on Vercel
+Esse comando é uma escrita externa. Execute-o somente depois de confirmar que `DATABASE_URL` já aponta para a branch não produtiva pretendida; não use placeholders nem uma URL de produção para teste. A execução e inspeção remotas ficaram para a verificação da Task 14.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Implantação
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Antes de implantar, aplique as migrations na branch correta, ative Neon Auth e o webhook bloqueante, vincule as oito contas à tabela `members`, configure o Blob público e todas as variáveis na Vercel. Rode testes, lint, tipos e build localmente.
+
+O objetivo de custo zero é condicional às cotas gratuitas vigentes de Neon, Vercel Hobby e Blob. Monitore armazenamento/operações e não habilite add-ons pagos ou gasto sob demanda sem nova decisão.

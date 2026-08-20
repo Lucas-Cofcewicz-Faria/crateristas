@@ -1,107 +1,57 @@
-# Contexto do Projeto: Crateristas
+# Contexto do projeto: Crateristas
 
-Este documento serve como guia e referência de contexto para agentes de IA que venham a colaborar no desenvolvimento do projeto **Crateristas**.
+## Produto
 
----
+Crateristas é um livro de registros gastronômicos coletivo para exatamente oito integrantes. Visitantes consultam somente visitas publicadas, médias coletivas, comentários atribuídos e o diretório público de membros. Integrantes autenticados criam visitas, enviam a própria ficha e gerenciam fotos; o administrador pode publicar antes do quórum, ocultar e republicar.
 
-## 1. Visão Geral do Projeto
-O **Crateristas** é um portal gastronômico exclusivo e intimista planejado para um grupo de amigos ("Os Discípulos do Guizão") documentarem e avaliarem experiências sensoriais detalhadas em restaurantes de São Paulo. O design adota uma estética de luxo sombrio (Sunset/Twilight/Gold), com transições fluidas e efeitos tridimensionais.
+A primeira entrega é desktop-first, validada entre `1280` e `1920 px`. A experiência mobile fica para uma fase posterior.
 
----
+## Stack e arquitetura
 
-## 2. Stack Tecnológica
-*   **Framework Principal**: Next.js 16.2.7 (com suporte a Turbopack e App Router).
-*   **Linguagem**: TypeScript / React 19.
-*   **Estilização (CSS)**: CSS Puro (Vanilla CSS) localizado em [src/app/globals.css](file:///C:/Users/patho/Documents/GitHub/crateristas/src/app/globals.css). **Não é utilizado TailwindCSS**.
-*   **Efeitos 3D**: Three.js (0.184.0) para a animação da cratera na landing page.
-*   **Ícones**: Lucide React.
-*   **Banco de Dados**: Neon Serverless Postgres via `@neondatabase/serverless` com fallback em `localStorage` para modo demonstração (offline).
+- Next.js `16.2.7`, App Router, React `19.2.4` e TypeScript strict.
+- Server Components para leituras e redirects; Route Handlers finos para mutações autenticadas.
+- Domínio independente em `src/domain/reviews`: notas, agregação, publicação, schemas, contratos e serviço.
+- Persistência em Neon Postgres por `src/lib/repositories/neon-review-repository.ts`.
+- Sessões fechadas em Neon Auth; autorização efetiva no servidor com `requireMember()` e `requireAdmin()`.
+- Fotos em Vercel Blob, com compressão WebP no cliente e limites repetidos no token/callback e no banco.
+- CSS Modules e CSS vanilla; o frontend é dividido em shell, UI, registros, restaurante, membros, autenticação e visitas para permitir evolução isolada.
 
----
+## Modelo atual
 
-## 3. Arquitetura do Banco de Dados
-A tabela principal do banco de dados é a `reviews`.
+Uma visita pertence a um restaurante e nasce privada, com quórum padrão de seis. Cada membro envia uma ficha com notas inteiras de `0` a `10` para:
 
-### Schema SQL
-```sql
-CREATE TABLE IF NOT EXISTS reviews (
-  id VARCHAR(50) PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  cuisine VARCHAR(100) NOT NULL,
-  location VARCHAR(255) NOT NULL,
-  overall INT NOT NULL,           -- Nota geral calculada (1 a 5 estrelas)
-  taste INT NOT NULL,             -- Sabor (1 a 10)
-  service INT NOT NULL,           -- Serviço (1 a 10)
-  ambiance INT NOT NULL,          -- Ambiente (1 a 10)
-  cost_benefit INT,               -- Custo-Benefício (1 a 10)
-  ux INT,                         -- Experiência de Consumo (1 a 10)
-  spend_per_person INT,           -- Gasto por Pessoa em R$
-  price VARCHAR(10) NOT NULL,     -- Categoria de preço ($, $$, $$$, $$$$)
-  description TEXT NOT NULL,      -- Texto detalhado da crítica
-  image TEXT NOT NULL,            -- Imagem principal (URL ou Base64)
-  images TEXT,                    -- Array JSON de imagens secundárias (multi-upload)
-  author VARCHAR(100) NOT NULL,   -- Autor da crítica
-  date VARCHAR(50) NOT NULL       -- Data formatada
-);
-```
+- comida (`food`);
+- serviço (`service`);
+- ambiente (`ambience`);
+- custo-benefício (`value`);
+- acesso/localização (`access`);
+- tempo de espera (`waitTime`).
 
-> [!IMPORTANT]
-> **Compatibilidade Retroativa**: A coluna `images` (que guarda múltiplas fotos) foi adicionada posteriormente. Ao ler registros antigos que possuem apenas `image`, o código deve gerar um fallback seguro:
-> `const allImages = review.images ? JSON.parse(review.images) : [review.image];`
+O comentário é obrigatório, tem até 180 caracteres e uma ficha por membro/visita é garantida no banco. A publicação automática ocorre na sexta participação; a projeção pública retorna somente médias, contagem e comentários, sem e-mail, auth ID ou notas individuais.
 
----
+## Rotas principais
 
-## 4. Estrutura de Rotas e Páginas Principais
+- Públicas: `/`, `/registros`, `/restaurantes/[slug]`, `/membros`, `/entrar`.
+- Privadas: `/painel`, `/visitas/nova`, `/visitas/[id]/avaliar`.
+- Compatibilidade: `/home` e `/restaurant/[id]` redirecionam permanentemente para `/registros`; `/add-restaurant` para `/visitas/nova`.
+- APIs atuais: Auth, criação/avaliação/publicação/fotos de visitas, webhook Neon Auth e o importador autenticado `/api/parse-maps`.
 
-*   **Landing Page (`/`)** - [src/app/page.tsx](file:///C:/Users/patho/Documents/GitHub/crateristas/src/app/page.tsx):
-    *   Exibe a animação 3D procedural `GourmetScene` com foco no efeito de descida (plunge) na cratera conforme o usuário faz o scroll.
-    *   Ao atingir 95% do scroll, redireciona o usuário automaticamente para `/home`.
+O protótipo `/api/reviews`, seus painéis de banco, componentes antigos, mocks e fallback em `localStorage` foram removidos. A migration `002_purge_legacy_reviews.sql` apaga somente as linhas de `reviews` se a tabela existir; não migra esses registros, não derruba o schema e não toca nas tabelas novas.
 
-*   **Painel Principal (`/home`)** - [src/app/home/page.tsx](file:///C:/Users/patho/Documents/GitHub/crateristas/src/app/home/page.tsx):
-    *   Painel central contendo a listagem das críticas gastronômicas.
-    *   Controles de busca textual e filtros de categorias de culinária.
-    *   Seção "Os Discípulos do Guizão" mostrando perfis e cargos.
-    *   Seção "Menu do Dia" interativa baseada no dia atual da semana.
-    *   Card explicativo sobre a integração do Neon Serverless Postgres.
+## Fronteiras de segurança
 
-*   **Registrar Restaurante (`/add-restaurant`)** - [src/app/add-restaurant/page.tsx](file:///C:/Users/patho/Documents/GitHub/crateristas/src/app/add-restaurant/page.tsx):
-    *   Formulário de cadastro contendo:
-        *   Importador automático de dados via URL do Google Maps (`/api/parse-maps`).
-        *   Seleção múltipla de imagens com pré-visualização e botões de exclusão.
-        *   Sliders interativos para notas de Sabor, Serviço, Ambiente, Custo-benefício e UX. O fundo do slider muda dinamicamente de cor (Vermelho -> Amarelo -> Verde) com base no valor.
-        *   Cálculo em tempo real da Média Decimal e do número correspondente de Estrelas (1 a 5).
+- Não há cadastro público. O webhook `user.before_create` deve aceitar exatamente os oito e-mails configurados em `NEON_AUTH_ALLOWED_EMAILS`; a lista real não pertence ao repositório.
+- O Proxy é apenas otimista. Toda leitura/mutação privada revalida a sessão e o papel junto da operação.
+- A assistência Google Maps existe somente no fluxo autenticado de criação. Ela valida HTTPS, host, redirects, timeout, tamanho de resposta e um retorno estreito; os campos continuam editáveis.
+- Cada visita aceita até cinco WebP, `1600 px` e `750.000 bytes` por arquivo. Falhas de callback têm confirmação autenticada e recuperação segura.
+- `npm run db:migrate` escreve em banco externo. Só pode ser usado com uma `DATABASE_URL` já configurada e comprovadamente não produtiva; nunca com placeholder.
 
-*   **Detalhes do Restaurante (`/restaurant/[id]`)** - [src/app/restaurant/\[id\]/page.tsx](file:///C:/Users/patho/Documents/GitHub/crateristas/src/app/restaurant/%5Bid%5D/page.tsx):
-    *   Exibe um banner grande da imagem ativa (480px de altura).
-    *   Galeria de miniaturas abaixo da foto principal para alternar entre as múltiplas imagens enviadas.
-    *   Exibição detalhada de todas as notas do crítico em formato de grid.
+## Fronteira Three.js
 
----
+`src/components/GourmetScene.tsx` e a landing preservam loop, câmera, geometrias, materiais, luzes, partículas, thresholds, temporização, eventos, efeitos e JSX. A única mudança funcional aprovada em `src/app/page.tsx` é o destino final da descida, de `/home` para `/registros`. Não alterar Three.js durante refactors do produto.
 
-## 5. Diretrizes Importantes de Design (Aesthetics)
-*   **Paleta de Cores**:
-    *   Fundo Primário: `#130917` (Deep twilight/violet).
-    *   Fundo Secundário: `#1a1020`.
-    *   Destaques/Acentos: `#e5683b` (Sunset orange-gold).
-    *   Textos: `#f5f5f5` (primário) e `#d1b8c8` (secundário).
-*   **Estrelas com Degradê Animado**:
-    *   As estrelas das avaliações usam classes CSS (`gradient-star-low`, `gradient-star-medium`, `gradient-star-high`) que aplicam um gradiente dinâmico baseado na nota (vermelho para baixas, amarelo para médias, verde para altas). O gradiente se move sutilmente com base na animação `@keyframes gradientFlow`.
-*   **Linhas Divisórias**:
-    *   Remova divisores laranjas desnecessários debaixo das fotos principais. Prefira sombreamentos suaves (`box-shadow`) e bordas suaves do sistema de design (`var(--border-light)`).
+## Operação e custo
 
----
+As variáveis necessárias são `DATABASE_URL`, `TEST_DATABASE_URL` para integrações opcionais, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`, `NEON_AUTH_ALLOWED_EMAILS` e `BLOB_READ_WRITE_TOKEN`. Consulte `README.md` e `docs/setup/neon-auth.md` antes de configurar ambientes.
 
-## 6. Primeiros Passos para Desenvolvimento
-1.  **Variáveis de Ambiente**:
-    Configure o arquivo `.env.local` com a string de conexão do Neon Postgres:
-    ```env
-    DATABASE_URL="postgres://usuario:senha@host/dbname?sslmode=require"
-    ```
-2.  **Iniciar Servidor de Dev**:
-    ```bash
-    npm run dev
-    ```
-3.  **Compilar para Produção**:
-    ```bash
-    npm run build
-    ```
+Operar sem custo é uma meta condicional às cotas gratuitas atuais de Neon, Vercel Hobby e Blob, não uma garantia ilimitada. Monitore armazenamento e operações, preserve scale-to-zero e não ative add-ons pagos ou gasto sob demanda sem autorização.
