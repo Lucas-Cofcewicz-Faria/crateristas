@@ -29,7 +29,7 @@ export async function GET(request: NextRequest): Promise<Response> {
       httpOnly: true,
       maxAge: PASSWORD_RESET_COOKIE_MAX_AGE_SECONDS,
       path: '/',
-      sameSite: 'strict',
+      sameSite: 'lax',
       secure: request.nextUrl.protocol === 'https:',
     });
   }

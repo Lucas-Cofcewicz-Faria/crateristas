@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { GET } from './route';
 
 describe('callback de redefinição de senha', () => {
-  it('troca o token da URL por um cookie HttpOnly temporário', async () => {
+  it('troca o token da URL por um cookie temporário aceito após o clique no e-mail', async () => {
     const response = await GET(new NextRequest(
       'https://crateristas.example/redefinir-senha/callback?token=token-secreto',
     ));
@@ -17,7 +17,8 @@ describe('callback de redefinição de senha', () => {
       'crateristas.password-reset=token-secreto',
     );
     expect(response.headers.get('set-cookie')).toContain('HttpOnly');
-    expect(response.headers.get('set-cookie')).toContain('SameSite=strict');
+    expect(response.headers.get('set-cookie')).toContain('SameSite=lax');
+    expect(response.headers.get('set-cookie')).not.toContain('SameSite=strict');
     expect(response.headers.get('set-cookie')).toContain('Max-Age=900');
     expect(response.headers.get('set-cookie')).toContain('Secure');
     expect(response.headers.get('referrer-policy')).toBe('no-referrer');
