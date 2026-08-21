@@ -45,7 +45,8 @@ Para gerar um segredo no PowerShell:
 
 ```powershell
 $bytes = [byte[]]::new(32)
-[Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+$rng = [Security.Cryptography.RandomNumberGenerator]::Create()
+try { $rng.GetBytes($bytes) } finally { $rng.Dispose() }
 [Convert]::ToBase64String($bytes)
 ```
 
@@ -95,10 +96,13 @@ indisponível, monitore o endpoint e mantenha o tempo de resposta abaixo do limi
 
 1. Acesse **Auth → Users** na mesma branch.
 2. Crie somente os usuários presentes em `NEON_AUTH_ALLOWED_EMAILS`, começando por uma conta de
-   homologação se necessário e chegando a no máximo oito. Use uma senha inicial forte, entregue-a
-   apenas ao respectivo integrante e solicite sua troca por um canal privado.
-3. Copie o ID de cada usuário. Esse é o valor que será gravado em `members.auth_user_id`.
-4. Não habilite OAuth, magic link, OTP, organizações, acesso anônimo ou outro plugin sem revisar
+   homologação se necessário e chegando a no máximo oito. O Console pode pedir apenas nome e
+   e-mail; criar o registro não envia automaticamente um convite nem define uma senha.
+3. Depois de implantar o site, abra `/entrar`, escolha **Esqueci minha senha** e informe o mesmo
+   e-mail. O integrante recebe um link temporário e define a própria senha em
+   `/redefinir-senha`. A resposta da tela é igual para e-mails cadastrados e desconhecidos.
+4. Copie o ID de cada usuário. Esse é o valor que será gravado em `members.auth_user_id`.
+5. Não habilite OAuth, magic link, OTP, organizações, acesso anônimo ou outro plugin sem revisar
    as duas allowlists: a de endpoints do aplicativo e a de e-mails do webhook.
 
 Não existe um controle global documentado no Console que desative todo cadastro por e-mail e

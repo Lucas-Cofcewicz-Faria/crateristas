@@ -11,7 +11,7 @@ afterEach(() => {
 });
 
 describe('LoginForm', () => {
-  it('oferece somente a entrada fechada por e-mail e senha', () => {
+  it('oferece entrada fechada e recuperação de senha, sem cadastro público', () => {
     const action: LoginAction = vi.fn();
 
     render(<LoginForm action={action} />);
@@ -28,7 +28,8 @@ describe('LoginForm', () => {
       'type',
       'submit',
     );
-    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Esqueci minha senha' }))
+      .toHaveAttribute('href', '/recuperar-senha');
     expect(screen.queryByText(/cadastro|criar conta|magic link|google/i))
       .not.toBeInTheDocument();
   });

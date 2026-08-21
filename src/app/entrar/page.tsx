@@ -3,7 +3,14 @@ import { LoginForm } from '@/features/auth/LoginForm';
 import { loginAction } from '@/features/auth/actions';
 import styles from '@/features/auth/auth.module.css';
 
-export default function LoginPage() {
+interface LoginPageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
+  const passwordWasDefined = params.senha === 'definida';
+
   return (
     <PublicShell viewer="visitor">
       <section className={styles.loginPage}>
@@ -17,6 +24,15 @@ export default function LoginPage() {
         </div>
         <div className={styles.loginCard}>
           <h2>Identifique-se</h2>
+          {passwordWasDefined ? (
+            <p
+              aria-live="polite"
+              className={`${styles.formSuccess} ${styles.loginNotice}`}
+              role="status"
+            >
+              Senha definida. Você já pode entrar.
+            </p>
+          ) : null}
           <LoginForm action={loginAction} />
         </div>
       </section>

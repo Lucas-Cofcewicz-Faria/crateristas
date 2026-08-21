@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
@@ -39,6 +40,9 @@ export function LoginForm({ action }: LoginFormProps) {
       <Button disabled={isPending} fullWidth type="submit">
         {isPending ? 'Entrando...' : 'Entrar'}
       </Button>
+      <Link className={styles.textLink} href="/recuperar-senha">
+        Esqueci minha senha
+      </Link>
     </form>
   );
 }

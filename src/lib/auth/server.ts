@@ -2,7 +2,21 @@ import { createNeonAuth } from '@neondatabase/auth/next/server';
 
 type NeonAuth = ReturnType<typeof createNeonAuth>;
 type AuthHandlers = ReturnType<NeonAuth['handler']>;
-type AuthFacade = Pick<NeonAuth, 'getSession' | 'signOut' | 'handler' | 'middleware'> & {
+type RequestPasswordReset = (
+  ...args: Parameters<NeonAuth['requestPasswordReset']>
+) => ReturnType<NeonAuth['requestPasswordReset']>;
+type ResetPassword = (
+  ...args: Parameters<NeonAuth['resetPassword']>
+) => ReturnType<NeonAuth['resetPassword']>;
+type AuthFacade = Pick<
+  NeonAuth,
+  | 'getSession'
+  | 'signOut'
+  | 'handler'
+  | 'middleware'
+> & {
+  requestPasswordReset: RequestPasswordReset;
+  resetPassword: ResetPassword;
   signIn: Pick<NeonAuth['signIn'], 'email'>;
 };
 interface AuthEnvironment {
@@ -54,6 +68,12 @@ const lazyGetSession: NeonAuth['getSession'] = (...args) => getNeonAuth().getSes
 const lazySignInEmail: NeonAuth['signIn']['email'] = (...args) =>
   getNeonAuth().signIn.email(...args);
 
+const lazyRequestPasswordReset: RequestPasswordReset = (...args) =>
+  getNeonAuth().requestPasswordReset(...args);
+
+const lazyResetPassword: ResetPassword = (...args) =>
+  getNeonAuth().resetPassword(...args);
+
 const lazySignOut: NeonAuth['signOut'] = (...args) => getNeonAuth().signOut(...args);
 
 const lazyHandler: NeonAuth['handler'] = () => ({
@@ -77,6 +97,8 @@ const lazyMiddleware: NeonAuth['middleware'] = (middlewareConfig) => {
  */
 export const auth = Object.freeze({
   getSession: lazyGetSession,
+  requestPasswordReset: lazyRequestPasswordReset,
+  resetPassword: lazyResetPassword,
   signIn: Object.freeze({
     email: lazySignInEmail,
   }),

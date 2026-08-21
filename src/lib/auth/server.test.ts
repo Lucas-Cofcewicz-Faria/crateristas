@@ -40,6 +40,20 @@ function createFakeAuth() {
       expect(this).toBe(fakeAuth);
       return Promise.resolve({ data: { user: { id: 'membro-1' } }, error: null });
     }),
+    requestPasswordReset: vi.fn(function (
+      this: unknown,
+      input: { email: string; redirectTo: string },
+    ) {
+      expect(this).toBe(fakeAuth);
+      return Promise.resolve({ data: { status: true, input }, error: null });
+    }),
+    resetPassword: vi.fn(function (
+      this: unknown,
+      input: { newPassword: string; token: string },
+    ) {
+      expect(this).toBe(fakeAuth);
+      return Promise.resolve({ data: { status: true, input }, error: null });
+    }),
     signIn,
     signOut: vi.fn(function (this: unknown) {
       expect(this).toBe(fakeAuth);
@@ -186,12 +200,42 @@ describe('configuração do Neon Auth', () => {
     expect(createNeonAuthMock).toHaveBeenCalledOnce();
   });
 
+  it('delega os dois passos da recuperação somente quando são usados', async () => {
+    useValidEnvironment();
+    const { fakeAuth } = createFakeAuth();
+    createNeonAuthMock.mockReturnValue(fakeAuth);
+    const { auth } = await loadServer();
+
+    expect(createNeonAuthMock).not.toHaveBeenCalled();
+
+    await auth.requestPasswordReset({
+      email: 'ana@example.com',
+      redirectTo: 'https://crateristas.example/redefinir-senha',
+    });
+    await auth.resetPassword({
+      newPassword: 'senha-segura',
+      token: 'token-valido',
+    });
+
+    expect(fakeAuth.requestPasswordReset).toHaveBeenCalledOnce();
+    expect(fakeAuth.resetPassword).toHaveBeenCalledOnce();
+    expect(createNeonAuthMock).toHaveBeenCalledOnce();
+  });
+
   it('expõe somente os métodos usados pelo aplicativo', async () => {
     const { auth } = await loadServer();
 
     expect(Reflect.get(auth, 'signUp')).toBeUndefined();
     expect(Object.keys(auth).sort()).toEqual(
-      ['getSession', 'handler', 'middleware', 'signIn', 'signOut'].sort(),
+      [
+        'getSession',
+        'handler',
+        'middleware',
+        'requestPasswordReset',
+        'resetPassword',
+        'signIn',
+        'signOut',
+      ].sort(),
     );
   });
 });
