@@ -92,8 +92,8 @@ Pré-requisito concluído: Blob store público de homologação e `BLOB_READ_WRI
 
 Em 25/08/2026, o store público `crateristas-fotos-preview` foi criado em `gru1`, conectado somente ao Preview e permaneceu vazio. A variável `BLOB_READ_WRITE_TOKEN` foi injetada pela Vercel, um redeploy ficou `Ready` e a geração de token sem sessão continuou respondendo `401` sem expor detalhes do Blob. O primeiro upload autenticado ainda depende da validação manual da sessão do administrador.
 
-- [ ] Enviar uma imagem e confirmar conversão real para WebP, maior lado de até `1600 px` e no máximo `750.000 bytes`.
-- [ ] Confirmar persistência via callback antes de apresentar a foto como concluída.
+- [x] Enviar uma imagem e confirmar conversão real para WebP: arquivo público `1600x901`, `108.904 bytes` e MIME `image/webp` no banco e no Blob.
+- [x] Confirmar persistência via callback antes de apresentar a foto como concluída: uma linha ocupou a posição 1 em `visit_photos`, o Blob continha exatamente um arquivo e o detalhe público incluiu sua URL.
 - [ ] Confirmar upload sequencial, retry de confirmação sem reupload e recuperação de callback terminal.
 - [ ] Confirmar limite de cinco fotos na interface e no servidor.
 - [ ] Confirmar que somente criador da visita ou administrador pode adicionar/remover fotos.
