@@ -90,7 +90,7 @@ O Neon Auth está configurado no Preview conforme [o guia fechado de autenticaç
 
 Pré-requisito concluído: Blob store público de homologação e `BLOB_READ_WRITE_TOKEN` configurado fora do repositório.
 
-Em 25/08/2026, o store público `crateristas-fotos-preview` foi criado em `gru1`, conectado somente ao Preview e permaneceu vazio. A variável `BLOB_READ_WRITE_TOKEN` foi injetada pela Vercel, um redeploy ficou `Ready` e a geração de token sem sessão continuou respondendo `401` sem expor detalhes do Blob. O primeiro upload autenticado ainda depende da validação manual da sessão do administrador.
+Em 25/08/2026, o store público `crateristas-fotos-preview` foi criado em `gru1` e conectado somente ao Preview. A variável `BLOB_READ_WRITE_TOKEN` foi injetada pela Vercel, um redeploy ficou `Ready` e a geração de token sem sessão continuou respondendo `401` sem expor detalhes do Blob. Depois do login do administrador, o primeiro upload autenticado foi concluído e verificado conforme as evidências abaixo.
 
 - [x] Enviar uma imagem e confirmar conversão real para WebP: arquivo público `1600x901`, `108.904 bytes` e MIME `image/webp` no banco e no Blob.
 - [x] Confirmar persistência via callback antes de apresentar a foto como concluída: uma linha ocupou a posição 1 em `visit_photos`, o Blob continha exatamente um arquivo e o detalhe público incluiu sua URL.
