@@ -293,4 +293,30 @@ describe('PATCH /api/visits/[id]/publication', () => {
     });
     expect(dependencies.changePublication).not.toHaveBeenCalled();
   });
+
+  it('registra um diagnostico estruturado quando a publicacao falha no banco', async () => {
+    const databaseError = Object.assign(
+      new Error('column "deletion_started_at" does not exist'),
+      {
+        code: '42703',
+        column: 'deletion_started_at',
+      },
+    );
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    dependencies.changePublication.mockRejectedValueOnce(databaseError);
+
+    const response = await changePublication(
+      jsonRequest('http://localhost/api/visits/visit-1/publication', 'PATCH', 'hide'),
+      { params: Promise.resolve({ id: 'visit-1' }) },
+    );
+
+    expect(response.status).toBe(500);
+    expect(errorLog).toHaveBeenCalledWith('publication_change_failed', {
+      name: 'Error',
+      message: 'column "deletion_started_at" does not exist',
+      code: '42703',
+      column: 'deletion_started_at',
+    });
+    errorLog.mockRestore();
+  });
 });
