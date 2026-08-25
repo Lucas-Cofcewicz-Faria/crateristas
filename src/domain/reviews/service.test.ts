@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { aggregateScorecards } from './aggregate';
+import { VisitDeletionConflictError } from './deletion';
 import type {
   AtomicPublicationChangeInput,
   AtomicScorecardSubmissionInput,
@@ -68,6 +69,8 @@ class InMemoryReviewRepository implements ReviewRepository {
   readonly scorecards = new Map<string, ScorecardRecord>();
   readonly events: PublicationEventInput[] = [];
   readonly photos = new Map<string, PhotoRecord>();
+  visitDeleted = false;
+  deletionStarted = false;
   visit: VisitRecord = {
     id: visitId,
     slug: 'casa-teste',
@@ -94,7 +97,7 @@ class InMemoryReviewRepository implements ReviewRepository {
   }
 
   async findVisitById(id: string) {
-    return id === this.visit.id ? { ...this.visit } : null;
+    return !this.visitDeleted && id === this.visit.id ? { ...this.visit } : null;
   }
 
   async createVisit(actorId: string, input: CreateVisitInput) {
@@ -107,6 +110,7 @@ class InMemoryReviewRepository implements ReviewRepository {
   }
 
   async upsertScorecard(id: string, memberId: string, input: ScorecardInput) {
+    if (this.deletionStarted) throw new Error('A review está em exclusão.');
     this.scorecards.set(`${id}:${memberId}`, {
       id: `score-${memberId}`,
       visitId: id,
@@ -184,6 +188,7 @@ class InMemoryReviewRepository implements ReviewRepository {
   }
 
   async attachPhoto(id: string, actorId: string, input: PhotoInput) {
+    if (this.deletionStarted) throw new Error('A review está em exclusão.');
     const position = (await this.countVisitPhotos(id)) + 1;
     if (position > 5) throw new Error('A visita já possui o máximo de cinco fotos.');
     this.photos.set(`photo-${position}`, {
@@ -213,6 +218,37 @@ class InMemoryReviewRepository implements ReviewRepository {
 
   async countVisitPhotos(id: string) {
     return [...this.photos.values()].filter((photo) => photo.visitId === id).length;
+  }
+
+  async prepareVisitDeletion(id: string, actorId: string, expectedParticipantCount: number) {
+    if (this.visitDeleted || id !== this.visit.id) return null;
+    const actor = this.memberRecords.get(actorId);
+    if (actor?.role !== 'admin') return null;
+    const participantCount = await this.countScorecards(id);
+    if (participantCount !== expectedParticipantCount) throw new VisitDeletionConflictError();
+    this.deletionStarted = true;
+    this.visit.publicationState = 'hidden';
+    return {
+      id,
+      restaurantId: this.visit.restaurantId,
+      participantCount,
+      photoPathnames: [...this.photos.values()]
+        .filter((photo) => photo.visitId === id)
+        .map((photo) => photo.pathname),
+    };
+  }
+
+  async deleteVisit(id: string, actorId: string, expectedPhotoPathnames: string[]) {
+    void expectedPhotoPathnames;
+    const actor = this.memberRecords.get(actorId);
+    if (this.visitDeleted || !this.deletionStarted || id !== this.visit.id || actor?.role !== 'admin') {
+      return false;
+    }
+    this.visitDeleted = true;
+    this.scorecards.clear();
+    this.photos.clear();
+    this.events.length = 0;
+    return true;
   }
 
   async listPublicVisits(filters: PublicVisitFilters): Promise<PublicVisitSummary[]> {
@@ -268,6 +304,10 @@ class InMemoryReviewRepository implements ReviewRepository {
 
   async listVisitsInFormationForMember(memberId: string): Promise<PendingVisit[]> {
     void memberId;
+    return [];
+  }
+
+  async listVisitsForAdministration() {
     return [];
   }
 
@@ -388,6 +428,34 @@ describe('createReviewService', () => {
       .resolves.toMatchObject({ pathname: validPhoto.pathname });
     await expect(service.removePhoto(members[0], visitId, 'photo-1'))
       .resolves.toBeNull();
+  });
+
+  it('reserva a exclusão integral ao admin mesmo quando outras pessoas contribuíram', async () => {
+    const repository = repositoryWithScores(3);
+    const admin = member('member-8', 'admin');
+    repository.memberRecords.set(admin.id, admin);
+    await repository.attachPhoto(visitId, members[1].id, validPhoto);
+    const service = createReviewService(repository);
+
+    await expect(service.prepareVisitDeletion(members[0], visitId, 3))
+      .rejects.toThrow('Apenas o administrador pode excluir uma review.');
+    await expect(service.deleteVisit(members[0], visitId, [validPhoto.pathname]))
+      .rejects.toThrow('Apenas o administrador pode excluir uma review.');
+
+    await expect(service.prepareVisitDeletion(admin, visitId, 2))
+      .rejects.toThrow('A quantidade de avaliações mudou.');
+    expect(repository.deletionStarted).toBe(false);
+
+    await expect(service.prepareVisitDeletion(admin, visitId, 3)).resolves.toEqual({
+      id: visitId,
+      restaurantId: 'restaurant-1',
+      participantCount: 3,
+      photoPathnames: [validPhoto.pathname],
+    });
+    await expect(service.deleteVisit(admin, visitId, [validPhoto.pathname])).resolves.toBe(true);
+    await expect(repository.findVisitById(visitId)).resolves.toBeNull();
+    expect(repository.scorecards.size).toBe(0);
+    expect(repository.photos.size).toBe(0);
   });
 
   it('publishes the sixth scorecard and keeps individual scores private', async () => {

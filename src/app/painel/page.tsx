@@ -8,10 +8,13 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardPage() {
   const member = await requireMember();
   const repository = getReviewRepository();
-  const [awaiting, forming, recent] = await Promise.all([
+  const [awaiting, forming, recent, managed] = await Promise.all([
     repository.listPendingVisitsForMember(member.id),
     repository.listVisitsInFormationForMember(member.id),
     repository.listRecentPublishedVisits(6),
+    member.role === 'admin'
+      ? repository.listVisitsForAdministration(member.id)
+      : Promise.resolve([]),
   ]);
 
   return (
@@ -20,6 +23,7 @@ export default async function DashboardPage() {
         awaiting={awaiting}
         forming={forming}
         isAdmin={member.role === 'admin'}
+        managed={managed}
         memberName={member.displayName}
         recent={recent}
       />

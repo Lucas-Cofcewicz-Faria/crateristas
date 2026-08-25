@@ -25,7 +25,7 @@ describe('PasswordResetForm', () => {
 
   it('mostra o erro da ação e não inclui as senhas no texto da página', async () => {
     const password = 'senha-privada';
-    const action: PasswordResetAction = vi.fn(async () => ({
+    const action = vi.fn<PasswordResetAction>(async () => ({
       status: 'error',
       message: 'As senhas não coincidem.',
     }));
@@ -47,7 +47,7 @@ describe('PasswordResetForm', () => {
 
   it('desabilita a confirmação enquanto a ação está em andamento', async () => {
     let resolveAction: (state: PasswordResetState) => void = () => undefined;
-    const action: PasswordResetAction = vi.fn(() => new Promise((resolve) => {
+    const action = vi.fn<PasswordResetAction>(() => new Promise<PasswordResetState>((resolve) => {
       resolveAction = resolve;
     }));
     render(<PasswordResetForm action={action} />);

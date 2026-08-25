@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { VISIT_DELETION_CONFIRMATION } from '@/domain/reviews/deletion';
 import type { PublicPhoto } from '@/domain/reviews/repository';
 import type { CreateVisitInput, ScorecardInput } from '@/domain/reviews/schemas';
 import {
@@ -29,6 +30,27 @@ export type AdminPublicationCommand = 'publish_early' | 'hide' | 'republish';
 export interface PublicationResponse {
   publicationState: PublicationState;
   publicationReason: 'quorum' | 'admin_override' | null;
+}
+
+export class VisitDeletionOutdatedError extends Error {
+  constructor() {
+    super('A quantidade de avaliações mudou.');
+    this.name = 'VisitDeletionOutdatedError';
+  }
+}
+
+export async function deleteVisit(
+  visitId: string,
+  confirmation: typeof VISIT_DELETION_CONFIRMATION,
+  expectedParticipantCount: number,
+): Promise<void> {
+  const response = await fetch(`/api/visits/${encodeURIComponent(visitId)}`, {
+    method: 'DELETE',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ confirmation, expectedParticipantCount }),
+  });
+  if (response.status === 409) throw new VisitDeletionOutdatedError();
+  if (response.status !== 204) throw new Error('delete_visit_failed');
 }
 
 function isPublicationState(value: unknown): value is PublicationState {

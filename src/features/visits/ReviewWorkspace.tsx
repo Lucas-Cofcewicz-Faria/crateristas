@@ -5,6 +5,7 @@ import type { PublicPhoto } from '@/domain/reviews/repository';
 import type { ScorecardInput } from '@/domain/reviews/schemas';
 import type { PublicationState } from '@/domain/reviews/types';
 import { AdminPublicationControls } from './AdminPublicationControls';
+import { AdminVisitDeletion } from './AdminVisitDeletion';
 import { PhotoUploader } from './PhotoUploader';
 import { PublicationStatus } from './PublicationStatus';
 import { ScorecardForm } from './ScorecardForm';
@@ -89,6 +90,12 @@ export function ReviewWorkspace({
         onChanged={handlePublicationChanged}
         participantCount={reviewState.participantCount}
         publicationState={reviewState.publicationState}
+        visitId={visitId}
+      />
+      <AdminVisitDeletion
+        isAdmin={isAdmin}
+        participantCount={reviewState.participantCount}
+        restaurantName={restaurantName}
         visitId={visitId}
       />
     </>

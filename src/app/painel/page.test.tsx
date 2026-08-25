@@ -7,6 +7,7 @@ const dependencies = vi.hoisted(() => ({
   listPendingVisitsForMember: vi.fn(),
   listVisitsInFormationForMember: vi.fn(),
   listRecentPublishedVisits: vi.fn(),
+  listVisitsForAdministration: vi.fn(),
   listPublicVisits: vi.fn(),
 }));
 
@@ -19,6 +20,7 @@ vi.mock('@/lib/reviews/server', () => ({
     listPendingVisitsForMember: dependencies.listPendingVisitsForMember,
     listVisitsInFormationForMember: dependencies.listVisitsInFormationForMember,
     listRecentPublishedVisits: dependencies.listRecentPublishedVisits,
+    listVisitsForAdministration: dependencies.listVisitsForAdministration,
     listPublicVisits: dependencies.listPublicVisits,
   }),
 }));
@@ -86,6 +88,7 @@ describe('página privada do painel', () => {
       participantCount: published.participantCount,
       publishedAt: published.publishedAt,
     }]);
+    dependencies.listVisitsForAdministration.mockResolvedValue([]);
     dependencies.listPublicVisits.mockResolvedValue([published]);
   });
 
@@ -119,6 +122,7 @@ describe('página privada do painel', () => {
     });
     expect(dependencies.listRecentPublishedVisits).toHaveBeenCalledOnce();
     expect(dependencies.listPublicVisits).not.toHaveBeenCalled();
+    expect(dependencies.listVisitsForAdministration).not.toHaveBeenCalled();
     releasePending([pending]);
     releaseForming([]);
     releaseRecent([{
@@ -135,6 +139,25 @@ describe('página privada do painel', () => {
     expect(screen.getByRole('button', { name: 'Sair' })).toBeInTheDocument();
     expect(screen.getByText('Mesa Pendente')).toBeInTheDocument();
     expect(screen.getByText('Mesa Publicada')).toBeInTheDocument();
+  });
+
+  it('carrega todas as reviews para o painel do administrador, inclusive ocultas', async () => {
+    dependencies.requireMember.mockResolvedValue({ ...member, role: 'admin' });
+    dependencies.listVisitsForAdministration.mockResolvedValue([{
+      id: 'visit-hidden',
+      slug: 'mesa-oculta',
+      restaurantName: 'Mesa Oculta',
+      visitedAt: '2026-08-08',
+      participantCount: 3,
+      quorum: 6,
+      publicationState: 'hidden',
+    }]);
+
+    render(await DashboardPage());
+
+    expect(dependencies.listVisitsForAdministration).toHaveBeenCalledWith(member.id);
+    expect(screen.getByRole('region', { name: 'Gerenciar reviews' }))
+      .toHaveTextContent('Mesa Oculta');
   });
 
   it('não consulta nem renderiza dados quando a autorização falha', async () => {

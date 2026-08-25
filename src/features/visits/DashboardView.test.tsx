@@ -23,6 +23,16 @@ const recent = [{
   participantCount: 1,
 }];
 
+const managed = [{
+  id: 'visit-hidden',
+  slug: 'mesa-oculta',
+  restaurantName: 'Mesa Oculta',
+  visitedAt: '2026-08-08',
+  participantCount: 3,
+  quorum: 6,
+  publicationState: 'hidden' as const,
+}];
+
 describe('DashboardView', () => {
   it('mostra as três filas com contagens reais e a criação de visita', () => {
     render(
@@ -30,6 +40,7 @@ describe('DashboardView', () => {
         awaiting={pending}
         forming={[]}
         isAdmin={false}
+        managed={[]}
         memberName="Ana"
         recent={recent}
       />,
@@ -56,13 +67,19 @@ describe('DashboardView', () => {
         awaiting={[]}
         forming={[]}
         isAdmin
+        managed={managed}
         memberName="Bia"
         recent={[]}
       />,
     );
 
     expect(screen.getByText('Administrador')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /publicar|ocultar|administrar/i }))
-      .not.toBeInTheDocument();
+    const management = screen.getByRole('region', { name: 'Gerenciar reviews' });
+    expect(within(management).getByText('Mesa Oculta')).toBeInTheDocument();
+    expect(within(management).getByText('Oculta')).toBeInTheDocument();
+    expect(within(management).getByText('3 avaliações serão apagadas em uma exclusão'))
+      .toBeInTheDocument();
+    expect(within(management).getByRole('link', { name: 'Gerenciar Mesa Oculta' }))
+      .toHaveAttribute('href', '/visitas/visit-hidden/avaliar');
   });
 });

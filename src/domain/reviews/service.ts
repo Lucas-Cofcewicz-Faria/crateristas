@@ -5,6 +5,7 @@ import type {
   PhotoRecord,
   ReviewRepository,
   SubmissionResult,
+  VisitDeletionTarget,
   VisitRecord,
 } from './repository';
 import {
@@ -33,6 +34,16 @@ export interface ReviewService {
     photoId: string,
   ): Promise<PhotoRecord | null>;
   removePhoto(actor: MemberRecord, visitId: string, photoId: string): Promise<PhotoRecord | null>;
+  prepareVisitDeletion(
+    actor: MemberRecord,
+    visitId: string,
+    expectedParticipantCount: number,
+  ): Promise<VisitDeletionTarget | null>;
+  deleteVisit(
+    actor: MemberRecord,
+    visitId: string,
+    expectedPhotoPathnames: string[],
+  ): Promise<boolean>;
 }
 
 export class VisitPhotoAuthorizationError extends Error {
@@ -47,6 +58,17 @@ export class VisitPhotoCapacityError extends Error {
     super('A visita já possui o máximo de cinco fotos.');
     this.name = 'VisitPhotoCapacityError';
   }
+}
+
+export class VisitDeletionAuthorizationError extends Error {
+  constructor() {
+    super('Apenas o administrador pode excluir uma review.');
+    this.name = 'VisitDeletionAuthorizationError';
+  }
+}
+
+function requireVisitDeletionAdmin(actor: MemberRecord): void {
+  if (actor.role !== 'admin') throw new VisitDeletionAuthorizationError();
 }
 
 async function requireManagedVisit(
@@ -187,6 +209,16 @@ export function createReviewService(repository: ReviewRepository): ReviewService
     async removePhoto(actor, visitId, photoId) {
       await requireManagedVisit(repository, actor, visitId);
       return repository.deletePhoto(visitId, photoId, actor.id);
+    },
+
+    async prepareVisitDeletion(actor, visitId, expectedParticipantCount) {
+      requireVisitDeletionAdmin(actor);
+      return repository.prepareVisitDeletion(visitId, actor.id, expectedParticipantCount);
+    },
+
+    async deleteVisit(actor, visitId, expectedPhotoPathnames) {
+      requireVisitDeletionAdmin(actor);
+      return repository.deleteVisit(visitId, actor.id, expectedPhotoPathnames);
     },
   };
 }

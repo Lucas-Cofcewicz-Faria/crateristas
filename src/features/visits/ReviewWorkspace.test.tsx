@@ -78,6 +78,10 @@ it('coordena auto-publicação e PATCH entre resumo, ficha e controle admin', as
     expect(within(summary).getByText('6 de 6 membros contribuíram')).toBeInTheDocument();
   });
   expect(screen.getByRole('button', { name: 'Ocultar' })).toBeInTheDocument();
+  const deletion = screen.getByRole('region', { name: 'Excluir review' });
+  expect(deletion).toHaveTextContent('6 avaliações serão apagadas');
+  expect(within(deletion).getByRole('button', { name: 'Excluir review permanentemente' }))
+    .toBeInTheDocument();
 
   await user.click(screen.getByRole('button', { name: 'Ocultar' }));
   await user.click(screen.getByRole('button', { name: 'Confirmar ocultação' }));

@@ -2,9 +2,9 @@
 
 Última atualização local: **25 de agosto de 2026**
 
-Base verificada: `7fda4f0` (`develop`)
+Base desta rodada: `5e3057f` (`develop`); os resultados incrementais abaixo cobrem o diff ainda não implantado.
 
-Estado: **migration e integração PostgreSQL verificadas; primeiro administrador provisionado; recuperação de senha, fronteira visitante/rotas privadas e infraestrutura Blob verificadas no Preview; fluxo autenticado completo, uploads reais e inspeção visual com reviews ainda pendentes**.
+Estado: **migration e integração PostgreSQL verificadas; primeiro administrador provisionado; recuperação de senha, fluxo autenticado, publicação antecipada e fotos reais verificados no Preview; gerenciamento e exclusão administrativa cobertos localmente e ainda pendentes de homologação no novo Preview**.
 
 Este documento separa evidência observada de tarefas que ainda dependem de infraestrutura. Em 20/08/2026, as migrations foram verificadas na branch Neon não produtiva `development` e o mesmo esquema-base vazio foi aplicado à `main`, de onde a integração cria branches isoladas de Preview. A Vercel Production continua sem conexão com o banco; nenhuma conta, upload ou implantação de produção foi criada nesta rodada.
 
@@ -29,6 +29,19 @@ Rodada incremental em 25/08/2026, após a homologação da recuperação de senh
 | `npm run lint` | PASS — zero erros; oito avisos preexistentes e restritos a `GourmetScene.tsx` |
 | `npm run build` | PASS — compilação, TypeScript e geração das 14 páginas concluídas |
 | `git diff --check` | PASS |
+
+Rodada incremental em 25/08/2026, após a implementação do gerenciamento e da exclusão administrativa de reviews:
+
+| Comando | Resultado observado em 25/08/2026 |
+| --- | --- |
+| `npm test` | PASS — 65 arquivos, 424 testes aprovados e 20 integrações condicionais ignoradas |
+| `node --env-file=.env.local ./node_modules/vitest/vitest.mjs run` | PASS — 65 arquivos e 444 testes aprovados; zero skips de integração PostgreSQL |
+| `npx tsc --noEmit` | PASS |
+| `npm run lint` | PASS — zero erros; oito avisos preexistentes e restritos a `GourmetScene.tsx` |
+| `npm run build` | PASS — compilação, TypeScript e geração das 14 páginas concluídas; rota `DELETE /api/visits/[id]` incluída |
+| `git diff --check` | PASS |
+
+Antes dessa rodada integrada, `003_safe_visit_deletion.sql` foi aplicada à branch Neon vazia de desenvolvimento. A suíte real comprovou o marcador persistente anterior ao Blob, o bloqueio de ficha/foto concorrente, os cascades de fichas, fotos e eventos, a preservação do restaurante compartilhado e a remoção do restaurante órfão. Uma consulta posterior confirmou novamente zero linhas em `members`, `restaurants`, `visits`, `scorecards`, `visit_photos` e `publication_events`.
 
 ## 2. Navegação HTTP local
 
@@ -78,6 +91,7 @@ O Neon Auth está configurado no Preview conforme [o guia fechado de autenticaç
 - [ ] Membro comum: entra e consegue editar somente a própria ficha; depende de uma segunda conta real para provar a fronteira entre membros.
 - [x] Administrador publica antecipadamente: a visita real ficou `published` por `admin_override` com uma participação e apareceu nas duas rotas públicas.
 - [ ] Administrador oculta e republica uma visita real pelo Preview; as regras já passaram na aceitação transacional, mas a interface ainda não foi percorrida.
+- [ ] Administrador exclui uma review real pelo Preview após conferir a contagem e digitar exatamente `Deletar review`; autorização, confirmação e exclusão composta já estão cobertas por testes automatizados.
 - [x] Tentar cada mutação sem sessão e registrar `401`: criação de visita, ficha, publicação, geração de token de foto e importação do Google Maps verificadas no Preview.
 - [ ] Tentar operações administrativas como membro comum e registrar `403`.
 - [x] Tentar cadastrar diretamente um nono e-mail pela Auth URL e confirmar rejeição do webhook: `403 SIGNUP_BLOCKED`, sem sessão emitida e sem aumento na quantidade de contas.
@@ -99,6 +113,7 @@ Em 25/08/2026, o store público `crateristas-fotos-preview` foi criado em `gru1`
 - [x] Confirmar o caminho autorizado: o criador/administrador adicionou, removeu e reenviou a foto pela interface real.
 - [ ] Confirmar a negação para outro membro comum tentando adicionar/remover fotos; depende de uma segunda conta real.
 - [x] Excluir uma foto e confirmar remoção no banco e no Blob sem deixar órfão: após o reenvio, Neon e Blob voltaram a exatamente um item, na posição 1; o Blob atual respondeu `200` e sua URL apareceu no detalhe público.
+- [ ] Excluir uma review completa com fotos pelo Preview e confirmar que todos os Blobs, fichas e comentários desapareceram, além do restaurante quando ele não tiver outra visita.
 
 ## 6. Inspeção visual desktop — pendente
 

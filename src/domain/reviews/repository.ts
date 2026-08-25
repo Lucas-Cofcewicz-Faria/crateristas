@@ -127,6 +127,23 @@ export interface RecentPublishedVisit {
   publishedAt: string | null;
 }
 
+export interface AdminVisitSummary {
+  id: string;
+  slug: string;
+  restaurantName: string;
+  visitedAt: string;
+  participantCount: number;
+  quorum: number;
+  publicationState: PublicationState;
+}
+
+export interface VisitDeletionTarget {
+  id: string;
+  restaurantId: string;
+  participantCount: number;
+  photoPathnames: string[];
+}
+
 export interface VisitReviewWorkspace {
   id: string;
   restaurantName: string;
@@ -216,8 +233,19 @@ export interface ReviewRepository {
   findPhotoByPathname(pathname: string): Promise<PhotoRecord | null>;
   deletePhoto(visitId: string, photoId: string, actorId: string): Promise<PhotoRecord | null>;
   countVisitPhotos(visitId: string): Promise<number>;
+  prepareVisitDeletion(
+    visitId: string,
+    actorId: string,
+    expectedParticipantCount: number,
+  ): Promise<VisitDeletionTarget | null>;
+  deleteVisit(
+    visitId: string,
+    actorId: string,
+    expectedPhotoPathnames: string[],
+  ): Promise<boolean>;
   listPublicVisits(filters: PublicVisitFilters): Promise<PublicVisitSummary[]>;
   listRecentPublishedVisits(limit: number): Promise<RecentPublishedVisit[]>;
+  listVisitsForAdministration(actorId: string): Promise<AdminVisitSummary[]>;
   getPublicVisitBySlug(slug: string): Promise<PublicVisitDetail | null>;
   listPublicMembers(): Promise<PublicMemberSummary[]>;
   listPendingVisitsForMember(memberId: string): Promise<PendingVisit[]>;

@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import type { PendingVisit } from '@/domain/reviews/repository';
+import type { AdminVisitSummary, PendingVisit } from '@/domain/reviews/repository';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { PendingVisitList } from './PendingVisitList';
+import { PublicationStatus } from './PublicationStatus';
 import {
   formatDashboardCount,
   formatDashboardVisitDate,
@@ -20,6 +21,7 @@ export interface RecentDashboardVisit {
 export interface DashboardViewProps {
   memberName: string;
   isAdmin: boolean;
+  managed: AdminVisitSummary[];
   awaiting: PendingVisit[];
   forming: PendingVisit[];
   recent: RecentDashboardVisit[];
@@ -45,6 +47,7 @@ function SectionHeading({ count, id, title }: SectionHeadingProps) {
 export function DashboardView({
   memberName,
   isAdmin,
+  managed,
   awaiting,
   forming,
   recent,
@@ -123,6 +126,55 @@ export function DashboardView({
             </div>
           )}
         </section>
+
+        {isAdmin ? (
+          <section
+            aria-labelledby="management-title"
+            className={`${styles.panelSection} ${styles.managementSection}`}
+          >
+            <SectionHeading
+              count={managed.length}
+              id="management-title"
+              title="Gerenciar reviews"
+            />
+            {managed.length === 0 ? (
+              <p className={styles.emptyList} role="status">
+                Nenhuma review está disponível para gerenciamento.
+              </p>
+            ) : (
+              <div className={styles.managementList} role="list">
+                {managed.map((visit) => (
+                  <article className={styles.managementRow} key={visit.id} role="listitem">
+                    <div className={styles.managementIdentity}>
+                      <PublicationStatus state={visit.publicationState} />
+                      <div>
+                        <h3>{visit.restaurantName}</h3>
+                        <p>
+                          {formatEvaluationCount(visit.participantCount)} · visita em{' '}
+                          <time dateTime={visit.visitedAt}>
+                            {formatDashboardVisitDate(visit.visitedAt)}
+                          </time>
+                        </p>
+                        <p className={styles.deletionImpact}>
+                          {visit.participantCount === 1
+                            ? '1 avaliação será apagada em uma exclusão'
+                            : `${visit.participantCount} avaliações serão apagadas em uma exclusão`}
+                        </p>
+                      </div>
+                    </div>
+                    <Link
+                      aria-label={`Gerenciar ${visit.restaurantName}`}
+                      className={styles.managementLink}
+                      href={`/visitas/${visit.id}/avaliar`}
+                    >
+                      Gerenciar
+                    </Link>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        ) : null}
       </div>
     </section>
   );

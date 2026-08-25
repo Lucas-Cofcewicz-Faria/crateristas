@@ -24,7 +24,7 @@ describe('PasswordResetRequestForm', () => {
   });
 
   it('confirma o pedido com uma mensagem que não revela se o e-mail existe', async () => {
-    const action: PasswordResetAction = vi.fn(async () => ({
+    const action = vi.fn<PasswordResetAction>(async () => ({
       status: 'sent',
       message: 'Se o e-mail estiver cadastrado, enviaremos um link para definir uma nova senha.',
     }));
@@ -42,7 +42,7 @@ describe('PasswordResetRequestForm', () => {
 
   it('desabilita o envio enquanto a solicitação está em andamento', async () => {
     let resolveAction: (state: PasswordResetState) => void = () => undefined;
-    const action: PasswordResetAction = vi.fn(() => new Promise((resolve) => {
+    const action = vi.fn<PasswordResetAction>(() => new Promise<PasswordResetState>((resolve) => {
       resolveAction = resolve;
     }));
     render(<PasswordResetRequestForm action={action} />);

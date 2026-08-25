@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ScorecardInput } from '@/domain/reviews/schemas';
-import { confirmUploadedPhoto, createVisit, submitScorecard } from './visit-api';
+import {
+  VisitDeletionOutdatedError,
+  confirmUploadedPhoto,
+  createVisit,
+  deleteVisit,
+  submitScorecard,
+} from './visit-api';
 
 const visitId = '11111111-1111-4111-8111-111111111111';
 const scorecard: ScorecardInput = {
@@ -38,6 +44,25 @@ function successfulJson(payload: unknown): Response {
 }
 
 describe('contratos de resposta do client de visitas', () => {
+  it('envia a confirmação exata e aceita somente a exclusão sem conteúdo', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(deleteVisit(visitId, 'Deletar review', 3)).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith(`/api/visits/${visitId}`, {
+      method: 'DELETE',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ confirmation: 'Deletar review', expectedParticipantCount: 3 }),
+    });
+  });
+
+  it('distingue conflito de contagem para obrigar a atualização do diálogo', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 409 })));
+
+    await expect(deleteVisit(visitId, 'Deletar review', 3))
+      .rejects.toBeInstanceOf(VisitDeletionOutdatedError);
+  });
+
   it('aceita UUID/slug reais da criação e remove campos que não pertencem ao client', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(successfulJson({
       id: visitId,

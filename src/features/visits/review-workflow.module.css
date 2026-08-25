@@ -341,11 +341,48 @@
 }
 
 .adminSection > div > p:last-child,
+.deletionSection > div > p,
 .confirmDialog > p {
   margin-top: 8px;
   color: var(--ink-muted);
   font-size: 0.8rem;
   line-height: 1.5;
+}
+
+.deletionSection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  margin-top: 20px;
+  padding: 28px 32px;
+  border: 1px solid color-mix(in srgb, var(--danger), transparent 48%);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.deletionSection h2 {
+  color: var(--danger);
+  font-size: 1.45rem;
+  font-weight: 580;
+}
+
+.deletionNotice {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--danger), transparent 40%);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+}
+
+.deletionNotice p {
+  margin-top: 6px;
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+}
+
+.deletionConfirmation {
+  margin-top: 22px;
 }
 
 .dialogBackdrop {

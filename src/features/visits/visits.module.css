@@ -82,6 +82,10 @@
   grid-column: 1 / -1;
 }
 
+.managementSection {
+  grid-column: 1 / -1;
+}
+
 .sectionHeader {
   display: flex;
   align-items: center;
@@ -196,6 +200,74 @@
   color: var(--ink);
 }
 
+.managementList {
+  display: grid;
+}
+
+.managementRow {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 20px 0;
+  border-top: 1px solid var(--line);
+}
+
+.managementRow:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.managementRow:last-child {
+  padding-bottom: 0;
+}
+
+.managementIdentity {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.managementIdentity h3 {
+  color: var(--ink);
+  font-size: 1.08rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.managementIdentity p {
+  margin-top: 5px;
+  color: var(--ink-muted);
+  font-size: 0.76rem;
+}
+
+.managementIdentity .deletionImpact {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.managementLink {
+  min-height: 44px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.managementLink:hover {
+  border-color: var(--ember);
+  color: var(--ember-bright);
+}
+
 .routeState {
   width: min(calc(100% - 96px), var(--page-max));
   min-height: 620px;
@@ -242,6 +314,7 @@
   .newVisit,
   .cardAction,
   .inlineLink,
+  .managementLink,
   .retryButton {
     transition: none;
   }

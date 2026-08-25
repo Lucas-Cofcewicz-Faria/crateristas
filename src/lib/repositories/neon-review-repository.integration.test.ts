@@ -164,6 +164,7 @@ describe('NeonReviewRepository', () => {
   });
 
   it('finds, counts, and deletes photos while preserving the deleted metadata', async () => {
+    let deletionSql = '';
     const photoRow = {
       id: 'photo-1',
       visit_id: 'visit-1',
@@ -177,6 +178,7 @@ describe('NeonReviewRepository', () => {
     const sql = {
       query: async (text: string) => {
         if (text.includes('COUNT(*)')) return [{ photo_count: 2 }];
+        if (text.includes('DELETE FROM visit_photos')) deletionSql = text;
         return [photoRow];
       },
       transaction: async () => {
@@ -195,9 +197,11 @@ describe('NeonReviewRepository', () => {
       pathname: 'visits/visit-1/photo.webp',
       uploadedBy: 'member-1',
     });
+    expect(deletionSql).toContain('deletion_started_at IS NULL');
   });
 
   it('submits a scorecard through the transaction boundary', async () => {
+    let capturedSql = '';
     const transactionRows = [{
       visit_id: 'visit-1',
       publication_state: 'published',
@@ -219,6 +223,7 @@ describe('NeonReviewRepository', () => {
       transaction: async (factory: (transaction: { query: (text: string, params: unknown[]) => unknown }) => unknown[]) => {
         const queries = factory({ query: (text, params) => ({ text, params }) });
         if (queries.length !== 1) throw new Error('A operação composta deve usar uma única statement.');
+        capturedSql = (queries[0] as { text: string }).text;
         return [transactionRows];
       },
     } as unknown as ReviewSqlClient;
@@ -245,6 +250,8 @@ describe('NeonReviewRepository', () => {
       },
       publicationChanged: true,
     });
+    expect(capturedSql).toContain('deletion_started_at IS NULL');
+    expect(capturedSql.indexOf('locked_visit')).toBeLessThan(capturedSql.indexOf('saved AS'));
   });
 
   it('retries a serialization failure so a concurrent scorecard is not lost', async () => {
@@ -333,6 +340,7 @@ describe('NeonReviewRepository', () => {
   });
 
   it('changes publication state and records its event through the transaction boundary', async () => {
+    let capturedSql = '';
     const transactionRows = [{
       id: 'visit-1',
       slug: 'casa-teste',
@@ -356,6 +364,7 @@ describe('NeonReviewRepository', () => {
       transaction: async (factory: (transaction: { query: (text: string, params: unknown[]) => unknown }) => unknown[]) => {
         const queries = factory({ query: (text, params) => ({ text, params }) });
         if (queries.length !== 1) throw new Error('A operação composta deve usar uma única statement.');
+        capturedSql = (queries[0] as { text: string }).text;
         return [transactionRows];
       },
     } as unknown as ReviewSqlClient;
@@ -375,9 +384,11 @@ describe('NeonReviewRepository', () => {
       publicationState: 'hidden',
       hiddenBy: 'admin-1',
     });
+    expect(capturedSql).toContain('deletion_started_at IS NULL');
   });
 
   it('allocates a photo position and inserts it through the transaction boundary', async () => {
+    let capturedSql = '';
     const sql = {
       query: async () => {
         throw new Error('Mutação executada fora da transação.');
@@ -385,6 +396,7 @@ describe('NeonReviewRepository', () => {
       transaction: async (factory: (transaction: { query: (text: string, params: unknown[]) => unknown }) => unknown[]) => {
         const queries = factory({ query: (text, params) => ({ text, params }) });
         if (queries.length !== 1) throw new Error('Posição e insert devem compartilhar uma statement.');
+        capturedSql = (queries[0] as { text: string }).text;
         return [[{ id: 'photo-1' }]];
       },
     } as unknown as ReviewSqlClient;
@@ -396,6 +408,7 @@ describe('NeonReviewRepository', () => {
       contentType: 'image/webp',
       sizeBytes: 100_000,
     })).resolves.toBeUndefined();
+    expect(capturedSql).toContain('deletion_started_at IS NULL');
   });
 
   it('retries only the slot constraint after a concurrent insert leaves position five free', async () => {
@@ -730,6 +743,132 @@ describe('NeonReviewRepository', () => {
     expect(capturedSql).not.toMatch(/average_|overall|visit_photos|cover_photo/i);
   });
 
+  it('lista todas as reviews para o admin, incluindo publicadas e ocultas', async () => {
+    let capturedSql = '';
+    const sql = {
+      query: async (text: string, params: unknown[]) => {
+        capturedSql = text;
+        if (params[0] !== 'admin-1') return [];
+        return [{
+          id: 'visit-hidden',
+          slug: 'mesa-oculta',
+          restaurant_name: 'Mesa Oculta',
+          visited_at: '2026-08-12',
+          participant_count: 3,
+          quorum: 6,
+          publication_state: 'hidden',
+        }];
+      },
+      transaction: async () => {
+        throw new Error('Consulta administrativa não deve abrir transação.');
+      },
+    } as unknown as ReviewSqlClient;
+    const repository = createNeonReviewRepository(sql);
+
+    await expect(repository.listVisitsForAdministration('admin-1')).resolves.toEqual([{
+      id: 'visit-hidden',
+      slug: 'mesa-oculta',
+      restaurantName: 'Mesa Oculta',
+      visitedAt: '2026-08-12',
+      participantCount: 3,
+      quorum: 6,
+      publicationState: 'hidden',
+    }]);
+    expect(capturedSql).toContain("actor.role = 'admin'");
+    expect(capturedSql).not.toContain("v.publication_state = 'published'");
+  });
+
+  it('prepara a limpeza e apaga a visita com dependências e restaurante órfão', async () => {
+    const captured: Array<{ text: string; params: unknown[] }> = [];
+    const sql = {
+      query: async () => {
+        throw new Error('A exclusão precisa usar transações com bloqueio da visita.');
+      },
+      transaction: async (factory: (transaction: {
+        query(text: string, params: unknown[]): { text: string; params: unknown[] };
+      }) => Array<{ text: string; params: unknown[] }>) => {
+        const queries = factory({
+          query(text: string, params: unknown[]) {
+            return { text, params };
+          },
+        });
+        captured.push(...queries);
+        if (queries[1].text.includes('deletion_ready')) {
+          return [[{ id: 'visit-1' }], [{
+            id: 'visit-1',
+            restaurant_id: 'restaurant-1',
+            participant_count: 2,
+            photo_pathnames: [
+              'visits/visit-1/a.webp',
+              'visits/visit-1/a.webp',
+              'visits/visit-1/b.webp',
+              'visits/visit-1/b.webp',
+            ],
+            deletion_ready: true,
+          }]];
+        }
+        return [[{ id: 'visit-1' }], [{ deleted_count: 1 }]];
+      },
+    } as unknown as ReviewSqlClient;
+    const repository = createNeonReviewRepository(sql);
+
+    await expect(repository.prepareVisitDeletion('visit-1', 'admin-1', 2)).resolves.toEqual({
+      id: 'visit-1',
+      restaurantId: 'restaurant-1',
+      participantCount: 2,
+      photoPathnames: ['visits/visit-1/a.webp', 'visits/visit-1/b.webp'],
+    });
+    await expect(repository.deleteVisit('visit-1', 'admin-1', [
+      'visits/visit-1/a.webp',
+      'visits/visit-1/b.webp',
+    ])).resolves.toBe(true);
+
+    const preparationLockSql = captured[0].text;
+    const preparationSql = captured[1].text;
+    const deletionLockSql = captured[2].text;
+    const deletionSql = captured[3].text;
+    expect(captured[0].params).toEqual(['visit-1', 'admin-1']);
+    expect(preparationLockSql).toContain("actor.role = 'admin'");
+    expect(preparationLockSql).toContain('FOR UPDATE');
+    expect(captured[1].params).toEqual(['visit-1', 'admin-1', 2]);
+    expect(preparationSql).toContain("publication_state = 'hidden'");
+    expect(preparationSql).toContain('deletion_started_at');
+    expect(preparationSql).toContain('deletion_ready');
+    expect(captured[2].params).toEqual(['visit-1', 'admin-1']);
+    expect(deletionLockSql).toContain('deletion_started_at IS NOT NULL');
+    expect(captured[3].params).toEqual([
+      'visit-1',
+      'admin-1',
+      ['visits/visit-1/a.webp', 'visits/visit-1/b.webp'],
+    ]);
+    expect(deletionSql).toContain("actor.role = 'admin'");
+    expect(deletionSql).toMatch(/DELETE FROM visits/);
+    expect(deletionSql).toMatch(/DELETE FROM restaurants/);
+    expect(deletionSql).toContain('other.id <> $1');
+    expect(deletionSql).toContain('UNNEST($3::text[])');
+  });
+
+  it('recusa preparar a exclusão quando a quantidade de avaliações mudou', async () => {
+    const sql = {
+      query: async () => [],
+      transaction: async (factory: (transaction: {
+        query(text: string, params: unknown[]): { text: string; params: unknown[] };
+      }) => Array<{ text: string; params: unknown[] }>) => {
+        factory({ query: (text, params) => ({ text, params }) });
+        return [[{ id: 'visit-1' }], [{
+          id: 'visit-1',
+          restaurant_id: 'restaurant-1',
+          participant_count: 3,
+          photo_pathnames: [],
+          deletion_ready: false,
+        }]];
+      },
+    } as unknown as ReviewSqlClient;
+
+    await expect(createNeonReviewRepository(sql).prepareVisitDeletion('visit-1', 'admin-1', 2))
+      .rejects.toThrow('A quantidade de avaliações mudou.');
+  });
+
   it('lists public member profiles without email or authentication identifiers', async () => {
     const sql = {
       query: async () => [{
@@ -887,6 +1026,11 @@ describeIntegration('NeonReviewRepository database constraints', () => {
   const concurrentMemberB = randomUUID();
   const concurrentRestaurantId = randomUUID();
   const concurrentVisitId = randomUUID();
+  const deletionAdminId = randomUUID();
+  const deletionMemberId = randomUUID();
+  const deletionRestaurantId = randomUUID();
+  const deletionVisitId = randomUUID();
+  const preservedVisitId = randomUUID();
 
   beforeAll(async () => {
     if (!sql) throw new Error('TEST_DATABASE_URL ausente.');
@@ -1243,6 +1387,141 @@ describeIntegration('NeonReviewRepository database constraints', () => {
     });
   });
 
+  it('oculta antes da limpeza, bloqueia novas contribuições e preserva restaurante compartilhado', async () => {
+    if (!sql) throw new Error('TEST_DATABASE_URL ausente.');
+    const suffix = deletionVisitId.slice(0, 8);
+    const photoPathname = `test/${deletionVisitId}/deletion.webp`;
+    await sql.transaction((transaction) => [
+      transaction.query(
+        `INSERT INTO members
+          (id, auth_user_id, email, slug, display_name, member_number, role)
+         VALUES ($1, $2, $3, $4, $5, 1, 'admin'), ($6, $7, $8, $9, $10, 2, 'member')`,
+        [
+          deletionAdminId,
+          `deletion-admin-auth-${suffix}`,
+          `deletion-admin-${suffix}@example.com`,
+          `deletion-admin-${suffix}`,
+          'Admin Exclusão',
+          deletionMemberId,
+          `deletion-member-auth-${suffix}`,
+          `deletion-member-${suffix}@example.com`,
+          `deletion-member-${suffix}`,
+          'Membro Exclusão',
+        ],
+      ),
+      transaction.query(
+        `INSERT INTO restaurants (id, slug, name, cuisine, neighborhood)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [deletionRestaurantId, `deletion-restaurant-${suffix}`, 'Exclusão', 'Teste', 'Teste'],
+      ),
+      transaction.query(
+        `INSERT INTO visits
+          (id, slug, restaurant_id, created_by, visited_at, publication_state)
+         VALUES ($1, $2, $5, $6, '2026-08-12', 'published'),
+                ($3, $4, $5, $6, '2026-08-13', 'private')`,
+        [
+          deletionVisitId,
+          `deletion-visit-${suffix}`,
+          preservedVisitId,
+          `preserved-visit-${suffix}`,
+          deletionRestaurantId,
+          deletionAdminId,
+        ],
+      ),
+      transaction.query(
+        `INSERT INTO scorecards
+          (visit_id, member_id, food, service, ambience, value, access, wait_time, comment)
+         VALUES ($1, $2, 8, 8, 8, 8, 8, 8, 'Será removida')`,
+        [deletionVisitId, deletionMemberId],
+      ),
+      transaction.query(
+        `INSERT INTO visit_photos
+          (visit_id, uploaded_by, url, pathname, content_type, size_bytes, position)
+         VALUES ($1, $2, $3, $4, 'image/webp', 100000, 1)`,
+        [deletionVisitId, deletionAdminId, 'https://images.example.com/deletion.webp', photoPathname],
+      ),
+      transaction.query(
+        `INSERT INTO publication_events (visit_id, actor_id, action, participant_count)
+         VALUES ($1, $2, 'publish_early', 1)`,
+        [deletionVisitId, deletionAdminId],
+      ),
+    ]);
+    const repository = createNeonReviewRepository(sql);
+
+    await expect(repository.prepareVisitDeletion(deletionVisitId, deletionAdminId, 1))
+      .resolves.toMatchObject({ participantCount: 1, photoPathnames: [photoPathname] });
+    const [marked] = await sql.query(
+      `SELECT publication_state, deletion_started_at IS NOT NULL AS deletion_started
+       FROM visits WHERE id = $1`,
+      [deletionVisitId],
+    );
+    expect(marked).toMatchObject({ publication_state: 'hidden', deletion_started: true });
+
+    await expect(repository.attachPhoto(deletionVisitId, deletionAdminId, {
+      url: 'https://images.example.com/late.webp',
+      pathname: `test/${deletionVisitId}/late.webp`,
+      contentType: 'image/webp',
+      sizeBytes: 100_000,
+    })).rejects.toThrow('Visita não encontrada.');
+    await expect(repository.submitScorecardAtomically({
+      visitId: deletionVisitId,
+      memberId: deletionAdminId,
+      scorecard,
+      expectedPublicationState: 'hidden',
+      quorum: 6,
+      transitionAtQuorum: { state: 'hidden', reason: null },
+    })).rejects.toThrow('Visita não encontrada.');
+
+    await expect(repository.deleteVisit(deletionVisitId, deletionAdminId, [photoPathname]))
+      .resolves.toBe(true);
+    const dependentCounts = await sql.query(
+      `SELECT
+         (SELECT COUNT(*)::int FROM scorecards WHERE visit_id = $1) AS scorecards,
+         (SELECT COUNT(*)::int FROM visit_photos WHERE visit_id = $1) AS photos,
+         (SELECT COUNT(*)::int FROM publication_events WHERE visit_id = $1) AS events,
+         (SELECT COUNT(*)::int FROM restaurants WHERE id = $2) AS restaurants`,
+      [deletionVisitId, deletionRestaurantId],
+    );
+    expect(dependentCounts[0]).toMatchObject({
+      scorecards: 0,
+      photos: 0,
+      events: 0,
+      restaurants: 1,
+    });
+
+    const concurrentPathname = `test/${preservedVisitId}/concurrent.webp`;
+    const [preparation, concurrentUpload] = await Promise.allSettled([
+      repository.prepareVisitDeletion(preservedVisitId, deletionAdminId, 0),
+      repository.attachPhoto(preservedVisitId, deletionAdminId, {
+        url: 'https://images.example.com/concurrent.webp',
+        pathname: concurrentPathname,
+        contentType: 'image/webp',
+        sizeBytes: 100_000,
+      }),
+    ]);
+    expect(preparation.status).toBe('fulfilled');
+    if (preparation.status !== 'fulfilled' || !preparation.value) {
+      throw new Error('A preparação concorrente deveria encontrar a visita.');
+    }
+    expect(preparation.value.photoPathnames).toEqual(
+      concurrentUpload.status === 'fulfilled' ? [concurrentPathname] : [],
+    );
+    if (concurrentUpload.status === 'rejected') {
+      expect(concurrentUpload.reason).toMatchObject({ message: 'Visita não encontrada.' });
+    }
+    await expect(repository.deleteVisit(
+      preservedVisitId,
+      deletionAdminId,
+      preparation.value.photoPathnames,
+    ))
+      .resolves.toBe(true);
+    const restaurants = await sql.query(
+      'SELECT COUNT(*)::int AS restaurant_count FROM restaurants WHERE id = $1',
+      [deletionRestaurantId],
+    );
+    expect(restaurants[0]).toMatchObject({ restaurant_count: 0 });
+  });
+
   afterAll(async () => {
     if (!sql) return;
     await sql.transaction((transaction) => [
@@ -1252,17 +1531,22 @@ describeIntegration('NeonReviewRepository database constraints', () => {
       transaction.query('DELETE FROM visits WHERE id = $1', [photoRaceVisitWithThreeId]),
       transaction.query('DELETE FROM visits WHERE id = $1', [photoRaceVisitWithFourId]),
       transaction.query('DELETE FROM visits WHERE id = $1', [concurrentVisitId]),
+      transaction.query('DELETE FROM visits WHERE id = $1', [deletionVisitId]),
+      transaction.query('DELETE FROM visits WHERE id = $1', [preservedVisitId]),
       transaction.query('DELETE FROM restaurants WHERE id = $1', [restaurantId]),
       transaction.query('DELETE FROM restaurants WHERE id = $1', [atomicRestaurantId]),
       transaction.query('DELETE FROM restaurants WHERE id = $1', [photoRestaurantId]),
       transaction.query('DELETE FROM restaurants WHERE id = $1', [photoRaceRestaurantId]),
       transaction.query('DELETE FROM restaurants WHERE id = $1', [concurrentRestaurantId]),
+      transaction.query('DELETE FROM restaurants WHERE id = $1', [deletionRestaurantId]),
       transaction.query('DELETE FROM members WHERE id = $1', [memberId]),
       transaction.query('DELETE FROM members WHERE id = $1', [atomicMemberId]),
       transaction.query('DELETE FROM members WHERE id = $1', [photoMemberId]),
       transaction.query('DELETE FROM members WHERE id = $1', [photoRaceMemberId]),
       transaction.query('DELETE FROM members WHERE id = $1', [concurrentMemberA]),
       transaction.query('DELETE FROM members WHERE id = $1', [concurrentMemberB]),
+      transaction.query('DELETE FROM members WHERE id = $1', [deletionMemberId]),
+      transaction.query('DELETE FROM members WHERE id = $1', [deletionAdminId]),
     ]);
   });
 });

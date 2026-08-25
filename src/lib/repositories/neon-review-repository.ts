@@ -6,6 +6,7 @@ import type {
 import type {
   AtomicPublicationChangeInput,
   AtomicScorecardSubmissionInput,
+  AdminVisitSummary,
   HistoricalReview,
   MemberRecord,
   PendingVisit,
@@ -21,9 +22,11 @@ import type {
   ReviewRepository,
   SubmissionResult,
   VisitRecord,
+  VisitDeletionTarget,
   VisitReviewWorkspace,
 } from '@/domain/reviews/repository';
 import type { CreateVisitInput, ScorecardInput } from '@/domain/reviews/schemas';
+import { VisitDeletionConflictError } from '@/domain/reviews/deletion';
 import { SCORE_KEYS, type PublicationReason, type PublicationState, type PublicVisitFilters } from '@/domain/reviews/types';
 import { getDb } from '@/lib/db';
 
@@ -142,6 +145,11 @@ function publicComments(value: unknown): PublicComment[] {
   });
 }
 
+function stringArray(value: unknown, field: string): string[] {
+  if (!Array.isArray(value)) throw new Error(`Resposta inválida do banco: ${field}.`);
+  return value.map((item) => requiredString(item, field));
+}
+
 function historicalReview(legacyReviewId: unknown, legacyPayload: unknown): HistoricalReview | null {
   if (legacyReviewId === null || legacyReviewId === undefined) return null;
   const id = requiredString(legacyReviewId, 'legacy_review_id');
@@ -232,6 +240,27 @@ function recentPublishedVisitFromRow(row: Row): RecentPublishedVisit {
     visitedAt: dateString(row.visited_at, 'visited_at'),
     participantCount: numberValue(row.participant_count, 'participant_count'),
     publishedAt: nullableDateString(row.published_at, 'published_at'),
+  };
+}
+
+function adminVisitSummaryFromRow(row: Row): AdminVisitSummary {
+  return {
+    id: requiredString(row.id, 'id'),
+    slug: requiredString(row.slug, 'slug'),
+    restaurantName: requiredString(row.restaurant_name, 'restaurant_name'),
+    visitedAt: dateString(row.visited_at, 'visited_at'),
+    participantCount: numberValue(row.participant_count, 'participant_count'),
+    quorum: numberValue(row.quorum, 'quorum'),
+    publicationState: publicationState(row.publication_state),
+  };
+}
+
+function visitDeletionTargetFromRow(row: Row): VisitDeletionTarget {
+  return {
+    id: requiredString(row.id, 'id'),
+    restaurantId: requiredString(row.restaurant_id, 'restaurant_id'),
+    participantCount: numberValue(row.participant_count, 'participant_count'),
+    photoPathnames: [...new Set(stringArray(row.photo_pathnames, 'photo_pathnames'))],
   };
 }
 
@@ -414,10 +443,18 @@ function submissionFromRow(row: Row): SubmissionResult {
 // scorecard branch mirrors resolvePublication's only automatic transition:
 // private -> published when the post-upsert participant count reaches quorum.
 const ATOMIC_SCORECARD_SQL = `
-WITH saved AS (
+WITH locked_visit AS MATERIALIZED (
+  SELECT v.id, v.publication_state, v.publication_reason
+  FROM visits v
+  WHERE v.id = $1
+    AND v.deletion_started_at IS NULL
+  FOR UPDATE OF v
+),
+saved AS (
   INSERT INTO scorecards
     (visit_id, member_id, food, service, ambience, value, access, wait_time, comment)
-  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+  SELECT lv.id, $2, $3, $4, $5, $6, $7, $8, $9
+  FROM locked_visit lv
   ON CONFLICT (visit_id, member_id) DO UPDATE SET
     food = EXCLUDED.food,
     service = EXCLUDED.service,
@@ -430,10 +467,9 @@ WITH saved AS (
   RETURNING visit_id
 ),
 visit_context AS MATERIALIZED (
-  SELECT v.id, v.publication_state, v.publication_reason
-  FROM visits v
-  JOIN saved s ON s.visit_id = v.id
-  FOR UPDATE OF v
+  SELECT lv.id, lv.publication_state, lv.publication_reason
+  FROM locked_visit lv
+  JOIN saved s ON s.visit_id = lv.id
 ),
 post_upsert_scores AS MATERIALIZED (
   SELECT s.food, s.service, s.ambience, s.value, s.access, s.wait_time
@@ -499,7 +535,10 @@ LIMIT 1`;
 
 const ATOMIC_PUBLICATION_SQL = `
 WITH locked_visit AS MATERIALIZED (
-  SELECT * FROM visits WHERE id = $1 FOR UPDATE
+  SELECT * FROM visits
+  WHERE id = $1
+    AND deletion_started_at IS NULL
+  FOR UPDATE
 ),
 score_count AS (
   SELECT COUNT(*)::int AS participant_count
@@ -551,7 +590,10 @@ LIMIT 1`;
 
 const ATOMIC_PHOTO_SQL = `
 WITH locked_visit AS MATERIALIZED (
-  SELECT id FROM visits WHERE id = $1 FOR UPDATE
+  SELECT id FROM visits
+  WHERE id = $1
+    AND deletion_started_at IS NULL
+  FOR UPDATE
 ),
 next_position AS (
   SELECT MIN(candidate.position)::int AS position
@@ -791,6 +833,7 @@ class NeonReviewRepository implements ReviewRepository {
        WHERE photo.id = $2
          AND photo.visit_id = $1
          AND visit.id = photo.visit_id
+         AND visit.deletion_started_at IS NULL
          AND actor.id = $3
          AND (visit.created_by = $3 OR actor.role = 'admin')
        RETURNING photo.id, photo.visit_id, photo.uploaded_by, photo.url, photo.pathname,
@@ -806,6 +849,146 @@ class NeonReviewRepository implements ReviewRepository {
       [visitId],
     );
     return rows[0] ? numberValue(rows[0].photo_count, 'photo_count') : 0;
+  }
+
+  async prepareVisitDeletion(
+    visitId: string,
+    actorId: string,
+    expectedParticipantCount: number,
+  ): Promise<VisitDeletionTarget | null> {
+    const [, rows] = await this.sql.transaction((transaction) => [
+      transaction.query(
+        `SELECT visit.id
+         FROM visits visit
+         JOIN members actor ON actor.id = $2
+         WHERE visit.id = $1
+           AND actor.role = 'admin'
+         FOR UPDATE OF visit`,
+        [visitId, actorId],
+      ),
+      transaction.query(
+        `WITH target AS MATERIALIZED (
+           SELECT
+             visit.id,
+             visit.restaurant_id,
+             (SELECT COUNT(*)::int FROM scorecards score WHERE score.visit_id = visit.id)
+               AS participant_count,
+             COALESCE(
+               (SELECT ARRAY_AGG(photo.pathname ORDER BY photo.pathname)
+                FROM visit_photos photo
+                WHERE photo.visit_id = visit.id),
+               ARRAY[]::text[]
+             ) AS photo_pathnames
+           FROM visits visit
+           JOIN members actor ON actor.id = $2
+           WHERE visit.id = $1
+             AND actor.role = 'admin'
+         ),
+         marked AS (
+           UPDATE visits visit
+           SET publication_state = 'hidden',
+               publication_reason = NULL,
+               hidden_at = COALESCE(visit.hidden_at, NOW()),
+               hidden_by = COALESCE(visit.hidden_by, $2),
+               deletion_started_at = COALESCE(visit.deletion_started_at, NOW()),
+               deletion_started_by = COALESCE(visit.deletion_started_by, $2),
+               updated_at = CASE
+                 WHEN visit.deletion_started_at IS NULL THEN NOW()
+                 ELSE visit.updated_at
+               END,
+               version = visit.version + CASE
+                 WHEN visit.deletion_started_at IS NULL THEN 1
+                 ELSE 0
+               END
+           FROM target
+           WHERE visit.id = target.id
+             AND target.participant_count = $3
+           RETURNING visit.id
+         )
+         SELECT
+           target.id,
+           target.restaurant_id,
+           target.participant_count,
+           target.photo_pathnames,
+           (marked.id IS NOT NULL) AS deletion_ready
+         FROM target
+         LEFT JOIN marked ON TRUE`,
+        [visitId, actorId, expectedParticipantCount],
+      ),
+    ]);
+    const row = rows[0];
+    if (!row) return null;
+    if (!booleanValue(row.deletion_ready)) throw new VisitDeletionConflictError();
+    return visitDeletionTargetFromRow(row);
+  }
+
+  async deleteVisit(
+    visitId: string,
+    actorId: string,
+    expectedPhotoPathnames: string[],
+  ): Promise<boolean> {
+    const [, rows] = await this.sql.transaction((transaction) => [
+      transaction.query(
+        `SELECT visit.id
+         FROM visits visit
+         JOIN members actor ON actor.id = $2
+         WHERE visit.id = $1
+           AND actor.role = 'admin'
+           AND visit.deletion_started_at IS NOT NULL
+         FOR UPDATE OF visit`,
+        [visitId, actorId],
+      ),
+      transaction.query(
+        `WITH authorized AS (
+         SELECT $1::uuid AS visit_id
+         FROM members actor
+         WHERE actor.id = $2
+           AND actor.role = 'admin'
+       ),
+       target AS (
+         SELECT visit.id, visit.restaurant_id
+         FROM visits visit
+         JOIN authorized ON authorized.visit_id = visit.id
+         WHERE visit.deletion_started_at IS NOT NULL
+           AND (
+           SELECT COALESCE(
+             ARRAY_AGG(photo.pathname ORDER BY photo.pathname),
+             ARRAY[]::text[]
+           )
+           FROM visit_photos photo
+           WHERE photo.visit_id = visit.id
+         ) = (
+           SELECT COALESCE(
+             ARRAY_AGG(expected.pathname ORDER BY expected.pathname),
+             ARRAY[]::text[]
+           )
+           FROM UNNEST($3::text[]) AS expected(pathname)
+         )
+       ),
+       deleted_visit AS (
+         DELETE FROM visits visit
+         USING target
+         WHERE visit.id = target.id
+         RETURNING visit.restaurant_id
+       ),
+       deleted_restaurant AS (
+         DELETE FROM restaurants restaurant
+         USING deleted_visit
+         WHERE restaurant.id = deleted_visit.restaurant_id
+           AND NOT EXISTS (
+             SELECT 1
+             FROM visits other
+             WHERE other.restaurant_id = restaurant.id
+               AND other.id <> $1
+           )
+         RETURNING restaurant.id
+       )
+       SELECT COUNT(*)::int AS deleted_count
+       FROM deleted_visit`,
+        [visitId, actorId, expectedPhotoPathnames],
+      ),
+    ]);
+    return rows[0] ? numberValue(rows[0].deleted_count, 'deleted_count') === 1 : false;
   }
 
   async listPublicVisits(filters: PublicVisitFilters): Promise<PublicVisitSummary[]> {
@@ -880,6 +1063,29 @@ class NeonReviewRepository implements ReviewRepository {
       [limit],
     );
     return rows.map(recentPublishedVisitFromRow);
+  }
+
+  async listVisitsForAdministration(actorId: string): Promise<AdminVisitSummary[]> {
+    const rows = await this.sql.query(
+      `SELECT
+         v.id,
+         v.slug,
+         r.name AS restaurant_name,
+         v.visited_at,
+         v.quorum,
+         v.publication_state,
+         COUNT(score.id)::int AS participant_count
+       FROM members actor
+       JOIN visits v ON TRUE
+       JOIN restaurants r ON r.id = v.restaurant_id
+       LEFT JOIN scorecards score ON score.visit_id = v.id
+       WHERE actor.id = $1
+         AND actor.role = 'admin'
+       GROUP BY v.id, r.name
+       ORDER BY v.visited_at DESC, v.id`,
+      [actorId],
+    );
+    return rows.map(adminVisitSummaryFromRow);
   }
 
   async getPublicVisitBySlug(slug: string): Promise<PublicVisitDetail | null> {
