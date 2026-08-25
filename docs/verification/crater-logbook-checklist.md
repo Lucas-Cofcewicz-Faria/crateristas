@@ -126,9 +126,9 @@ Verificação documental em 20/08/2026; cotas podem mudar e devem ser reconfirma
 
 - Neon Free: a [página oficial de preços](https://neon.com/pricing) informa plano sem cartão e, atualmente, `100 CU-hours`, `0,5 GB` de armazenamento e `5 GB` de transferência por projeto/mês. No Free, o [scale-to-zero](https://neon.com/docs/introduction/scale-to-zero) ocorre após cinco minutos de inatividade.
 - Vercel Blob Hobby: a [documentação oficial de uso e preços](https://vercel.com/docs/vercel-blob/usage-and-pricing) informa atualmente `1 GB` de armazenamento, `10.000` operações simples, `2.000` operações avançadas e `10 GB` de transferência incluídos por mês. Ao exceder o limite no Hobby, o acesso ao Blob pode ficar indisponível até a renovação da cota.
-- [ ] Confirmar no dashboard que o projeto está no plano Hobby e usa o subdomínio gratuito `.vercel.app`.
+- [x] Confirmar no projeto que a conta está no plano Hobby e usa o alias gratuito `crateristas-git-develop-cofcewicz.vercel.app`; a API autenticada retornou `account_plan=hobby` em 25/08/2026.
 - [ ] Confirmar alertas de uso para banco, armazenamento e operações.
-- [ ] Não habilitar add-on pago, gasto sob demanda ou domínio pago sem nova decisão explícita.
+- [x] Nenhum add-on pago, compra de créditos ou domínio pago foi habilitado nesta homologação; qualquer gasto futuro continua exigindo nova decisão explícita.
 - [x] Limites defensivos no código: cinco fotos por visita, WebP, `750.000 bytes`, upload autenticado e importador do Google Maps limitado a criação autenticada.
 
 ## Critério de liberação
