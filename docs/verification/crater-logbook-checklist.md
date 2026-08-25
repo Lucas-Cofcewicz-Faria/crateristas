@@ -58,14 +58,16 @@ Pré-requisito: configurar `DATABASE_URL` e `TEST_DATABASE_URL` com uma branch N
 - [x] Confirmar em PostgreSQL real que `002_purge_legacy_reviews.sql` apaga somente as linhas de `reviews`, preserva a tabela e remove zero linhas adicionais no rerun.
 - [x] Alinhar `DATABASE_URL` e Neon Auth do Git branch `develop` na branch Neon `preview/develop`; o override sensível da Vercel não altera `main` nem Production.
 - [x] Provisionar a primeira conta real como Craterista nº 1 e `admin`, sem bio, foto ou título inventado; a branch ficou com um usuário Auth e um membro do domínio.
-- [ ] Criar exatamente oito membros de teste e uma visita.
-- [ ] Enviar cinco fichas: a visita deve continuar privada.
-- [ ] Enviar a sexta ficha: a visita deve ser publicada automaticamente.
-- [ ] Enviar a sétima e a oitava fichas: médias e nota geral devem ser recalculadas.
-- [ ] Ocultar a visita, editar uma ficha e confirmar que ela continua oculta.
-- [ ] Republicar e confirmar que a projeção pública reaparece.
+- [x] Criar exatamente oito membros de teste e uma visita em uma transação serializável descartável na branch `development`.
+- [x] Enviar cinco fichas: a visita permaneceu privada e ausente das duas projeções públicas.
+- [x] Enviar a sexta ficha: a visita foi publicada automaticamente por `quorum`, com um único evento para seis participantes.
+- [x] Enviar a sétima e a oitava fichas: médias, nota geral, contagem e oito comentários foram recalculados pela projeção real do repositório.
+- [x] Ocultar a visita, editar uma ficha e confirmar que ela continuou oculta e ausente das projeções públicas.
+- [x] Republicar e confirmar que a projeção pública reapareceu com a média atualizada e comentários sem notas individuais.
 - [x] Executar novamente a suíte com `TEST_DATABASE_URL`: 394 testes aprovados e zero skips de integração PostgreSQL.
 - [x] Aplicar as migrations versionadas à Neon `main` somente como base vazia para as branches automáticas de Preview; os endpoints `main` e `development` foram validados como distintos e Production permanece desconectada na Vercel.
+
+A aceitação coletiva remota de 25/08/2026 usou o serviço e o repositório reais sobre uma única conexão Neon com `BEGIN ISOLATION LEVEL SERIALIZABLE`. O teste terminou em `ROLLBACK`; uma nova conexão confirmou zero linhas em `members`, `restaurants`, `visits`, `scorecards` e `publication_events`, portanto nenhum membro ou registro fictício foi preservado.
 
 ## 4. Autenticação, autorização e privacidade — parcialmente verificada
 
