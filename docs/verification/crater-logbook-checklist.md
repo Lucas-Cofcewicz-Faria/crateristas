@@ -96,8 +96,9 @@ Em 25/08/2026, o store público `crateristas-fotos-preview` foi criado em `gru1`
 - [x] Confirmar persistência via callback antes de apresentar a foto como concluída: uma linha ocupou a posição 1 em `visit_photos`, o Blob continha exatamente um arquivo e o detalhe público incluiu sua URL.
 - [ ] Confirmar upload sequencial, retry de confirmação sem reupload e recuperação de callback terminal.
 - [ ] Confirmar limite de cinco fotos na interface e no servidor.
-- [ ] Confirmar que somente criador da visita ou administrador pode adicionar/remover fotos.
-- [ ] Excluir uma foto e confirmar remoção no banco e no Blob sem deixar órfão.
+- [x] Confirmar o caminho autorizado: o criador/administrador adicionou, removeu e reenviou a foto pela interface real.
+- [ ] Confirmar a negação para outro membro comum tentando adicionar/remover fotos; depende de uma segunda conta real.
+- [x] Excluir uma foto e confirmar remoção no banco e no Blob sem deixar órfão: após o reenvio, Neon e Blob voltaram a exatamente um item, na posição 1; o Blob atual respondeu `200` e sua URL apareceu no detalhe público.
 
 ## 6. Inspeção visual desktop — pendente
 
