@@ -4,7 +4,7 @@
 
 Base verificada: `7fda4f0` (`develop`)
 
-Estado: **migration e integração PostgreSQL verificadas; primeiro administrador provisionado; recuperação de senha e fronteira visitante/rotas privadas verificadas no Preview; fluxo autenticado completo, Blob e inspeção visual com reviews ainda pendentes**.
+Estado: **migration e integração PostgreSQL verificadas; primeiro administrador provisionado; recuperação de senha, fronteira visitante/rotas privadas e infraestrutura Blob verificadas no Preview; fluxo autenticado completo, uploads reais e inspeção visual com reviews ainda pendentes**.
 
 Este documento separa evidência observada de tarefas que ainda dependem de infraestrutura. Em 20/08/2026, as migrations foram verificadas na branch Neon não produtiva `development` e o mesmo esquema-base vazio foi aplicado à `main`, de onde a integração cria branches isoladas de Preview. A Vercel Production continua sem conexão com o banco; nenhuma conta, upload ou implantação de produção foi criada nesta rodada.
 
@@ -82,11 +82,11 @@ O Neon Auth está configurado no Preview conforme [o guia fechado de autenticaç
 - [ ] Repetir a inspeção de privacidade após criar membros, fichas e uma projeção pública reais.
 - [ ] Testar logout e retorno à navegação pública.
 
-## 5. Fotos e Vercel Blob — pendente
+## 5. Fotos e Vercel Blob — infraestrutura pronta, fluxo pendente
 
-Pré-requisito: um Blob store público de homologação e `BLOB_READ_WRITE_TOKEN` configurado fora do repositório.
+Pré-requisito concluído: Blob store público de homologação e `BLOB_READ_WRITE_TOKEN` configurado fora do repositório.
 
-Em 25/08/2026, a listagem de variáveis do Preview confirmou que `BLOB_READ_WRITE_TOKEN` ainda não está configurada; nenhum upload foi tentado.
+Em 25/08/2026, o store público `crateristas-fotos-preview` foi criado em `gru1`, conectado somente ao Preview e permaneceu vazio. A variável `BLOB_READ_WRITE_TOKEN` foi injetada pela Vercel, um redeploy ficou `Ready` e a geração de token sem sessão continuou respondendo `401` sem expor detalhes do Blob. O primeiro upload autenticado ainda depende da validação manual da sessão do administrador.
 
 - [ ] Enviar uma imagem e confirmar conversão real para WebP, maior lado de até `1600 px` e no máximo `750.000 bytes`.
 - [ ] Confirmar persistência via callback antes de apresentar a foto como concluída.
