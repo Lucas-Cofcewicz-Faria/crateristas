@@ -74,14 +74,16 @@ A aceitação coletiva remota de 25/08/2026 usou o serviço e o repositório rea
 O Neon Auth está configurado no Preview conforme [o guia fechado de autenticação](../setup/neon-auth.md). A primeira conta, sua associação com `members` e a recuperação de senha foram verificadas; ainda faltam as outras sete contas.
 
 - [x] Visitante: vê apenas rotas públicas e é recusado nas mutações privadas.
-- [ ] Membro: entra, vê o painel, cria visita e edita somente a própria ficha.
-- [ ] Administrador: além do fluxo de membro, publica antecipadamente, oculta e republica.
+- [x] Administrador como participante: entra, vê o painel, cria uma visita e envia a própria ficha; o fluxo manual foi confirmado no Preview.
+- [ ] Membro comum: entra e consegue editar somente a própria ficha; depende de uma segunda conta real para provar a fronteira entre membros.
+- [x] Administrador publica antecipadamente: a visita real ficou `published` por `admin_override` com uma participação e apareceu nas duas rotas públicas.
+- [ ] Administrador oculta e republica uma visita real pelo Preview; as regras já passaram na aceitação transacional, mas a interface ainda não foi percorrida.
 - [x] Tentar cada mutação sem sessão e registrar `401`: criação de visita, ficha, publicação, geração de token de foto e importação do Google Maps verificadas no Preview.
 - [ ] Tentar operações administrativas como membro comum e registrar `403`.
 - [x] Tentar cadastrar diretamente um nono e-mail pela Auth URL e confirmar rejeição do webhook: `403 SIGNUP_BLOCKED`, sem sessão emitida e sem aumento na quantidade de contas.
 - [x] Solicitar um e-mail novo de recuperação, abrir o callback e redefinir a senha; fluxo confirmado manualmente no Preview.
 - [x] Inspecionar o HTML público vazio de `/registros` e `/membros`: nenhum e-mail, Auth ID ou marcador de nota individual apareceu.
-- [ ] Repetir a inspeção de privacidade após criar membros, fichas e uma projeção pública reais.
+- [x] Repetir a inspeção de privacidade após criar membro, ficha e projeção pública reais: `/registros` e o detalhe responderam `200` sem e-mail nem Auth ID; a projeção real do repositório não carregou notas individuais nos comentários.
 - [ ] Testar logout e retorno à navegação pública.
 
 ## 5. Fotos e Vercel Blob — infraestrutura pronta, fluxo pendente
