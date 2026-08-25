@@ -189,11 +189,14 @@ export function createVisitPhotoRouteHandlers(
         const visitId = validatePhotoIdentifier(rawVisitId, 'O identificador da visita é inválido.');
         const body = await parseRequestBody(request) as HandleUploadBody;
         const dependencies = await resolveDependencies();
+        const tokenActor = body.type === 'blob.generate-client-token'
+          ? await dependencies.requireMember()
+          : null;
         const result = await dependencies.handleUpload({
           body,
           request,
           onBeforeGenerateToken: async (pathname) => {
-            const actor = await dependencies.requireMember();
+            const actor = tokenActor ?? await dependencies.requireMember();
             const memberId = validatePhotoIdentifier(
               actor.id,
               'O identificador do membro é inválido.',

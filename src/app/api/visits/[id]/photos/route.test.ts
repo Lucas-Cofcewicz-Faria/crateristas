@@ -236,6 +236,28 @@ beforeEach(() => {
 });
 
 describe('POST /api/visits/[id]/photos', () => {
+  it('recusa geração de token sem sessão antes de inicializar o fluxo Blob', async () => {
+    const harness = makeHarness();
+    const authError = new Error('sessão ausente');
+    authError.name = 'AuthenticationError';
+    harness.dependencies.requireMember = vi.fn().mockRejectedValue(authError);
+    harness.dependencies.handleUpload = vi.fn().mockRejectedValue(
+      new Error('BLOB_READ_WRITE_TOKEN ausente'),
+    );
+    const handlers = createVisitPhotoRouteHandlers(async () => harness.dependencies);
+
+    const response = await handlers.POST(
+      jsonRequest('POST', generateBody()),
+      { params: Promise.resolve({ id: visitId }) },
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({
+      error: 'Sessão expirada. Entre novamente.',
+    });
+    expect(harness.dependencies.handleUpload).not.toHaveBeenCalled();
+  });
+
   it('emite token somente após autenticar e usa apenas IDs validados do servidor', async () => {
     const harness = makeHarness();
 
