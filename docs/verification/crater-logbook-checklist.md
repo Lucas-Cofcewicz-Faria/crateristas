@@ -1,10 +1,10 @@
 # Verificação do livro de registros dos Crateristas
 
-Última atualização local: **20 de agosto de 2026**
+Última atualização local: **25 de agosto de 2026**
 
-Base verificada: `9e3dda0` (`develop`)
+Base verificada: `7fda4f0` (`develop`)
 
-Estado: **migration e integração PostgreSQL verificadas na branch Neon `development`; autenticação, Blob e inspeção visual ainda pendentes**.
+Estado: **migration e integração PostgreSQL verificadas; primeiro administrador provisionado; recuperação de senha e fronteira visitante/rotas privadas verificadas no Preview; fluxo autenticado completo, Blob e inspeção visual com reviews ainda pendentes**.
 
 Este documento separa evidência observada de tarefas que ainda dependem de infraestrutura. Em 20/08/2026, as migrations foram verificadas na branch Neon não produtiva `development` e o mesmo esquema-base vazio foi aplicado à `main`, de onde a integração cria branches isoladas de Preview. A Vercel Production continua sem conexão com o banco; nenhuma conta, upload ou implantação de produção foi criada nesta rodada.
 
@@ -20,6 +20,15 @@ Este documento separa evidência observada de tarefas que ainda dependem de infr
 | `git diff --check` | PASS |
 
 O primeiro teste PostgreSQL real revelou que o fixture da corrida de fotos reutilizava `$1` como `uuid` e `text` sem casts explícitos. Após reproduzir o erro real, o fixture passou a tipar o parâmetro como `uuid` antes da conversão do pathname; a suíte focada fechou em 38/38 e a suíte completa em 394/394.
+
+Rodada incremental em 25/08/2026, após a homologação da recuperação de senha e da autenticação dos pedidos de foto:
+
+| Comando | Resultado observado em 25/08/2026 |
+| --- | --- |
+| `npm test` | PASS — 62 arquivos, 403 testes aprovados e 19 integrações condicionais ignoradas |
+| `npm run lint` | PASS — zero erros; oito avisos preexistentes e restritos a `GourmetScene.tsx` |
+| `npm run build` | PASS — compilação, TypeScript e geração das 14 páginas concluídas |
+| `git diff --check` | PASS |
 
 ## 2. Navegação HTTP local
 
@@ -38,6 +47,8 @@ O servidor Next.js local respondeu aos seguintes smoke tests sem navegador:
 
 As páginas públicas dependentes do banco alcançam seus limites de erro sem `DATABASE_URL`. Isso confirma o comportamento local de falha, mas não substitui o teste com dados reais.
 
+No Preview da branch `develop`, `/`, `/registros`, `/membros` e `/entrar` responderam `200`; `/painel` e `/visitas/nova` responderam `307` para `/entrar` sem sessão. O HTML público de `/registros` e `/membros` não continha e-mail, Auth ID nem marcador de nota individual.
+
 ## 3. Banco de dados e regras coletivas — parcialmente verificado
 
 Pré-requisito: configurar `DATABASE_URL` e `TEST_DATABASE_URL` com uma branch Neon **descartável e não produtiva**. Não colar credenciais no chat nem usar valores de exemplo.
@@ -45,6 +56,8 @@ Pré-requisito: configurar `DATABASE_URL` e `TEST_DATABASE_URL` com uma branch N
 - [x] Confirmar no console que as duas URLs apontam para a branch Neon `development`; validação local confirmou duas URLs Neon presentes e iguais sem exibir o segredo.
 - [x] Executar `npm run db:migrate` somente após essa confirmação; `001_crater_logbook.sql` e `002_purge_legacy_reviews.sql` foram aplicadas e a segunda execução foi idempotente pelo ledger.
 - [x] Confirmar em PostgreSQL real que `002_purge_legacy_reviews.sql` apaga somente as linhas de `reviews`, preserva a tabela e remove zero linhas adicionais no rerun.
+- [x] Alinhar `DATABASE_URL` e Neon Auth do Git branch `develop` na branch Neon `preview/develop`; o override sensível da Vercel não altera `main` nem Production.
+- [x] Provisionar a primeira conta real como Craterista nº 1 e `admin`, sem bio, foto ou título inventado; a branch ficou com um usuário Auth e um membro do domínio.
 - [ ] Criar exatamente oito membros de teste e uma visita.
 - [ ] Enviar cinco fichas: a visita deve continuar privada.
 - [ ] Enviar a sexta ficha: a visita deve ser publicada automaticamente.
@@ -54,22 +67,26 @@ Pré-requisito: configurar `DATABASE_URL` e `TEST_DATABASE_URL` com uma branch N
 - [x] Executar novamente a suíte com `TEST_DATABASE_URL`: 394 testes aprovados e zero skips de integração PostgreSQL.
 - [x] Aplicar as migrations versionadas à Neon `main` somente como base vazia para as branches automáticas de Preview; os endpoints `main` e `development` foram validados como distintos e Production permanece desconectada na Vercel.
 
-## 4. Autenticação, autorização e privacidade — pendente
+## 4. Autenticação, autorização e privacidade — parcialmente verificada
 
-Pré-requisito: configurar Neon Auth conforme [o guia fechado de autenticação](../setup/neon-auth.md), incluindo webhook `user.before_create`, oito contas e a associação com `members`.
+O Neon Auth está configurado no Preview conforme [o guia fechado de autenticação](../setup/neon-auth.md). A primeira conta, sua associação com `members` e a recuperação de senha foram verificadas; ainda faltam as outras sete contas.
 
-- [ ] Visitante: vê apenas rotas públicas e é recusado nas mutações privadas.
+- [x] Visitante: vê apenas rotas públicas e é recusado nas mutações privadas.
 - [ ] Membro: entra, vê o painel, cria visita e edita somente a própria ficha.
 - [ ] Administrador: além do fluxo de membro, publica antecipadamente, oculta e republica.
-- [ ] Tentar cada mutação sem sessão e registrar `401`.
+- [x] Tentar cada mutação sem sessão e registrar `401`: criação de visita, ficha, publicação, geração de token de foto e importação do Google Maps verificadas no Preview.
 - [ ] Tentar operações administrativas como membro comum e registrar `403`.
 - [ ] Tentar cadastrar diretamente um nono e-mail pela Auth URL e confirmar rejeição do webhook.
-- [ ] Inspecionar JSON e HTML públicos: nenhum e-mail, Auth ID ou nota numérica individual pode aparecer.
+- [x] Solicitar um e-mail novo de recuperação, abrir o callback e redefinir a senha; fluxo confirmado manualmente no Preview.
+- [x] Inspecionar o HTML público vazio de `/registros` e `/membros`: nenhum e-mail, Auth ID ou marcador de nota individual apareceu.
+- [ ] Repetir a inspeção de privacidade após criar membros, fichas e uma projeção pública reais.
 - [ ] Testar logout e retorno à navegação pública.
 
 ## 5. Fotos e Vercel Blob — pendente
 
 Pré-requisito: um Blob store público de homologação e `BLOB_READ_WRITE_TOKEN` configurado fora do repositório.
+
+Em 25/08/2026, a listagem de variáveis do Preview confirmou que `BLOB_READ_WRITE_TOKEN` ainda não está configurada; nenhum upload foi tentado.
 
 - [ ] Enviar uma imagem e confirmar conversão real para WebP, maior lado de até `1600 px` e no máximo `750.000 bytes`.
 - [ ] Confirmar persistência via callback antes de apresentar a foto como concluída.
@@ -80,14 +97,14 @@ Pré-requisito: um Blob store público de homologação e `BLOB_READ_WRITE_TOKEN
 
 ## 6. Inspeção visual desktop — pendente
 
-Não havia navegador de automação conectado ao ambiente e o CLI `agent-browser` não está instalado. Sem instalar nada, foi possível usar o Edge já presente por caminho fixo para um screenshot headless efêmero de `/entrar` em `1280x720`: cabeçalho, texto e formulário ficaram visíveis, sem overflow ou sobreposição aparente. A imagem temporária foi inspecionada e removida. Isso é apenas um smoke visual estático, sem interação por teclado, e não aprova a matriz abaixo.
+Não havia navegador de automação conectado ao ambiente e o CLI `agent-browser` não está instalado. O Edge já presente foi usado em modo headless para capturar `/`, `/registros`, `/membros` e `/entrar` em `1280x720`, `1440x900`, `1600x900` e `1920x1080`. Os estados inicial, carregando e vazio inspecionados não apresentaram overflow horizontal, sobreposição ou recorte de controles. Isso ainda não verifica interação por teclado, páginas privadas nem estados com dados.
 
 Testar os tamanhos `1280x720`, `1440x900`, `1600x900` e `1920x1080` em:
 
-- [ ] `/registros`, incluindo vazio, filtros e cards;
+- [ ] `/registros`, incluindo vazio, filtros e cards; vazio e filtros aprovados nos quatro tamanhos, cards pendentes;
 - [ ] `/restaurantes/[slug]`, incluindo galeria, notas e oito comentários;
-- [ ] `/membros`, incluindo expansão por teclado;
-- [ ] `/entrar`, incluindo erros de credencial;
+- [ ] `/membros`, incluindo expansão por teclado; estado vazio aprovado nos quatro tamanhos, cards e teclado pendentes;
+- [ ] `/entrar`, incluindo erros de credencial; estado inicial aprovado nos quatro tamanhos, erro e teclado pendentes;
 - [ ] `/painel`, incluindo estados vazio, carregando e erro;
 - [ ] `/visitas/nova`, incluindo importação opcional do Google Maps;
 - [ ] `/visitas/[id]/avaliar`, incluindo sliders, diálogo administrativo e fotos.
