@@ -35,6 +35,7 @@ export const scorecardSchema = z.object({
   value: scoreSchema,
   access: scoreSchema,
   waitTime: scoreSchema,
+  dish: optionalText('O prato pedido', 80),
   comment: z.string({ error: 'O comentário deve ser um texto.' })
     .trim()
     .min(1, 'O comentário é obrigatório.')

@@ -288,6 +288,16 @@ class InMemoryReviewRepository implements ReviewRepository {
         displayName: this.memberRecords.get(scorecard.memberId)!.displayName,
         avatarUrl: this.memberRecords.get(scorecard.memberId)!.avatarUrl,
         comment: scorecard.comment,
+        dish: scorecard.dish ?? null,
+        scores: {
+          food: scorecard.food,
+          service: scorecard.service,
+          ambience: scorecard.ambience,
+          value: scorecard.value,
+          access: scorecard.access,
+          waitTime: scorecard.waitTime,
+        },
+        overall: aggregateScorecards([scorecard]).overall!,
       })),
       historical: null,
     };

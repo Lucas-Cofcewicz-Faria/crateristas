@@ -554,7 +554,7 @@ describe('NeonReviewRepository', () => {
     await expect(repository.getPublicVisitBySlug('visita-privada')).resolves.toBeNull();
   });
 
-  it('returns flat allowlisted public comments with explicit historical gaps', async () => {
+  it('returns public comments with dish and individual scores without identity secrets', async () => {
     const sql = {
       query: async () => [{
         id: 'visit-1',
@@ -589,6 +589,7 @@ describe('NeonReviewRepository', () => {
           displayName: 'Membro 1',
           avatarUrl: null,
           comment: 'Comentário público.',
+          dish: 'Moqueca de banana-da-terra',
           food: 10,
           service: 10,
           ambience: 10,
@@ -630,13 +631,28 @@ describe('NeonReviewRepository', () => {
       displayName: 'Membro 1',
       avatarUrl: null,
       comment: 'Comentário público.',
+      dish: 'Moqueca de banana-da-terra',
+      scores: {
+        food: 10,
+        service: 10,
+        ambience: 10,
+        value: 10,
+        access: 10,
+        waitTime: 10,
+      },
+      overall: 10,
     });
     expect(Object.keys(result!.comments[0]).sort()).toEqual([
       'avatarUrl',
       'comment',
+      'dish',
       'displayName',
       'memberId',
+      'overall',
+      'scores',
     ]);
+    expect(result?.comments[0]).not.toHaveProperty('email');
+    expect(result?.comments[0]).not.toHaveProperty('authUserId');
     expect(result?.photos[0]).toEqual({
       id: 'photo-1',
       url: 'https://images.example.com/cover.webp',
@@ -1167,6 +1183,53 @@ describeIntegration('NeonReviewRepository database constraints', () => {
       [atomicVisitId],
     );
     expect(Number(events[0]?.event_count)).toBe(1);
+  });
+
+  it('persists the optional dish and exposes the complete individual scorecard on published detail', async () => {
+    if (!sql) throw new Error('TEST_DATABASE_URL ausente.');
+    const repository = createNeonReviewRepository(sql);
+    const suffix = memberId.slice(0, 8);
+
+    await sql.query(
+      `UPDATE visits
+       SET publication_state = 'published', publication_reason = 'admin_override', published_at = NOW()
+       WHERE id = $1`,
+      [visitId],
+    );
+
+    await repository.upsertScorecard(visitId, memberId, {
+      food: 9,
+      service: 8,
+      ambience: 7,
+      value: 6,
+      access: 5,
+      waitTime: 4,
+      dish: 'Lámen tonkotsu',
+      comment: 'O caldo sustentou o prato até o fim.',
+    });
+
+    const detail = await repository.getPublicVisitBySlug(
+      `test-visit-${suffix}`,
+    );
+    expect(detail?.comments).toEqual([{
+      memberId,
+      displayName: 'Teste',
+      avatarUrl: null,
+      comment: 'O caldo sustentou o prato até o fim.',
+      dish: 'Lámen tonkotsu',
+      scores: {
+        food: 9,
+        service: 8,
+        ambience: 7,
+        value: 6,
+        access: 5,
+        waitTime: 4,
+      },
+      overall: 6.5,
+    }]);
+
+    const workspace = await repository.getVisitReviewWorkspace(visitId, memberId);
+    expect(workspace?.ownScorecard?.dish).toBe('Lámen tonkotsu');
   });
 
   it('reuses a deleted photo position without exceeding five photos', async () => {

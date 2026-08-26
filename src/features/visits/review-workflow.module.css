@@ -207,6 +207,44 @@
   gap: 10px;
 }
 
+.dishField {
+  display: grid;
+  gap: 8px;
+}
+
+.dishField label {
+  color: var(--ink);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.dishField input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: inherit;
+}
+
+.dishField input::placeholder {
+  color: var(--ink-muted);
+  opacity: 1;
+}
+
+.dishField input:focus {
+  border-color: var(--ember-bright);
+}
+
+.dishField p {
+  color: var(--ink-muted);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
 .commentField textarea {
   width: 100%;
   resize: vertical;

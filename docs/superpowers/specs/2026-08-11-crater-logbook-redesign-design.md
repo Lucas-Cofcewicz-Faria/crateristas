@@ -1,7 +1,7 @@
 # Crateristas: Livro de Registros e Avaliacao Coletiva
 
 **Data:** 11 de agosto de 2026
-**Status:** aprovado para planejamento
+**Status:** aprovado e atualizado em 25 de agosto de 2026
 **Idioma do produto:** portugues brasileiro
 **Plataforma inicial:** desktop, de 1280 a 1920 px
 
@@ -20,7 +20,7 @@ O visitante deve perceber primeiro um arquivo de restaurantes. A Sociedade da Cr
 - Permitir que oito membros autenticados contribuam com notas e comentarios curtos.
 - Publicar automaticamente uma avaliacao ao atingir seis contribuicoes.
 - Permitir que o administrador publique antes do quorum ou oculte uma avaliacao.
-- Manter as notas individuais privadas e mostrar publicamente apenas medias coletivas.
+- Mostrar medias coletivas de imediato e permitir que o visitante revele a ficha individual de cada comentario.
 - Criar uma pagina publica de membros com cartoes expansíveis.
 - Manter hospedagem, banco, autenticacao e imagens dentro de cotas gratuitas.
 - Construir primeiro uma experiencia desktop satisfatoria.
@@ -32,7 +32,7 @@ O visitante deve perceber primeiro um arquivo de restaurantes. A Sociedade da Cr
 - Cadastro publico de usuarios.
 - Votacao de aprovacao ou edicao coletiva de um unico texto.
 - Veredito criado por IA ou por regras automaticas.
-- Exposicao publica das notas numericas de cada membro.
+- Rankings ou comparacoes automaticas entre membros.
 - Gamificacao complexa, ranking competitivo ou sistema de pontos.
 - Refatoracao interna do Three.js sem uma necessidade tecnica comprovada.
 
@@ -50,9 +50,9 @@ A Sociedade da Cratera surge de forma gradual. Simbolos discretos, numeracao inc
 
 O site apresenta medias, fotos e comentarios individuais curtos. O visitante forma a propria conclusao; o sistema nao gera um resumo definitivo.
 
-### 4.4 Colaboracao sem exposicao indevida
+### 4.4 Transparencia sem exposicao indevida
 
-Os comentarios sao atribuidos publicamente aos membros, mas as notas numericas individuais permanecem privadas. Isso evita transformar a pagina publica em uma comparacao entre amigos.
+Os comentarios, o prato pedido opcional e as notas numericas sao atribuidos publicamente aos membros. A ficha individual permanece recolhida ate o visitante escolher `Ver notas`; a pagina nao cria ranking entre amigos. E-mails, IDs de autenticacao e identificadores internos permanecem privados.
 
 ### 4.5 Simplicidade operacional
 
@@ -204,8 +204,8 @@ Os estados persistidos serao `private`, `published` e `hidden`. O motivo da publ
 
 - consultar registros publicados;
 - pesquisar e filtrar;
-- ver medias coletivas, fotos, participacao, comentarios e membros publicos;
-- nao receber notas individuais nem dados de rascunhos.
+- ver medias coletivas, fotos, participacao, comentarios, pratos pedidos, fichas individuais e membros publicos;
+- nao receber dados de rascunhos, e-mails, IDs de autenticacao ou identificadores internos.
 
 ### Membro autenticado
 

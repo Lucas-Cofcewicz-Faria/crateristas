@@ -22,6 +22,36 @@ describe('scorecardSchema', () => {
   it('accepts six valid scores and a 180-character comment', () => {
     expect(scorecardSchema.safeParse({ ...validScores, comment: 'a'.repeat(180) }).success).toBe(true);
   });
+
+  it('normalizes an optional dish without breaking scorecards that omit it', () => {
+    expect(scorecardSchema.parse({
+      ...validScores,
+      comment: 'Comentário válido.',
+      dish: '  Nhoque de mandioquinha  ',
+    }).dish).toBe('Nhoque de mandioquinha');
+    expect(scorecardSchema.parse({
+      ...validScores,
+      comment: 'Comentário válido.',
+    }).dish).toBeUndefined();
+    expect(scorecardSchema.parse({
+      ...validScores,
+      comment: 'Comentário válido.',
+      dish: '   ',
+    }).dish).toBeUndefined();
+  });
+
+  it('rejects a dish above 80 characters', () => {
+    const result = scorecardSchema.safeParse({
+      ...validScores,
+      comment: 'Comentário válido.',
+      dish: 'a'.repeat(81),
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.flatten().fieldErrors.dish).toEqual([
+      'O prato pedido deve ter no máximo 80 caracteres.',
+    ]);
+  });
 });
 
 describe('publicVisitFiltersSchema', () => {

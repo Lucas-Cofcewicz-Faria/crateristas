@@ -1,4 +1,6 @@
 import Image from 'next/image';
+import type { ScoreValues } from '@/domain/reviews/types';
+import { IndividualScoreDisclosure } from './IndividualScoreDisclosure';
 import styles from './restaurant.module.css';
 
 export interface CommentFragment {
@@ -6,6 +8,9 @@ export interface CommentFragment {
   displayName: string;
   avatarUrl: string | null;
   comment: string;
+  dish: string | null;
+  scores: ScoreValues;
+  overall: number;
 }
 
 function normalizeDisplayName(displayName: string): string {
@@ -64,6 +69,17 @@ export function CommentFragments({ comments }: { comments: CommentFragment[] }):
               <blockquote>
                 <p>{comment.comment}</p>
               </blockquote>
+              {comment.dish ? (
+                <p className={styles.commentDish}>
+                  <span>Prato pedido</span>
+                  <strong>{comment.dish}</strong>
+                </p>
+              ) : null}
+              <IndividualScoreDisclosure
+                displayName={displayName}
+                overall={comment.overall}
+                scores={comment.scores}
+              />
             </figure>
           </li>
         );

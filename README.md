@@ -1,13 +1,13 @@
 # Crateristas
 
-Livro de registros gastronômicos de um grupo fechado de oito crateristas. Cada visita reúne seis notas de `0` a `10` — comida, serviço, ambiente, custo-benefício, acesso/localização e tempo de espera — e um comentário de até 180 caracteres por integrante. A sexta ficha publica a visita automaticamente; o administrador também pode publicar antecipadamente, ocultar e republicar.
+Livro de registros gastronômicos de um grupo fechado de oito crateristas. Cada visita reúne seis notas de `0` a `10` — comida, serviço, ambiente, custo-benefício, acesso/localização e tempo de espera —, um comentário de até 180 caracteres e o prato pedido opcional por integrante. A sexta ficha publica a visita automaticamente; o administrador também pode publicar antecipadamente, ocultar e republicar.
 
 ## Rotas
 
 - `/`: landing Three.js; ao fim da descida, segue para `/registros`.
 - `/registros`: arquivo público filtrável das visitas publicadas.
-- `/restaurantes/[slug]`: detalhe público, médias coletivas, comentários e até cinco fotos.
-- `/membros`: diretório público sem e-mails, IDs de autenticação ou notas individuais.
+- `/restaurantes/[slug]`: detalhe público, médias coletivas, comentários, pratos pedidos, fichas individuais expansíveis e até cinco fotos.
+- `/membros`: diretório público sem e-mails nem IDs de autenticação.
 - `/entrar`: entrada das oito contas já provisionadas; não há cadastro público.
 - `/painel`: visitas em formação e publicações recentes do membro autenticado.
 - `/visitas/nova`: criação autenticada de visita, com assistência opcional do Google Maps.
@@ -19,7 +19,8 @@ Bookmarks antigos continuam compatíveis: `/home` e `/restaurant/[id]` redirecio
 
 - Exatamente oito contas permitidas por uma allowlist server-side e webhook bloqueante `user.before_create`.
 - Quórum padrão de seis; cada membro envia ou edita somente uma ficha por visita.
-- A saída pública mostra médias coletivas e comentários atribuídos, nunca notas numéricas individuais.
+- A saída pública mostra médias coletivas e comentários atribuídos; no detalhe da visita, cada comentário permite revelar a ficha numérica daquele membro.
+- E-mails, IDs de autenticação e outros identificadores internos nunca fazem parte da projeção pública.
 - Fotos são WebP, no máximo cinco por visita, até `1600 px` no maior lado e `750.000 bytes` por arquivo.
 - A importação do Google Maps é somente assistência autenticada em `/visitas/nova`: aceita hosts oficiais, valida redirecionamentos, limita tempo/tamanho e retorna sugestões editáveis. Não há scraper público.
 - Não existe fallback em `localStorage` nem dado mock publicado.

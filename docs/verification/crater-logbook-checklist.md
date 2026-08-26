@@ -60,7 +60,7 @@ O servidor Next.js local respondeu aos seguintes smoke tests sem navegador:
 
 As páginas públicas dependentes do banco alcançam seus limites de erro sem `DATABASE_URL`. Isso confirma o comportamento local de falha, mas não substitui o teste com dados reais.
 
-No Preview da branch `develop`, `/`, `/registros`, `/membros` e `/entrar` responderam `200`; `/painel` e `/visitas/nova` responderam `307` para `/entrar` sem sessão. O HTML público de `/registros` e `/membros` não continha e-mail, Auth ID nem marcador de nota individual.
+No Preview da branch `develop`, `/`, `/registros`, `/membros` e `/entrar` responderam `200`; `/painel` e `/visitas/nova` responderam `307` para `/entrar` sem sessão. Na inspeção anterior à mudança de 25/08/2026, o HTML público de `/registros` e `/membros` não continha e-mail nem Auth ID.
 
 ## 3. Banco de dados e regras coletivas — parcialmente verificado
 
@@ -76,7 +76,8 @@ Pré-requisito: configurar `DATABASE_URL` e `TEST_DATABASE_URL` com uma branch N
 - [x] Enviar a sexta ficha: a visita foi publicada automaticamente por `quorum`, com um único evento para seis participantes.
 - [x] Enviar a sétima e a oitava fichas: médias, nota geral, contagem e oito comentários foram recalculados pela projeção real do repositório.
 - [x] Ocultar a visita, editar uma ficha e confirmar que ela continuou oculta e ausente das projeções públicas.
-- [x] Republicar e confirmar que a projeção pública reapareceu com a média atualizada e comentários sem notas individuais.
+- [x] Republicar e confirmar que a projeção pública reapareceu com a média atualizada e comentários. A verificação ocorreu antes da publicação opcional das fichas individuais aprovada em 25/08/2026.
+- [x] Aplicar `004_scorecard_dish.sql` na branch Neon `development` e confirmar por integração real que prato, seis notas e média pessoal são persistidos e projetados sem e-mail nem Auth ID.
 - [x] Executar novamente a suíte com `TEST_DATABASE_URL`: 394 testes aprovados e zero skips de integração PostgreSQL.
 - [x] Aplicar as migrations versionadas à Neon `main` somente como base vazia para as branches automáticas de Preview; os endpoints `main` e `development` foram validados como distintos e Production permanece desconectada na Vercel.
 
@@ -96,8 +97,9 @@ O Neon Auth está configurado no Preview conforme [o guia fechado de autenticaç
 - [ ] Tentar operações administrativas como membro comum e registrar `403`.
 - [x] Tentar cadastrar diretamente um nono e-mail pela Auth URL e confirmar rejeição do webhook: `403 SIGNUP_BLOCKED`, sem sessão emitida e sem aumento na quantidade de contas.
 - [x] Solicitar um e-mail novo de recuperação, abrir o callback e redefinir a senha; fluxo confirmado manualmente no Preview.
-- [x] Inspecionar o HTML público vazio de `/registros` e `/membros`: nenhum e-mail, Auth ID ou marcador de nota individual apareceu.
-- [x] Repetir a inspeção de privacidade após criar membro, ficha e projeção pública reais: `/registros` e o detalhe responderam `200` sem e-mail nem Auth ID; a projeção real do repositório não carregou notas individuais nos comentários.
+- [x] Inspecionar o HTML público vazio de `/registros` e `/membros`: nenhum e-mail nem Auth ID apareceu.
+- [x] Repetir a inspeção de privacidade após criar membro, ficha e projeção pública reais: `/registros` e o detalhe responderam `200` sem e-mail nem Auth ID. Esta inspeção ocorreu antes da decisão de 25/08/2026 de publicar fichas individuais sob demanda.
+- [ ] No Preview atualizado, confirmar que cada comentário mostra o prato opcional, revela somente a própria ficha ao clicar em `Ver notas` e continua sem e-mail, Auth ID ou identificador interno.
 - [ ] Testar logout e retorno à navegação pública.
 
 ## 5. Fotos e Vercel Blob — infraestrutura pronta, fluxo pendente

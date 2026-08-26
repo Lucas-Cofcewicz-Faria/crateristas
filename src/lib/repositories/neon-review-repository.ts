@@ -136,11 +136,26 @@ function publicComments(value: unknown): PublicComment[] {
     if (!isRecord(comment)) {
       throw new Error('Resposta inválida do banco: comment.');
     }
+    const scores = {
+      food: numberValue(comment.food, 'comment.food'),
+      service: numberValue(comment.service, 'comment.service'),
+      ambience: numberValue(comment.ambience, 'comment.ambience'),
+      value: numberValue(comment.value, 'comment.value'),
+      access: numberValue(comment.access, 'comment.access'),
+      waitTime: numberValue(comment.waitTime, 'comment.waitTime'),
+    };
+    const overall = Math.round((
+      Object.values(scores).reduce((sum, score) => sum + score, 0) / SCORE_KEYS.length
+      + Number.EPSILON
+    ) * 10) / 10;
     return {
       memberId: requiredString(comment.memberId, 'comment.memberId'),
       displayName: requiredString(comment.displayName, 'comment.displayName'),
       avatarUrl: nullableString(comment.avatarUrl, 'comment.avatarUrl'),
       comment: requiredString(comment.comment, 'comment.comment'),
+      dish: nullableString(comment.dish, 'comment.dish'),
+      scores,
+      overall,
     };
   });
 }
@@ -294,6 +309,7 @@ function pendingVisitFromRow(row: Row): PendingVisit {
 }
 
 function visitReviewWorkspaceFromRow(row: Row): VisitReviewWorkspace {
+  const ownDish = nullableString(row.own_dish, 'own_dish');
   const ownScorecard = row.own_food === null || row.own_food === undefined ? null : {
     food: numberValue(row.own_food, 'own_food'),
     service: numberValue(row.own_service, 'own_service'),
@@ -302,6 +318,7 @@ function visitReviewWorkspaceFromRow(row: Row): VisitReviewWorkspace {
     access: numberValue(row.own_access, 'own_access'),
     waitTime: numberValue(row.own_wait_time, 'own_wait_time'),
     comment: requiredString(row.own_comment, 'own_comment'),
+    ...(ownDish ? { dish: ownDish } : {}),
   };
   return {
     id: requiredString(row.id, 'id'),
@@ -452,8 +469,8 @@ WITH locked_visit AS MATERIALIZED (
 ),
 saved AS (
   INSERT INTO scorecards
-    (visit_id, member_id, food, service, ambience, value, access, wait_time, comment)
-  SELECT lv.id, $2, $3, $4, $5, $6, $7, $8, $9
+    (visit_id, member_id, food, service, ambience, value, access, wait_time, comment, dish)
+  SELECT lv.id, $2, $3, $4, $5, $6, $7, $8, $9, $10
   FROM locked_visit lv
   ON CONFLICT (visit_id, member_id) DO UPDATE SET
     food = EXCLUDED.food,
@@ -463,6 +480,7 @@ saved AS (
     access = EXCLUDED.access,
     wait_time = EXCLUDED.wait_time,
     comment = EXCLUDED.comment,
+    dish = EXCLUDED.dish,
     updated_at = NOW()
   RETURNING visit_id
 ),
@@ -494,17 +512,17 @@ score_aggregate AS (
 ),
 transition AS (
   UPDATE visits v
-  SET publication_state = $12,
-      publication_reason = $13,
-      published_at = CASE WHEN $12 = 'published' THEN NOW() ELSE v.published_at END,
-      published_by = CASE WHEN $12 = 'published' THEN NULL ELSE v.published_by END,
+  SET publication_state = $13,
+      publication_reason = $14,
+      published_at = CASE WHEN $13 = 'published' THEN NOW() ELSE v.published_at END,
+      published_by = CASE WHEN $13 = 'published' THEN NULL ELSE v.published_by END,
       updated_at = NOW(),
       version = v.version + 1
   FROM visit_context vc, score_aggregate aggregate
   WHERE v.id = vc.id
-    AND vc.publication_state = $10
-    AND vc.publication_state <> $12
-    AND aggregate.participant_count >= $11
+    AND vc.publication_state = $11
+    AND vc.publication_state <> $13
+    AND aggregate.participant_count >= $12
   RETURNING v.publication_state, v.publication_reason
 ),
 event AS (
@@ -633,6 +651,7 @@ class NeonReviewRepository implements ReviewRepository {
         scorecard.access,
         scorecard.waitTime,
         scorecard.comment,
+        scorecard.dish ?? null,
         input.expectedPublicationState,
         input.quorum,
         input.transitionAtQuorum.state,
@@ -704,8 +723,8 @@ class NeonReviewRepository implements ReviewRepository {
   async upsertScorecard(visitId: string, memberId: string, input: ScorecardInput): Promise<void> {
     await this.sql.query(
       `INSERT INTO scorecards
-         (visit_id, member_id, food, service, ambience, value, access, wait_time, comment)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         (visit_id, member_id, food, service, ambience, value, access, wait_time, comment, dish)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        ON CONFLICT (visit_id, member_id) DO UPDATE SET
          food = EXCLUDED.food,
          service = EXCLUDED.service,
@@ -714,6 +733,7 @@ class NeonReviewRepository implements ReviewRepository {
          access = EXCLUDED.access,
          wait_time = EXCLUDED.wait_time,
          comment = EXCLUDED.comment,
+         dish = EXCLUDED.dish,
          updated_at = NOW()`,
       [
         visitId,
@@ -725,6 +745,7 @@ class NeonReviewRepository implements ReviewRepository {
         input.access,
         input.waitTime,
         input.comment,
+        input.dish ?? null,
       ],
     );
   }
@@ -1146,7 +1167,14 @@ class NeonReviewRepository implements ReviewRepository {
            'memberId', s.member_id,
            'displayName', m.display_name,
            'avatarUrl', m.avatar_url,
-           'comment', s.comment
+           'comment', s.comment,
+           'dish', s.dish,
+           'food', s.food,
+           'service', s.service,
+           'ambience', s.ambience,
+           'value', s.value,
+           'access', s.access,
+           'waitTime', s.wait_time
          ) ORDER BY s.created_at) AS items
          FROM scorecards s
          JOIN members m ON m.id = s.member_id
@@ -1259,6 +1287,7 @@ class NeonReviewRepository implements ReviewRepository {
          own.access AS own_access,
          own.wait_time AS own_wait_time,
          own.comment AS own_comment,
+         own.dish AS own_dish,
          COALESCE(photos.items, '[]'::jsonb) AS photos
        FROM visits v
        JOIN restaurants r ON r.id = v.restaurant_id

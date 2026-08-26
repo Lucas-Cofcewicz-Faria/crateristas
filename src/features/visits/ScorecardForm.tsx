@@ -28,6 +28,7 @@ const EMPTY_SCORECARD: ScorecardInput = {
   value: 0,
   access: 0,
   waitTime: 0,
+  dish: '',
   comment: '',
 };
 
@@ -74,8 +75,9 @@ export function ScorecardForm({ visitId, initialValues, onSaved }: ScorecardForm
     if (pending) return;
     const parsed = scorecardSchema.safeParse(values);
     if (!parsed.success) {
+      const dishIssue = parsed.error.flatten().fieldErrors.dish?.[0];
       const commentIssue = parsed.error.flatten().fieldErrors.comment?.[0];
-      setError(commentIssue ?? 'Revise as notas informadas.');
+      setError(dishIssue ?? commentIssue ?? 'Revise as notas informadas.');
       return;
     }
     setPending(true);
@@ -123,6 +125,22 @@ export function ScorecardForm({ visitId, initialValues, onSaved }: ScorecardForm
               </div>
             );
           })}
+        </div>
+
+        <div className={styles.dishField}>
+          <label htmlFor="score-dish">Prato pedido (opcional)</label>
+          <input
+            id="score-dish"
+            maxLength={80}
+            onChange={(event) => setValues((current) => ({
+              ...current,
+              dish: event.target.value,
+            }))}
+            placeholder="Ex.: Lámen tonkotsu"
+            type="text"
+            value={values.dish ?? ''}
+          />
+          <p>O prato aparecerá junto do seu comentário na mesa.</p>
         </div>
 
         <div className={styles.commentField}>

@@ -335,6 +335,111 @@
   line-height: 1.5;
 }
 
+.commentDish {
+  display: grid;
+  gap: 3px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.commentDish span {
+  color: var(--ember-bright);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.commentDish strong {
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: 0.74rem;
+  font-weight: 760;
+  line-height: 1.4;
+}
+
+.scoreDisclosure {
+  margin-top: 14px;
+}
+
+.scoreToggle {
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ember-bright);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--ember-bright), transparent 55%);
+  text-underline-offset: 4px;
+}
+
+.scoreToggle:hover {
+  color: var(--ink);
+}
+
+.scoreToggle:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid var(--ember-bright);
+  outline-offset: 3px;
+}
+
+.individualScores {
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.individualOverall {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ink);
+}
+
+.individualOverall span {
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.individualOverall strong {
+  color: var(--ember-bright);
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: 1.2rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.individualScoreList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+  margin-top: 14px;
+}
+
+.individualScore {
+  min-width: 0;
+}
+
+.individualScore dt {
+  color: var(--ink-muted);
+  font-size: 0.58rem;
+  font-weight: 760;
+  line-height: 1.25;
+}
+
+.individualScore dd {
+  margin-top: 3px;
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
 .emptyComments {
   align-self: end;
   justify-self: center;

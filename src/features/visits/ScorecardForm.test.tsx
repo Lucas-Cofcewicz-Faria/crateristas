@@ -11,6 +11,7 @@ const existing: ScorecardInput = {
   value: 6,
   access: 5,
   waitTime: 4,
+  dish: 'Risoto de cogumelos',
   comment: 'Minha contribuição anterior.',
 };
 
@@ -40,6 +41,8 @@ describe('ficha acessível de avaliação', () => {
       expect(slider).toHaveAccessibleDescription();
       expect(screen.getByText(`${value} de 10`, { selector: 'output' })).toBeVisible();
     }
+    expect(screen.getByLabelText('Prato pedido (opcional)')).toHaveValue('Risoto de cogumelos');
+    expect(screen.getByLabelText('Prato pedido (opcional)')).toHaveAttribute('maxlength', '80');
     expect(screen.getByLabelText('Comentário')).toHaveValue('Minha contribuição anterior.');
     expect(screen.getByText('152 caracteres restantes')).toBeInTheDocument();
   });
@@ -87,6 +90,8 @@ describe('ficha acessível de avaliação', () => {
     const user = userEvent.setup();
     render(<ScorecardForm initialValues={existing} visitId="visit-1" />);
 
+    await user.clear(screen.getByLabelText('Prato pedido (opcional)'));
+    await user.type(screen.getByLabelText('Prato pedido (opcional)'), '  Lámen shoyu  ');
     await user.click(screen.getByRole('button', { name: 'Salvar avaliação' }));
 
     expect(fetchMock).toHaveBeenCalledWith('/api/visits/visit-1/scorecard', expect.objectContaining({
@@ -94,7 +99,7 @@ describe('ficha acessível de avaliação', () => {
       headers: { 'content-type': 'application/json' },
     }));
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(JSON.parse(String(init.body))).toEqual(existing);
+    expect(JSON.parse(String(init.body))).toEqual({ ...existing, dish: 'Lámen shoyu' });
     const status = await screen.findByRole('status', { name: 'Status da avaliação' });
     expect(status).toHaveTextContent('Avaliação salva.');
     expect(status).toHaveTextContent('6 de 8 membros contribuíram.');
@@ -116,6 +121,7 @@ describe('ficha acessível de avaliação', () => {
       'Não foi possível salvar a avaliação. Tente novamente.',
     );
     expect(food).toHaveValue('9');
+    expect(screen.getByLabelText('Prato pedido (opcional)')).toHaveValue(existing.dish);
     expect(screen.getByLabelText('Comentário')).toHaveValue(existing.comment);
   });
 });

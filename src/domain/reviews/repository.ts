@@ -81,6 +81,9 @@ export interface PublicComment {
   displayName: string;
   avatarUrl: string | null;
   comment: string;
+  dish: string | null;
+  scores: ScoreValues;
+  overall: number;
 }
 
 export type HistoricalScoreValues = Record<keyof ScoreValues, number | null>;
