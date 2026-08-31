@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { getCraterAtmosphere } from './crater-atmosphere';
 
 export default function GourmetScene() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -15,8 +16,14 @@ export default function GourmetScene() {
 
     // 1. Scene Setup
     const scene = new THREE.Scene();
-    // Deep sunset violet fog for ambient atmospheric depth
-    scene.fog = new THREE.FogExp2(0x160b19, 0.055);
+    const initialAtmosphere = getCraterAtmosphere(0);
+    const skyColor = new THREE.Color(initialAtmosphere.skyColor);
+    scene.background = skyColor;
+    const sceneFog = new THREE.FogExp2(
+      initialAtmosphere.fog.color,
+      initialAtmosphere.fog.density,
+    );
+    scene.fog = sceneFog;
 
     // 2. Camera Setup (Increased FOV to 70 for exaggerated wide-angle 3D depth)
     const camera = new THREE.PerspectiveCamera(
@@ -189,13 +196,17 @@ export default function GourmetScene() {
     const fineTexture = createFineTexture();
     const concreteTexture = createConcreteTexture();
 
-    // 5. Lighting - Sunset Theme (Refined to keep neutral grays crisp)
-    // Ambient light with cool twilight lavender-indigo undertones to balance warm sun
-    const ambientLight = new THREE.AmbientLight(0x8892b0, 0.5);
+    // 5. Lighting - driven by the scroll-based day/night atmosphere
+    const ambientLight = new THREE.AmbientLight(
+      initialAtmosphere.ambientLight.color,
+      initialAtmosphere.ambientLight.intensity,
+    );
     scene.add(ambientLight);
 
-    // Directional light representing the sunset sun casting warm golden-peach shadows
-    const sunLight = new THREE.DirectionalLight(0xffe5cc, 2.0);
+    const sunLight = new THREE.DirectionalLight(
+      initialAtmosphere.sun.color,
+      initialAtmosphere.sun.intensity,
+    );
     sunLight.position.set(6, 9, 14); // Slanted light source to cast shadows forward-left
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 1024;
@@ -210,25 +221,38 @@ export default function GourmetScene() {
     sunLight.shadow.bias = -0.0003;
     scene.add(sunLight);
 
-    // Dynamic camera headlight (soft neutral-warm peach headlight)
-    const cameraLight = new THREE.PointLight(0xfff0e0, 3.2, 25);
+    const cameraLight = new THREE.PointLight(
+      initialAtmosphere.cameraLight.color,
+      initialAtmosphere.cameraLight.intensity,
+      25,
+    );
     camera.add(cameraLight);
     scene.add(camera);
 
-    // Glowing orange core at the bottom of the crater (range restricted to 20 to prevent leakage)
-    const coreLight = new THREE.PointLight(0xffaa44, 9, 20);
+    // The crater takes over as the sun disappears below the horizon.
+    const coreLight = new THREE.PointLight(
+      initialAtmosphere.coreLight.color,
+      initialAtmosphere.coreLight.intensity,
+      32,
+    );
     coreLight.position.set(0, 0, -26);
     scene.add(coreLight);
 
-    // Side lights for structural orange/purple sunset highlights in the tunnel
-    // (moved deeper and range restricted to 12 to completely eliminate pink/orange light leak on the sloped ground)
-    const sideLight1 = new THREE.PointLight(0xff5533, 4.0, 12);
-    sideLight1.position.set(2, 2, -10);
-    scene.add(sideLight1);
+    const warmSideLight = new THREE.PointLight(
+      initialAtmosphere.sideLights.warm.color,
+      initialAtmosphere.sideLights.warm.intensity,
+      16,
+    );
+    warmSideLight.position.set(2, 2, -10);
+    scene.add(warmSideLight);
 
-    const sideLight2 = new THREE.PointLight(0x772255, 3.0, 12);
-    sideLight2.position.set(-2, -2, -18);
-    scene.add(sideLight2);
+    const coolSideLight = new THREE.PointLight(
+      initialAtmosphere.sideLights.cool.color,
+      initialAtmosphere.sideLights.cool.intensity,
+      16,
+    );
+    coolSideLight.position.set(-2, -2, -18);
+    scene.add(coolSideLight);
 
     // 6. Geometry & Meshes
 
@@ -506,11 +530,13 @@ export default function GourmetScene() {
     }
     tunnelGeometry.computeVertexNormals();
 
-    // Premium dark volcanic rock material for crater walls
+    // Rough volcanic rock keeps enough diffuse response for the night lighting to read.
     const tunnelMaterial = new THREE.MeshStandardMaterial({
-      color: 0x121110,
-      roughness: 0.9,
-      metalness: 0.35,
+      color: 0x382829,
+      emissive: 0x120707,
+      emissiveIntensity: 0.45,
+      roughness: 0.94,
+      metalness: 0.04,
       flatShading: true,
       side: THREE.BackSide, // Camera looks at inside walls
     });
@@ -1410,7 +1436,7 @@ export default function GourmetScene() {
       color: 0xcda45e,
       size: 0.04,
       transparent: true,
-      opacity: 0.6,
+      opacity: initialAtmosphere.particlesOpacity,
       blending: THREE.AdditiveBlending,
     });
 
@@ -1474,66 +1500,7 @@ export default function GourmetScene() {
     }
     scene.add(birdsGroup);
 
-    // E3. Minimalist Sunset Sky Backdrop Sphere (liquid-motion ShaderMaterial)
-    const skyGeom = new THREE.SphereGeometry(60, 32, 16);
-    const skyMat = new THREE.ShaderMaterial({
-      uniforms: {
-        uTime: { value: 0.0 },
-        uOpacity: { value: 0.95 },
-      },
-      vertexShader: `
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform float uTime;
-        uniform float uOpacity;
-        varying vec2 vUv;
-        void main() {
-          // Multiply UVs by a larger frequency to see multiple swirling waves/bands at the same time
-          vec2 uv = vUv * 7.5;
-          float t = uTime * 0.5; // Smooth slow fluid animation
-          
-          // Domain warping with nested sines/cosines for a fluid marble/liquid flow
-          float wx = uv.x + sin(uv.y + t * 1.2) * 1.5;
-          float wy = uv.y + cos(uv.x + t * 1.0) * 1.5;
-          
-          float w2x = wx + sin(wy * 1.5 - t * 0.9) * 1.2;
-          float w2y = wy + cos(wx * 1.5 + t * 1.1) * 1.2;
-          
-          float factor1 = sin(w2x + t) * 0.5 + 0.5;
-          float factor2 = cos(w2y - t * 0.8) * 0.5 + 0.5;
-          float factor3 = sin(w2x * 0.5 + w2y * 0.5 + t * 0.4) * 0.5 + 0.5;
-          
-          // High-contrast, vibrant, and dramatic psychedelic sunset colors:
-          vec3 sunGold = vec3(1.0, 0.88, 0.2);          // Saturated bright gold (#ffe033)
-          vec3 orangeCoral = vec3(1.0, 0.38, 0.1);      // Deep vibrant orange (#ff611a)
-          vec3 magentaPink = vec3(0.95, 0.12, 0.52);     // Intense hot magenta-pink (#f21e85)
-          vec3 deepIndigo = vec3(0.12, 0.06, 0.5);      // Deep twilight purple-indigo (#1e0f80)
-          
-          // Blend colors in a highly liquid swirling style
-          vec3 finalColor = mix(sunGold, orangeCoral, factor1);
-          finalColor = mix(finalColor, magentaPink, factor2 * 0.9);
-          finalColor = mix(finalColor, deepIndigo, factor3 * 0.85);
-          
-          gl_FragColor = vec4(finalColor, uOpacity);
-        }
-      `,
-      side: THREE.BackSide,
-      depthWrite: false,
-      transparent: true,
-    });
-    const skyMesh = new THREE.Mesh(skyGeom, skyMat);
-    // Positioned centered at the horizon (Z = 10)
-    skyMesh.position.set(0, 0, 10);
-    skyMesh.rotation.x = Math.PI / 2;
-    skyMesh.renderOrder = -10;
-    scene.add(skyMesh);
-
-    // E2. Twinkling Background Stars (Three independent particle groups for asynchronous twinkling)
+    // E2. Twinkling stars become visible as daylight recedes.
     const starGroupsCount = 3;
     const starsGroups: THREE.Points[] = [];
     const starsMaterials: THREE.PointsMaterial[] = [];
@@ -1546,26 +1513,16 @@ export default function GourmetScene() {
       const starColors = new Float32Array(gStarCount * 3);
       
       for (let i = 0; i < gStarCount; i++) {
-        // Distribute stars: X goes from -30 (upper left) to 4 (middle is 0, so 4 is slightly right of middle)
-        const x = -30.0 + Math.random() * 34.0;
-        // Y: depth/forward direction in world, 33 to 45
-        const y = 33.0 + Math.random() * 12.0;
-        // Z: height (up), 11 to 28
-        const z = 11.0 + Math.random() * 17.0;
+        const x = -28 + Math.random() * 56;
+        const y = 25 + Math.random() * 20;
+        const z = 10 + Math.random() * 20;
 
         starPositions[i * 3] = x;
         starPositions[i * 3 + 1] = y;
         starPositions[i * 3 + 2] = z;
 
-        // Calculate brightness based on position:
-        // Stars start appearing from the middle (X=0) to the upper left (X=-30, Z=28)
-        // Normalize X from [-30, 4] to [1, 0] (denser/brighter on the left)
-        const xFactor = Math.max(0, Math.min(1, (4 - x) / 34.0));
-        // Normalize Z from [11, 28] to [0.2, 1.0] (brighter/more visible higher up in the sky)
-        const zFactor = 0.2 + 0.8 * Math.max(0, Math.min(1, (z - 11) / 17.0));
-        
-        // Non-linear brightness curve for a smooth transition from dark to starry sky
-        const brightness = Math.pow(xFactor, 1.8) * Math.pow(zFactor, 0.8) * (0.3 + Math.random() * 0.7);
+        const zFactor = 0.25 + 0.75 * Math.max(0, Math.min(1, (z - 10) / 20));
+        const brightness = Math.pow(zFactor, 0.75) * (0.35 + Math.random() * 0.65);
         
         let r = 1.0, g_col = 1.0, b = 1.0;
         if (g === 1) { r = 0.92; g_col = 0.96; b = 1.0; } // cool white
@@ -1583,7 +1540,7 @@ export default function GourmetScene() {
         size: 0.12 + Math.random() * 0.08,
         vertexColors: true,
         transparent: true,
-        opacity: 0.85,
+        opacity: initialAtmosphere.starsOpacity,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
       });
@@ -1624,7 +1581,7 @@ export default function GourmetScene() {
     const sunMat = new THREE.SpriteMaterial({
       map: sunTexture,
       transparent: true,
-      opacity: 0.95,
+      opacity: initialAtmosphere.sun.opacity,
       fog: false, // Prevent fog from hiding the sun!
     });
     const sunMesh = new THREE.Sprite(sunMat);
@@ -1641,6 +1598,9 @@ export default function GourmetScene() {
     let mouseY = 0;
     let camTargetX = 0;
     let camTargetY = 0;
+    let atmosphere = initialAtmosphere;
+    let lastAtmosphereProgress = -1;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const onMouseMove = (event: MouseEvent) => {
       mouseX = (event.clientX - window.innerWidth / 2) / (window.innerWidth / 2);
@@ -1695,54 +1655,76 @@ export default function GourmetScene() {
         lookZ = targetZVal - 10;
       }
 
-      // Smooth camera interpolation
-      camera.position.x += (targetX - camera.position.x) * 0.08;
-      camera.position.y += (targetY - camera.position.y) * 0.08;
-      camera.position.z += (targetZVal - camera.position.z) * 0.08;
-
-      // Calculate light fade factor starting from progress 0.4 down to 1.0
-      const lightFade = progress < 0.4 ? 1.0 : 1.0 - (progress - 0.4) / 0.6;
-
-      // Pulse and fade core lighting (range limited to 20 to prevent leak)
-      coreLight.intensity = (9 + Math.sin(Date.now() * 0.0035) * 1.5) * lightFade;
-      
-      // Fade other light intensities (ranges are 12 to prevent leaks)
-      sideLight1.intensity = 4.0 * lightFade;
-      sideLight2.intensity = 3.0 * lightFade;
-      sunLight.intensity = 2.6 * lightFade;
-      cameraLight.intensity = 4.5 * lightFade;
-
-      // Fade particles
-      particleMaterial.opacity = 0.6 * lightFade;
-
-      // Animate particles: rise upward with drift and respawn at bottom
-      const pPos = particleGeometry.attributes.position as THREE.BufferAttribute;
-      for (let i = 0; i < particleCount; i++) {
-        let px = pPos.getX(i) + particleVelocities[i * 3];
-        let py = pPos.getY(i) + particleVelocities[i * 3 + 1];
-        let pz = pPos.getZ(i) + particleVelocities[i * 3 + 2];
-
-        // Add gentle swirl
-        const swirl = Math.sin(timeSec * 1.5 + i * 0.7) * 0.003;
-        px += swirl;
-        py += Math.cos(timeSec * 1.2 + i * 0.5) * 0.002;
-
-        // Respawn at bottom of tunnel when particle rises above mouth
-        if (pz > 12.0) {
-          const angle = Math.random() * Math.PI * 2;
-          const r = Math.random() * radiusBottom * 0.6;
-          px = Math.cos(angle) * r;
-          py = Math.sin(angle) * r;
-          pz = -25 + Math.random() * 5;
-        }
-
-        pPos.setXYZ(i, px, py, pz);
+      if (prefersReducedMotion) {
+        camera.position.set(targetX, targetY, targetZVal);
+      } else {
+        // Smooth camera interpolation
+        camera.position.x += (targetX - camera.position.x) * 0.08;
+        camera.position.y += (targetY - camera.position.y) * 0.08;
+        camera.position.z += (targetZVal - camera.position.z) * 0.08;
       }
-      pPos.needsUpdate = true;
+
+      if (progress !== lastAtmosphereProgress) {
+        atmosphere = getCraterAtmosphere(progress);
+        lastAtmosphereProgress = progress;
+
+        skyColor.setHex(atmosphere.skyColor);
+        sceneFog.color.setHex(atmosphere.fog.color);
+        sceneFog.density = atmosphere.fog.density;
+
+        ambientLight.color.setHex(atmosphere.ambientLight.color);
+        ambientLight.intensity = atmosphere.ambientLight.intensity;
+        sunLight.color.setHex(atmosphere.sun.color);
+        sunLight.intensity = atmosphere.sun.intensity;
+        cameraLight.color.setHex(atmosphere.cameraLight.color);
+        cameraLight.intensity = atmosphere.cameraLight.intensity;
+        coreLight.color.setHex(atmosphere.coreLight.color);
+        warmSideLight.color.setHex(atmosphere.sideLights.warm.color);
+        warmSideLight.intensity = atmosphere.sideLights.warm.intensity;
+        coolSideLight.color.setHex(atmosphere.sideLights.cool.color);
+        coolSideLight.intensity = atmosphere.sideLights.cool.intensity;
+        particleMaterial.opacity = prefersReducedMotion ? 0 : atmosphere.particlesOpacity;
+        sunMat.opacity = atmosphere.sun.opacity;
+
+        const horizonProgress = Math.min(progress / 0.55, 1);
+        sunMesh.position.z = 17.5 - horizonProgress * 6.5;
+        sunLight.position.x = 6 - horizonProgress * 10;
+        sunLight.position.z = 14 - horizonProgress * 8;
+      }
+
+      const corePulse = prefersReducedMotion ? 1 : 1 + Math.sin(timeSec * 3.5) * 0.08;
+      coreLight.intensity = atmosphere.coreLight.intensity * corePulse;
+
+      if (!prefersReducedMotion) {
+        // Animate particles: rise upward with drift and respawn at bottom
+        const pPos = particleGeometry.attributes.position as THREE.BufferAttribute;
+        for (let i = 0; i < particleCount; i++) {
+          let px = pPos.getX(i) + particleVelocities[i * 3];
+          let py = pPos.getY(i) + particleVelocities[i * 3 + 1];
+          let pz = pPos.getZ(i) + particleVelocities[i * 3 + 2];
+
+          // Add gentle swirl
+          const swirl = Math.sin(timeSec * 1.5 + i * 0.7) * 0.003;
+          px += swirl;
+          py += Math.cos(timeSec * 1.2 + i * 0.5) * 0.002;
+
+          // Respawn at bottom of tunnel when particle rises above mouth
+          if (pz > 12.0) {
+            const angle = Math.random() * Math.PI * 2;
+            const r = Math.random() * radiusBottom * 0.6;
+            px = Math.cos(angle) * r;
+            py = Math.sin(angle) * r;
+            pz = -25 + Math.random() * 5;
+          }
+
+          pPos.setXYZ(i, px, py, pz);
+        }
+        pPos.needsUpdate = true;
+      }
 
       // Mouse Parallax (Tilts camera based on mouse coordinates, adjusted for extremely tight tunnel)
-      camTargetX = mouseX * 0.15;
-      camTargetY = -mouseY * 0.15;
+      camTargetX = prefersReducedMotion ? 0 : mouseX * 0.15;
+      camTargetY = prefersReducedMotion ? 0 : -mouseY * 0.15;
       
       camera.lookAt(new THREE.Vector3(lookX + camTargetX, lookY + camTargetY, lookZ));
 
@@ -1750,58 +1732,50 @@ export default function GourmetScene() {
       // ringsGroup.rotation.z += 0.0008;
       // particles.rotation.z -= 0.0004;
 
-      // Fade sunset sun
-      sunMat.opacity = 0.95 * lightFade;
-
-      // Update liquid sky uniforms
-      skyMat.uniforms.uTime.value = timeSec;
-      skyMat.uniforms.uOpacity.value = 0.95 * lightFade;
-
-
-
-      // Animate birds flying across the screen (and flapping wing rotation around Y)
       const elapsedSec = timeSec;
-      birdMeshes.forEach((bird, idx) => {
-        if (elapsedSec < birdDelays[idx]) return; // wait for stagger delay
-        bird.position.x += birdSpeeds[idx];
-        bird.position.z += Math.sin(elapsedSec * 4.0 + idx) * 0.005; // gentle vertical bobbing
+      if (!prefersReducedMotion) {
+        // Animate birds flying across the screen (and flapping wing rotation around Y)
+        birdMeshes.forEach((bird, idx) => {
+          if (elapsedSec < birdDelays[idx]) return; // wait for stagger delay
+          bird.position.x += birdSpeeds[idx];
+          bird.position.z += Math.sin(elapsedSec * 4.0 + idx) * 0.005; // gentle vertical bobbing
 
-        // Wing flap animation around the Y-axis (up and down)
-        const flapAngle = Math.sin(elapsedSec * 14.0 + idx * 2.0) * 0.45;
-        if (bird.children[0]) bird.children[0].rotation.y = flapAngle;
-        if (bird.children[1]) bird.children[1].rotation.y = -flapAngle;
+          const flapAngle = Math.sin(elapsedSec * 14.0 + idx * 2.0) * 0.45;
+          if (bird.children[0]) bird.children[0].rotation.y = flapAngle;
+          if (bird.children[1]) bird.children[1].rotation.y = -flapAngle;
 
-        // Respawn on the left when bird exits right side
-        if (bird.position.x > 30) {
-          bird.position.x = -30 - Math.random() * 10;
-          bird.position.y = -4 + Math.random() * 8;
-          bird.position.z = 12 + Math.random() * 4;
-          birdDelays[idx] = elapsedSec + Math.random() * 4.0; // wait before re-entering
-        }
-      });
+          if (bird.position.x > 30) {
+            bird.position.x = -30 - Math.random() * 10;
+            bird.position.y = -4 + Math.random() * 8;
+            bird.position.z = 12 + Math.random() * 4;
+            birdDelays[idx] = elapsedSec + Math.random() * 4.0;
+          }
+        });
+      }
 
       // Twinkle star groups independently
       const timeMs = Date.now();
       starsMaterials.forEach((mat, idx) => {
-        let twinkleFactor = 0.5;
-        if (idx === 0) {
+        let twinkleFactor = 0.82;
+        if (!prefersReducedMotion && idx === 0) {
           twinkleFactor = 0.55 + Math.sin(timeMs * 0.002) * 0.35;
-        } else if (idx === 1) {
+        } else if (!prefersReducedMotion && idx === 1) {
           twinkleFactor = 0.5 + Math.cos(timeMs * 0.0035 + 1.2) * 0.35;
-        } else {
+        } else if (!prefersReducedMotion) {
           twinkleFactor = 0.45 + Math.sin(timeMs * 0.0017 - 0.8) * 0.4;
         }
-        mat.opacity = Math.max(0.1, Math.min(1.0, twinkleFactor)) * lightFade;
+        mat.opacity = Math.max(0.1, Math.min(1.0, twinkleFactor)) * atmosphere.starsOpacity;
       });
 
-      // Twist / sway grass tufts to simulate wind (subtle sway, pointing mostly straight up)
-      grassTufts.forEach(tuft => {
-        // Wind wave traveling from left to right (X direction)
-        const windWave = Math.sin(timeSec * 2.2 + tuft.position.x * 0.75) * 0.045;
-        const windSway = Math.cos(timeSec * 1.5 + tuft.position.y * 0.5) * 0.025;
-        tuft.rotation.x = Math.PI / 2 + windWave;
-        tuft.rotation.z = windSway;
-      });
+      if (!prefersReducedMotion) {
+        // Twist / sway grass tufts to simulate wind (subtle sway, pointing mostly straight up)
+        grassTufts.forEach(tuft => {
+          const windWave = Math.sin(timeSec * 2.2 + tuft.position.x * 0.75) * 0.045;
+          const windSway = Math.cos(timeSec * 1.5 + tuft.position.y * 0.5) * 0.025;
+          tuft.rotation.x = Math.PI / 2 + windWave;
+          tuft.rotation.z = windSway;
+        });
+      }
 
       renderer.render(scene, camera);
     };
@@ -1894,9 +1868,6 @@ export default function GourmetScene() {
 
       starsGeometries.forEach(geom => geom.dispose());
       starsMaterials.forEach(mat => mat.dispose());
-
-      skyGeom.dispose();
-      skyMat.dispose();
 
       sunTexture?.dispose();
       sunMat.dispose();
