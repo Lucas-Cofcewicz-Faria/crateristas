@@ -1,0 +1,215 @@
+.carousel {
+  outline: none;
+}
+
+.carousel:focus-visible {
+  outline: 2px solid var(--ember-bright);
+  outline-offset: 6px;
+}
+
+.carouselStage {
+  display: grid;
+  grid-template-columns: minmax(96px, 0.16fr) minmax(0, 0.68fr) minmax(96px, 0.16fr);
+  align-items: center;
+  gap: 24px;
+  min-height: 560px;
+  overflow: hidden;
+}
+
+.adjacentSlide {
+  min-height: 370px;
+  display: grid;
+  place-items: end center;
+  padding: 24px 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-muted);
+  writing-mode: vertical-rl;
+}
+
+.activeSlide {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.activeImage {
+  position: relative;
+  min-height: 520px;
+  background: var(--surface-raised);
+}
+
+.activeImage img {
+  object-fit: cover;
+}
+
+.archiveFallback,
+.carouselEmpty {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+}
+
+.archiveFallback {
+  height: 100%;
+  color: var(--ink-muted);
+}
+
+.archiveFallback span,
+.carouselEmpty > span {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 18px;
+  border: 1px solid var(--ember);
+  border-radius: 50%;
+  color: var(--ember-bright);
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: 1.7rem;
+}
+
+.activeCopy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 52px 44px;
+}
+
+.restaurantMeta {
+  color: var(--ember-bright);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.activeCopy h3 {
+  margin-top: 18px;
+  color: var(--ink);
+  font-size: clamp(2.2rem, 3vw, 3.8rem);
+  font-weight: 560;
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+}
+
+.activeCopy h3 + p {
+  margin-top: 28px;
+}
+
+.activeCopy p:not(.restaurantMeta, .collectiveScore) {
+  color: var(--ink-muted);
+  font-size: 0.86rem;
+}
+
+.collectiveScore {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 34px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  color: var(--ink-muted);
+}
+
+.collectiveScore strong {
+  color: var(--ink);
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: 2.4rem;
+  font-weight: 560;
+}
+
+.activeCopy a,
+.carouselEmpty a {
+  width: fit-content;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 28px;
+  padding: 0 20px;
+  border: 1px solid var(--ember);
+  background: var(--ember);
+  color: var(--canvas);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.activeCopy a:focus-visible,
+.carouselEmpty a:focus-visible,
+.carouselControls button:focus-visible,
+.carouselDots button:focus-visible {
+  outline: 2px solid var(--ember-bright);
+  outline-offset: 3px;
+}
+
+.carouselControls {
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  align-items: center;
+  gap: 18px;
+  max-width: 760px;
+  margin: 24px auto 0;
+}
+
+.carouselControls p {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.carouselControls button {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.carouselControls button:disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+}
+
+.carouselDots {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.carouselDots button {
+  width: 28px;
+  height: 3px;
+  border: 0;
+  background: var(--line);
+  cursor: pointer;
+}
+
+.carouselDots button[aria-current='true'] {
+  background: var(--ember-bright);
+}
+
+.carouselEmpty {
+  min-height: 420px;
+  padding: 56px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.carouselEmpty h3 {
+  font-size: 2rem;
+  font-weight: 560;
+}
+
+.carouselEmpty p {
+  max-width: 520px;
+  margin-top: 12px;
+  color: var(--ink-muted);
+}
