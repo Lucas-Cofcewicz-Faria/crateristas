@@ -6,8 +6,6 @@ import { getCraterAtmosphere, getDayNightCycleProgress } from './crater-atmosphe
 
 export default function GourmetScene() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const activeGeometriesRef = useRef<THREE.BufferGeometry[]>([]);
-  const activeMaterialRef = useRef<THREE.Material | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -267,11 +265,6 @@ export default function GourmetScene() {
     const craterW = 2.8;
     const craterH = 2.2;
     const craterR = 0.65;
-
-    // White ring squircle parameters (reduced proportionally, larger than crater hole)
-    const ringW = 3.5;
-    const ringH = 2.8;
-    const ringR = 0.8;
 
     // Helper to calculate coordinates on any squircle boundary at any angle
     const getSquirclePoint = (angle: number, w: number, h: number, r: number) => {
@@ -622,34 +615,7 @@ export default function GourmetScene() {
     lowerBlockPathMesh.receiveShadow = true;
     lowPolyGroup.add(lowerBlockPathMesh);
 
-    // B3.2. Detailed Slanted Parking Lot & Road Markings
-    const parkingLinesGroup = new THREE.Group();
-    const parkingLineMat = new THREE.MeshBasicMaterial({
-      color: 0xffffff, // Bright solid white
-      transparent: true,
-      opacity: 0.9,
-      side: THREE.DoubleSide,
-    });
-
     const roadGeometries: THREE.BufferGeometry[] = [];
-
-    // Helper to create straight line segments for parking slots
-    const createParkingLine = (p1: THREE.Vector2, p2: THREE.Vector2) => {
-      const midX = (p1.x + p2.x) / 2;
-      const midY = (p1.y + p2.y) / 2;
-      const dist = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
-      const rot = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-
-      const geom = new THREE.PlaneGeometry(dist, 0.05);
-      geom.rotateZ(rot);
-      
-      const baseZ = getGroundHeight(midX, midY);
-      const mesh = new THREE.Mesh(geom, parkingLineMat);
-      mesh.position.set(midX, midY, baseZ + 0.03);
-      
-      roadGeometries.push(geom);
-      return mesh;
-    };
 
     // B3.3. New Layout from User's "recreatethis.png"
     const customLinesGroup = new THREE.Group();
@@ -1592,8 +1558,6 @@ export default function GourmetScene() {
 
     // 7. Animation & Interactive Loop
     let animationFrameId: number;
-    const currentZ = camera.position.z;
-    const targetZ = currentZ;
     let mouseX = 0;
     let mouseY = 0;
     let camTargetX = 0;
@@ -1813,10 +1777,6 @@ export default function GourmetScene() {
           }
         }
       });
-
-      // Dispose of loaded OBJ tree geometries and materials
-      activeGeometriesRef.current.forEach(geom => geom.dispose());
-      activeMaterialRef.current?.dispose();
 
       // Dispose of custom lines, grass tufts, and marks
       customLinesGroup.traverse(child => {

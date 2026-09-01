@@ -25,7 +25,7 @@ interface AtmosphereKeyframe extends CraterAtmosphere {
   progress: number;
 }
 
-export const DAY_NIGHT_CYCLE_SECONDS = 10;
+export const DAY_NIGHT_CYCLE_SECONDS = 20;
 
 const ATMOSPHERE_KEYFRAMES: readonly AtmosphereKeyframe[] = [
   {

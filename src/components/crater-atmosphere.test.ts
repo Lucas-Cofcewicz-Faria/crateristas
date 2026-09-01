@@ -55,17 +55,17 @@ describe('getCraterAtmosphere', () => {
 });
 
 describe('getDayNightCycleProgress', () => {
-  it('completes five seconds toward night and five seconds back to day', () => {
+  it('completes ten seconds toward night and ten seconds back to day', () => {
     const cycleProgress = Reflect.get(craterAtmosphere, 'getDayNightCycleProgress') as unknown;
 
     expect(cycleProgress).toBeTypeOf('function');
     if (typeof cycleProgress !== 'function') return;
 
     expect(cycleProgress(0)).toBe(0);
-    expect(cycleProgress(2.5)).toBe(0.5);
-    expect(cycleProgress(5)).toBe(1);
-    expect(cycleProgress(7.5)).toBe(0.5);
-    expect(cycleProgress(10)).toBe(0);
-    expect(cycleProgress(12.5)).toBe(0.5);
+    expect(cycleProgress(5)).toBe(0.5);
+    expect(cycleProgress(10)).toBe(1);
+    expect(cycleProgress(15)).toBe(0.5);
+    expect(cycleProgress(20)).toBe(0);
+    expect(cycleProgress(25)).toBe(0.5);
   });
 });
