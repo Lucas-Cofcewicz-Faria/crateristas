@@ -25,6 +25,8 @@ interface AtmosphereKeyframe extends CraterAtmosphere {
   progress: number;
 }
 
+export const DAY_NIGHT_CYCLE_SECONDS = 10;
+
 const ATMOSPHERE_KEYFRAMES: readonly AtmosphereKeyframe[] = [
   {
     progress: 0,
@@ -105,6 +107,17 @@ const ATMOSPHERE_KEYFRAMES: readonly AtmosphereKeyframe[] = [
 
 function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
+}
+
+export function getDayNightCycleProgress(elapsedSeconds: number): number {
+  const safeElapsed = Number.isFinite(elapsedSeconds) ? elapsedSeconds : 0;
+  const cycleTime = ((safeElapsed % DAY_NIGHT_CYCLE_SECONDS) + DAY_NIGHT_CYCLE_SECONDS)
+    % DAY_NIGHT_CYCLE_SECONDS;
+  const halfCycle = DAY_NIGHT_CYCLE_SECONDS / 2;
+
+  return cycleTime <= halfCycle
+    ? cycleTime / halfCycle
+    : (DAY_NIGHT_CYCLE_SECONDS - cycleTime) / halfCycle;
 }
 
 function smoothstep(value: number): number {

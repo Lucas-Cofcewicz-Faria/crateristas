@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { getCraterAtmosphere } from './crater-atmosphere';
+import * as craterAtmosphere from './crater-atmosphere';
+
+const { getCraterAtmosphere } = craterAtmosphere;
 
 function luminance(hex: number): number {
   const red = (hex >> 16) & 0xff;
@@ -38,7 +40,7 @@ describe('getCraterAtmosphere', () => {
     expect(crater.particlesOpacity).toBeGreaterThan(day.particlesOpacity);
   });
 
-  it('settles into the final crater state before the landing redirects at 0.95', () => {
+  it('settles into the final night state at the terminal atmosphere keyframe', () => {
     expect(getCraterAtmosphere(0.94)).toEqual(getCraterAtmosphere(1));
   });
 
@@ -49,5 +51,21 @@ describe('getCraterAtmosphere', () => {
     expect(Math.abs(after.ambientLight.intensity - before.ambientLight.intensity)).toBeLessThan(0.02);
     expect(Math.abs(after.starsOpacity - before.starsOpacity)).toBeLessThan(0.02);
     expect(Math.abs(luminance(after.skyColor) - luminance(before.skyColor))).toBeLessThan(2);
+  });
+});
+
+describe('getDayNightCycleProgress', () => {
+  it('completes five seconds toward night and five seconds back to day', () => {
+    const cycleProgress = Reflect.get(craterAtmosphere, 'getDayNightCycleProgress') as unknown;
+
+    expect(cycleProgress).toBeTypeOf('function');
+    if (typeof cycleProgress !== 'function') return;
+
+    expect(cycleProgress(0)).toBe(0);
+    expect(cycleProgress(2.5)).toBe(0.5);
+    expect(cycleProgress(5)).toBe(1);
+    expect(cycleProgress(7.5)).toBe(0.5);
+    expect(cycleProgress(10)).toBe(0);
+    expect(cycleProgress(12.5)).toBe(0.5);
   });
 });

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { getCraterAtmosphere } from './crater-atmosphere';
+import { getCraterAtmosphere, getDayNightCycleProgress } from './crater-atmosphere';
 
 export default function GourmetScene() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1314,10 +1314,10 @@ export default function GourmetScene() {
 
     // Plazas/Islands framing (avoiding the middle X=[-3, 3] for Y < 14)
     const plazaFraming = [
-      { x: -5.0, y: 8.3, scale: 0.95 },
+      { x: -5.0, y: 6.8, scale: 0.95 },
       { x: -7.5, y: 8.5, scale: 1.15 },
       { x: -10.0, y: 8.3, scale: 1.0 },
-      { x: 5.0, y: 8.3, scale: 1.05 },
+      { x: 5.0, y: 6.8, scale: 1.05 },
       { x: 7.5, y: 8.5, scale: 1.0 },
       { x: 10.0, y: 8.3, scale: 1.1 },
     ];
@@ -1618,6 +1618,7 @@ export default function GourmetScene() {
       const triggerHeight = viewportHeight * 1.4; // Matches the 140vh scroll spacer
       const progress = Math.min(scrollY / triggerHeight, 1);
       const timeSec = (Date.now() - startTime) * 0.001;
+      const atmosphereProgress = getDayNightCycleProgress(timeSec);
 
       // Camera Animation Phases
       let targetX = 0;
@@ -1664,9 +1665,9 @@ export default function GourmetScene() {
         camera.position.z += (targetZVal - camera.position.z) * 0.08;
       }
 
-      if (progress !== lastAtmosphereProgress) {
-        atmosphere = getCraterAtmosphere(progress);
-        lastAtmosphereProgress = progress;
+      if (atmosphereProgress !== lastAtmosphereProgress) {
+        atmosphere = getCraterAtmosphere(atmosphereProgress);
+        lastAtmosphereProgress = atmosphereProgress;
 
         skyColor.setHex(atmosphere.skyColor);
         sceneFog.color.setHex(atmosphere.fog.color);
@@ -1686,7 +1687,7 @@ export default function GourmetScene() {
         particleMaterial.opacity = prefersReducedMotion ? 0 : atmosphere.particlesOpacity;
         sunMat.opacity = atmosphere.sun.opacity;
 
-        const horizonProgress = Math.min(progress / 0.55, 1);
+        const horizonProgress = Math.min(atmosphereProgress / 0.55, 1);
         sunMesh.position.z = 17.5 - horizonProgress * 6.5;
         sunLight.position.x = 6 - horizonProgress * 10;
         sunLight.position.z = 14 - horizonProgress * 8;
