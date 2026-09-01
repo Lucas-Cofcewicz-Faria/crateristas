@@ -1,6 +1,6 @@
 # Landing page e história da Cratera
 
-**Status:** desenho aprovado em conversa, aguardando revisão desta especificação
+**Status:** aprovado pelo usuário em 2026-09-01
 **Data:** 2026-09-01
 **Escopo:** nova `/home`, nova `/historia`, navegação pública e destino da cena de entrada
 
