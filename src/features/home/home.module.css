@@ -180,20 +180,51 @@
 .carouselDots {
   display: flex;
   justify-content: center;
-  gap: 10px;
+  gap: 4px;
   margin-top: 18px;
 }
 
 .carouselDots button {
-  width: 28px;
-  height: 3px;
+  position: relative;
+  width: 44px;
+  height: 44px;
+  padding: 0;
   border: 0;
-  background: var(--line);
+  background: transparent;
   cursor: pointer;
 }
 
-.carouselDots button[aria-current='true'] {
+.carouselDots button::after {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  left: 8px;
+  height: 3px;
+  content: '';
+  background: var(--line);
+  transform: translateY(-50%);
+}
+
+.carouselDots button[aria-current='true']::after {
   background: var(--ember-bright);
+}
+
+@media (hover: hover) {
+  .activeCopy a:hover,
+  .carouselEmpty a:hover {
+    border-color: var(--ember-bright);
+    background: var(--ember-bright);
+  }
+
+  .carouselControls button:not(:disabled):hover {
+    border-color: var(--ember-bright);
+    background: var(--surface-raised);
+    color: var(--ember-bright);
+  }
+
+  .carouselDots button:hover::after {
+    background: var(--ember-bright);
+  }
 }
 
 .carouselEmpty {
