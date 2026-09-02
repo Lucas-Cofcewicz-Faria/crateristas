@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const dependencies = vi.hoisted(() => ({
@@ -26,8 +26,11 @@ describe('AppHeader', () => {
 
     expect(screen.getByRole('link', { name: 'Registros' }))
       .toHaveAttribute('href', '/registros');
-    expect(screen.getByRole('link', { name: 'Membros' }))
-      .toHaveAttribute('href', '/membros');
+    expect(screen.getByRole('link', { name: 'Crateristas — início' }))
+      .toHaveAttribute('href', '/home');
+    expect(screen.getByRole('link', { name: 'História' }))
+      .toHaveAttribute('href', '/historia');
+    expect(screen.queryByRole('link', { name: 'Membros' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Entrar' }))
       .toHaveAttribute('href', '/entrar');
 
@@ -76,5 +79,8 @@ describe('AppHeader', () => {
     );
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Entrar' })).toBeInTheDocument();
+    const footerNavigation = screen.getByRole('navigation', { name: 'Navegação do rodapé' });
+    expect(within(footerNavigation).getByRole('link', { name: 'História' }))
+      .toHaveAttribute('href', '/historia');
   });
 });

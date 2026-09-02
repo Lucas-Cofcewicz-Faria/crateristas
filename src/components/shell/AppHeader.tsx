@@ -16,7 +16,7 @@ export function AppHeader({
   return (
     <header className={styles.header}>
       <div className={styles.headerInner}>
-        <Link className={styles.brand} href="/" aria-label="Crateristas — início">
+        <Link className={styles.brand} href="/home" aria-label="Crateristas — início">
           <span className={styles.brandMark} aria-hidden="true">C</span>
           <span>
             <strong className={styles.brandName}>Crateristas</strong>
@@ -26,7 +26,7 @@ export function AppHeader({
 
         <nav className={styles.navigation} aria-label="Navegação principal">
           <Link className={styles.navLink} href="/registros">Registros</Link>
-          <Link className={styles.navLink} href="/membros">Membros</Link>
+          <Link className={styles.navLink} href="/historia">História</Link>
           {viewer === 'member' ? (
             <>
               <Link className={styles.navLink} href="/painel">Painel</Link>

@@ -17,7 +17,7 @@ export function AppFooter() {
         </div>
         <nav className={styles.footerNav} aria-label="Navegação do rodapé">
           <Link href="/registros">Registros</Link>
-          <Link href="/membros">Membros</Link>
+          <Link href="/historia">História</Link>
         </nav>
       </div>
     </footer>

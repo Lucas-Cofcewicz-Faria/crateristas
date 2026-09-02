@@ -51,9 +51,9 @@ export default function LandingPage() {
         clearTimeout(scrollHintTimer);
       }
 
-      // Redirect to reviews dashboard when descent completes (95% of the crater descent)
+      // Redirect to the public home when descent completes (95% of the crater descent)
       if (progress >= 0.95) {
-        router.push('/registros');
+        router.push('/home');
       }
     };
 
