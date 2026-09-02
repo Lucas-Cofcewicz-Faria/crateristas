@@ -1,0 +1,203 @@
+.story {
+  overflow: clip;
+}
+
+.storyHero {
+  width: min(calc(100% - 160px), 1120px);
+  min-height: 670px;
+  display: grid;
+  align-content: center;
+  margin: 0 auto;
+  padding: 100px 0;
+}
+
+.storyHero h1 {
+  max-width: 980px;
+  color: var(--ink);
+  font-size: clamp(4.5rem, 7vw, 6rem);
+  font-weight: 520;
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+}
+
+.storyHero > p:last-child {
+  max-width: 72ch;
+  margin-top: 38px;
+  color: var(--ink-muted);
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: 1.35rem;
+  line-height: 1.65;
+}
+
+.chapters {
+  border-top: 1px solid var(--line);
+}
+
+.chapter {
+  width: min(calc(100% - 160px), 1120px);
+  min-height: 520px;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  align-items: center;
+  gap: 72px;
+  margin: 0 auto;
+  padding: 100px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.chapter:nth-child(even) {
+  grid-template-columns: minmax(0, 1fr) 220px;
+}
+
+.chapter:nth-child(even) .chapterIndex {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.chapterIndex span {
+  color: var(--ember-bright);
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: 5rem;
+  line-height: 1;
+}
+
+.chapterIndex p {
+  margin-top: 10px;
+  color: var(--ink-muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.chapter h2 {
+  color: var(--ink);
+  font-size: clamp(3.4rem, 5vw, 6rem);
+  font-weight: 540;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+
+.chapter h2 + p {
+  max-width: 72ch;
+  margin-top: 26px;
+  color: var(--ink-muted);
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: 1.3rem;
+  line-height: 1.75;
+}
+
+.members {
+  width: min(calc(100% - 96px), var(--page-max));
+  margin: 0 auto;
+  padding: 132px 0 150px;
+}
+
+.membersHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 48px;
+  margin-bottom: 50px;
+}
+
+.membersHeader h2 {
+  font-size: clamp(3.6rem, 5vw, 6rem);
+  font-weight: 540;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+
+.membersHeader a,
+.storyFooter a,
+.retryButton {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  border: 1px solid var(--ember);
+  background: var(--ember);
+  color: var(--canvas);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.membersHeader a,
+.storyFooter a {
+  flex: 0 0 auto;
+}
+
+.storyFooter {
+  min-height: 560px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  padding: 120px 80px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  text-align: center;
+}
+
+.storyFooter h2 {
+  max-width: 820px;
+  font-size: clamp(3rem, 4.5vw, 5.6rem);
+  font-weight: 540;
+  letter-spacing: -0.04em;
+  line-height: 0.96;
+}
+
+.storyFooter a {
+  margin-top: 32px;
+}
+
+.routeState {
+  min-height: 680px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  padding: 80px;
+  text-align: center;
+}
+
+.eyebrow {
+  color: var(--ember-bright);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.routeState h1 {
+  margin-top: 14px;
+  color: var(--ink);
+  font-size: 3rem;
+  font-weight: 560;
+  letter-spacing: -0.03em;
+}
+
+.routeState > p:last-of-type {
+  max-width: 540px;
+  margin-top: 14px;
+  color: var(--ink-muted);
+}
+
+.retryButton {
+  margin-top: 24px;
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (max-width: 1280px) {
+  .storyHero,
+  .chapter {
+    width: min(calc(100% - 96px), 1120px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .membersHeader a,
+  .storyFooter a,
+  .retryButton {
+    transition: none;
+  }
+}
