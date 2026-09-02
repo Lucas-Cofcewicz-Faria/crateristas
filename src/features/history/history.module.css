@@ -120,6 +120,7 @@
   color: var(--canvas);
   font-size: 0.8rem;
   font-weight: 800;
+  transition: background-color 160ms ease, border-color 160ms ease;
 }
 
 .membersHeader a,
@@ -185,6 +186,15 @@
   margin-top: 24px;
   font: inherit;
   cursor: pointer;
+}
+
+@media (hover: hover) {
+  .membersHeader a:hover,
+  .storyFooter a:hover,
+  .retryButton:hover {
+    border-color: var(--ember-bright);
+    background: var(--ember-bright);
+  }
 }
 
 @media (max-width: 1280px) {
