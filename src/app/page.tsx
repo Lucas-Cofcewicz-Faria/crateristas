@@ -53,6 +53,7 @@ export default function LandingPage() {
 
       // Redirect to the public home when descent completes (95% of the crater descent)
       if (progress >= 0.95) {
+        window.scrollTo(0, 0);
         router.push('/home');
       }
     };

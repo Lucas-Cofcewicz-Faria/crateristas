@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { CRATER_HISTORY } from '@/content/crater-history';
 import type { PublicMemberSummary } from '@/domain/reviews/repository';
 import { MemberGrid } from '@/features/members/MemberGrid';
+import { HistoryHashTarget } from './HistoryHashTarget';
 import styles from './history.module.css';
 
 export interface HistoryNarrativeProps {
@@ -32,6 +33,7 @@ export function HistoryNarrative({ members, showPanelLink }: HistoryNarrativePro
         ))}
       </div>
 
+      <HistoryHashTarget />
       <section aria-labelledby="members-title" className={styles.members} id="integrantes">
         <header className={styles.membersHeader}>
           <h2 id="members-title">Os oito Crateristas</h2>

@@ -37,10 +37,17 @@ describe('landing descent destination', () => {
   it('entra na página pública ao descer além de 95% sem exercitar Three.js', () => {
     render(<LandingPage />);
 
+    const scrollTo = vi.mocked(window.scrollTo);
+    scrollTo.mockClear();
+
     Object.defineProperty(window, 'scrollY', { configurable: true, value: 1331 });
     fireEvent.scroll(window);
 
+    expect(scrollTo).toHaveBeenCalledOnce();
+    expect(scrollTo).toHaveBeenCalledWith(0, 0);
     expect(dependencies.push).toHaveBeenCalledWith('/home');
     expect(dependencies.push).not.toHaveBeenCalledWith('/registros');
+    expect(scrollTo.mock.invocationCallOrder[0])
+      .toBeLessThan(dependencies.push.mock.invocationCallOrder[0]);
   });
 });

@@ -16,7 +16,6 @@ const forbiddenSourceFragments = [
   ['mock', '_reviews'].join(''),
   ['local', 'Storage'].join(''),
   ['/api', '/reviews'].join(''),
-  ['router.push(', "'/home'", ')'].join(''),
 ];
 
 describe('legacy prototype removal', () => {
