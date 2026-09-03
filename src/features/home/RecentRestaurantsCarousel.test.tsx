@@ -29,6 +29,26 @@ function record(id: string, name: string): PublicVisitSummary {
 }
 
 describe('RecentRestaurantsCarousel', () => {
+  it('usa o nome como link principal do registro mesmo sem fotografia', () => {
+    render(<RecentRestaurantsCarousel records={[record('1', 'A Cantina')]} />);
+
+    expect(screen.getByRole('link', { name: 'A Cantina' }))
+      .toHaveAttribute('href', '/restaurantes/registro-1');
+    expect(screen.queryByRole('link', { name: 'Abrir registro' })).not.toBeInTheDocument();
+  });
+
+  it('monta uma nova ficha quando o visitante troca o restaurante manualmente', async () => {
+    const user = userEvent.setup();
+    render(<RecentRestaurantsCarousel records={[record('1', 'A'), record('2', 'B')]} />);
+
+    const firstSlide = screen.getByRole('article', { name: 'Registro de A' });
+    await user.click(screen.getByRole('button', { name: 'Próximo restaurante' }));
+
+    const secondSlide = screen.getByRole('article', { name: 'Registro de B' });
+    expect(secondSlide).not.toBe(firstSlide);
+    expect(firstSlide).not.toBeInTheDocument();
+  });
+
   it('navega por botões, teclado e indicadores sem ultrapassar as extremidades', async () => {
     const user = userEvent.setup();
     render(<RecentRestaurantsCarousel records={[record('1', 'A'), record('2', 'B'), record('3', 'C')]} />);

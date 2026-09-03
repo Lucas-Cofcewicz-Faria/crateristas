@@ -58,7 +58,11 @@ export function RecentRestaurantsCarousel({ records }: RecentRestaurantsCarousel
           {previous ? <span>{previous.restaurant.name}</span> : null}
         </div>
 
-        <article className={styles.activeSlide} aria-label={`Registro de ${record.restaurant.name}`}>
+        <article
+          key={record.id}
+          className={styles.activeSlide}
+          aria-label={`Registro de ${record.restaurant.name}`}
+        >
           <div className={styles.activeImage}>
             {record.coverPhotoUrl ? (
               <Image
@@ -78,11 +82,17 @@ export function RecentRestaurantsCarousel({ records }: RecentRestaurantsCarousel
             <p className={styles.restaurantMeta}>
               {record.restaurant.cuisine} · {record.restaurant.neighborhood}, {record.restaurant.city}
             </p>
-            <h3>{record.restaurant.name}</h3>
+            <h3>
+              <Link
+                className={styles.restaurantLink}
+                href={`/restaurantes/${record.slug}`}
+              >
+                {record.restaurant.name}
+              </Link>
+            </h3>
             <p>Visita em <time dateTime={record.visitedAt}>{formatVisitDate(record.visitedAt)}</time></p>
             <p>{formatParticipation(record.participantCount)}</p>
             <p className={styles.collectiveScore}>Nota coletiva <strong>{formatScore(record.overall)}</strong></p>
-            <Link href={`/restaurantes/${record.slug}`}>Abrir registro</Link>
           </div>
         </article>
 
