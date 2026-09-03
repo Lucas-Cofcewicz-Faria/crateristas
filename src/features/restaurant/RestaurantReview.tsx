@@ -9,6 +9,7 @@ import { formatVisitDate } from './restaurant-formatters';
 import { CommentFragments } from './CommentFragments';
 import { PhotoGallery } from './PhotoGallery';
 import { ScoreBreakdown } from './ScoreBreakdown';
+import { RestaurantAtmosphere } from './RestaurantAtmosphere';
 import styles from './restaurant.module.css';
 
 export interface RestaurantReviewProps {
@@ -33,7 +34,8 @@ export function RestaurantReview({
   comments,
 }: RestaurantReviewProps) {
   return (
-    <article className={styles.reviewPage}>
+    <RestaurantAtmosphere enabled={photos.length > 0}>
+      <article className={styles.reviewPage}>
       <Link className={styles.backLink} href="/registros">
         ← Voltar ao livro de registros
       </Link>
@@ -72,6 +74,7 @@ export function RestaurantReview({
           <CommentFragments comments={comments} />
         </div>
       </section>
-    </article>
+      </article>
+    </RestaurantAtmosphere>
   );
 }

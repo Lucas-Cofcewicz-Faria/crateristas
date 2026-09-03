@@ -27,6 +27,7 @@ export function PhotoGallery({ photos, restaurantName }: PhotoGalleryProps) {
         <figure className={styles.photo} key={photo.id}>
           <Image
             alt={`Foto ${index + 1} da visita ao restaurante ${restaurantName}`}
+            data-atmosphere-source={index === 0 ? 'true' : undefined}
             height={800}
             sizes="(max-width: 1440px) 50vw, 680px"
             src={photo.url}

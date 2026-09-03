@@ -26,6 +26,8 @@ describe('PhotoGallery', () => {
       'Foto 1 da visita ao restaurante Casa da Cratera',
       'Foto 2 da visita ao restaurante Casa da Cratera',
     ]);
+    expect(screen.getAllByRole('img').map((image) => image.getAttribute('data-atmosphere-source')))
+      .toEqual(['true', null]);
     expect(photos.map((photo) => photo.id)).toEqual(['photo-2', 'photo-1']);
   });
 
