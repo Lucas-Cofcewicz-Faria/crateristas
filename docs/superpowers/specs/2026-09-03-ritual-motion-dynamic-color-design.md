@@ -1,7 +1,7 @@
 # Movimento ritual e atmosfera cromática
 
-**Status:** aprovado pelo usuário em 2026-09-03  
-**Data:** 2026-09-03  
+**Status:** aprovado pelo usuário em 2026-09-03
+**Data:** 2026-09-03
 **Escopo:** páginas públicas `/home`, `/registros`, `/historia` e `/restaurantes/[slug]`
 
 ## Contexto

@@ -13,6 +13,9 @@
 # testing
 /coverage
 
+# generated code knowledge graph
+/graphify-out/
+
 # isolated development worktrees
 /.worktrees/
 
