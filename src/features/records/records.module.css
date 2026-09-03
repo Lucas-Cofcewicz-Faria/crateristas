@@ -75,6 +75,11 @@
   gap: 28px;
 }
 
+.grid > [data-motion-state='pending'] {
+  --motion-y: 42px;
+  --motion-scale: 0.975;
+}
+
 .card {
   height: 100%;
   overflow: hidden;
@@ -93,6 +98,7 @@
 
 .cardImage img {
   object-fit: cover;
+  transition: transform 480ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .imagePlaceholder {
@@ -265,6 +271,16 @@
   background: var(--ember-bright);
 }
 
+@media (hover: hover) {
+  .card:hover .cardImage img {
+    transform: scale(1.035);
+  }
+
+  .card:hover {
+    border-color: color-mix(in srgb, var(--ember), var(--line) 45%);
+  }
+}
+
 @media (max-width: 1280px) {
   .filters {
     grid-template-columns: minmax(260px, 1.2fr) repeat(2, minmax(180px, 0.8fr)) 178px;
@@ -278,6 +294,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .cardImage img {
+    transition: none;
+  }
+
+  .card:hover .cardImage img {
+    transform: none;
+  }
+
   .cardLink,
   .clearFilters,
   .retryButton {

@@ -10,7 +10,13 @@ export interface RecordFiltersProps {
 
 export function RecordFilters({ filters }: RecordFiltersProps) {
   return (
-    <form action="/registros" className={styles.filters} method="get" role="search">
+    <form
+      action="/registros"
+      className={styles.filters}
+      data-motion="excavation"
+      method="get"
+      role="search"
+    >
       <Field
         defaultValue={filters.busca}
         id="busca"

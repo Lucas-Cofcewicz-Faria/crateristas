@@ -1,4 +1,5 @@
 import { PublicShell } from '@/components/shell/PublicShell';
+import { MotionScope } from '@/components/motion/MotionScope';
 import { publicVisitFiltersSchema } from '@/domain/reviews/schemas';
 import { RecordFilters } from '@/features/records/RecordFilters';
 import { RecordGrid } from '@/features/records/RecordGrid';
@@ -20,10 +21,10 @@ export default async function RecordsPage({ searchParams }: RecordsPageProps) {
 
   return (
     <PublicShell viewer={member ? 'member' : 'visitor'}>
-      <section className={styles.archive}>
+      <MotionScope className={styles.archive}>
         <header className={styles.archiveHeader}>
           <p className={styles.eyebrow}>Arquivo público</p>
-          <h1 className={styles.archiveTitle}>Livro de registros</h1>
+          <h1 className={styles.archiveTitle} data-motion="inscription">Livro de registros</h1>
           <p className={styles.archiveLead}>
             Restaurantes visitados pela sociedade, preservados com a nota coletiva
             e o número de crateristas que contribuíram para cada relato.
@@ -31,7 +32,7 @@ export default async function RecordsPage({ searchParams }: RecordsPageProps) {
         </header>
         <RecordFilters filters={filters} />
         <RecordGrid records={records} />
-      </section>
+      </MotionScope>
     </PublicShell>
   );
 }

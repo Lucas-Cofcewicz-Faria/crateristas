@@ -19,8 +19,13 @@ export function RecordGrid({ records }: RecordGridProps) {
 
   return (
     <div aria-label="Registros publicados" className={styles.grid} role="list">
-      {records.map((record) => (
-        <div key={record.id} role="listitem">
+      {records.map((record, index) => (
+        <div
+          data-motion="excavation"
+          data-motion-index={Math.min(index, 5)}
+          key={record.id}
+          role="listitem"
+        >
           <RecordCard record={record} />
         </div>
       ))}
