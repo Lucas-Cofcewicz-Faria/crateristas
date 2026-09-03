@@ -18,6 +18,8 @@ describe('RestaurantAtmosphere', () => {
     });
     const { container } = render(
       <RestaurantAtmosphere enabled>
+        {/* Test fixture: native load events are the behavior under test. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img alt="Visita" data-atmosphere-source="true" src="/foto.png" />
       </RestaurantAtmosphere>,
     );
@@ -32,6 +34,8 @@ describe('RestaurantAtmosphere', () => {
     vi.spyOn(paletteModule, 'samplePhotoPalette').mockReturnValue(null);
     const { container } = render(
       <RestaurantAtmosphere enabled>
+        {/* Test fixture: native load events are the behavior under test. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img alt="Visita" data-atmosphere-source="true" src="/foto.png" />
       </RestaurantAtmosphere>,
     );

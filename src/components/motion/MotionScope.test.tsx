@@ -33,7 +33,10 @@ describe('MotionScope', () => {
     expect(title).toHaveAttribute('data-motion-state', 'pending');
     expect(observe).toHaveBeenCalledWith(title);
 
-    act(() => notify([{ isIntersecting: true, target: title }] as IntersectionObserverEntry[], {} as IntersectionObserver));
+    act(() => notify(
+      [{ isIntersecting: true, target: title }] as unknown as IntersectionObserverEntry[],
+      {} as IntersectionObserver,
+    ));
 
     expect(title).toHaveAttribute('data-motion-state', 'visible');
     expect(unobserve).toHaveBeenCalledWith(title);
