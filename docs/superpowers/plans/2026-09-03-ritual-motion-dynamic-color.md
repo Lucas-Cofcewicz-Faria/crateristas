@@ -30,6 +30,7 @@
 ### Novos arquivos
 
 - `public/images/cratera.png` — cópia versionada da fotografia real usada no hero.
+- `public/images/crater-aperture.svg` — máscara orgânica baseada no contorno já presente na landing.
 - `src/components/motion/MotionScope.tsx` — observação, redução de movimento e pausa de animações ambientais.
 - `src/components/motion/MotionScope.test.tsx` — contrato progressivo e acessível do controlador.
 - `src/components/motion/motion.module.css` — tokens e estados compartilhados de movimento.
@@ -283,6 +284,7 @@ git commit -m "feat: add progressive public motion scope"
 
 **Files:**
 - Create: `public/images/cratera.png`
+- Create: `public/images/crater-aperture.svg`
 - Create: `src/features/home/CraterHeroMedia.tsx`
 - Create: `src/features/home/CraterHeroMedia.test.tsx`
 - Modify: `src/features/home/LandingHero.tsx`
@@ -361,8 +363,7 @@ export function CraterHeroMedia() {
     if (!root) return undefined;
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     if (reduced) {
-      root.style.setProperty('--hero-clip-x', '74%');
-      root.style.setProperty('--hero-clip-y', '72%');
+      root.style.setProperty('--hero-mask-size', '140%');
       root.style.setProperty('--hero-scale', '1');
       return undefined;
     }
@@ -372,8 +373,7 @@ export function CraterHeroMedia() {
       frame = 0;
       const rect = root.getBoundingClientRect();
       const progress = getHeroProgress(rect.top, rect.height, window.innerHeight);
-      root.style.setProperty('--hero-clip-x', `${38 + progress * 42}%`);
-      root.style.setProperty('--hero-clip-y', `${34 + progress * 44}%`);
+      root.style.setProperty('--hero-mask-size', `${48 + progress * 92}%`);
       root.style.setProperty('--hero-scale', String(1.055 - progress * 0.055));
     };
     const schedule = () => {
@@ -410,10 +410,18 @@ export function CraterHeroMedia() {
 
 `LandingHero.tsx` deve substituir o `craterContour` atual por `<CraterHeroMedia />`, manter o título antes da imagem no DOM e marcar título, lead e ação com `data-motion`.
 
+Criar `public/images/crater-aperture.svg` reutilizando o contorno orgânico já existente no componente, sem aproximá-lo por círculo ou elipse:
+
+```svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 560">
+  <path fill="white" d="M95 139C145 88 217 68 291 83c62 12 123 56 150 116 32 71 5 155-49 207-51 49-120 82-192 62-68-19-123-79-131-148-7-64 4-119 26-168Z"/>
+</svg>
+```
+
 `home.module.css` deve:
 
 - manter o hero em duas áreas sobrepostas no desktop;
-- usar `clip-path: ellipse(var(--hero-clip-x, 38%) var(--hero-clip-y, 34%) at 68% 51%)` somente na mídia;
+- usar `mask: url('/images/crater-aperture.svg') center / var(--hero-mask-size, 48%) no-repeat` e o prefixo `-webkit-mask` somente na mídia;
 - aplicar `transform: scale(var(--hero-scale, 1.055))` apenas na imagem;
 - adicionar gradiente escuro localizado sob o texto;
 - desenhar os contornos em pseudo-elementos, com um único loop lento;
@@ -428,7 +436,7 @@ Expected: PASS, preservando “Bem-vindo à cratera” e “Explorar restaurante
 - [ ] **Step 6: Commitar o hero fotográfico**
 
 ```powershell
-git add -- public/images/cratera.png src/features/home/CraterHeroMedia.tsx src/features/home/CraterHeroMedia.test.tsx src/features/home/LandingHero.tsx src/features/home/home.module.css
+git add -- public/images/cratera.png public/images/crater-aperture.svg src/features/home/CraterHeroMedia.tsx src/features/home/CraterHeroMedia.test.tsx src/features/home/LandingHero.tsx src/features/home/home.module.css
 git commit -m "feat: reveal crater photograph in landing hero"
 ```
 
