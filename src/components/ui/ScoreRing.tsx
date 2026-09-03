@@ -33,6 +33,7 @@ export function ScoreRing({ value, label, size = 'small' }: ScoreRingProps) {
           className={styles.scoreProgress}
           cx="22"
           cy="22"
+          data-score-progress
           r="19"
           pathLength="100"
           strokeDasharray={`${progress} 100`}

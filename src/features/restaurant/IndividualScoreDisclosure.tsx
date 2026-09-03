@@ -45,26 +45,33 @@ export function IndividualScoreDisclosure({
       >
         {action}
       </button>
-      {expanded ? (
-        <section
-          aria-label={`Notas de ${displayName}`}
-          className={styles.individualScores}
-          id={regionId}
-        >
-          <div className={styles.individualOverall}>
-            <span>Média pessoal</span>
-            <strong>{scoreFormatter.format(overall)}</strong>
-          </div>
-          <dl className={styles.individualScoreList}>
-            {SCORE_ROWS.map(({ key, label }) => (
-              <div className={styles.individualScore} key={key}>
-                <dt>{label}</dt>
-                <dd>{scoreFormatter.format(scores[key])}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-      ) : null}
+      <div
+        className={styles.individualScoresClip}
+        data-expanded={expanded}
+        data-score-disclosure={displayName}
+      >
+        <div>
+          <section
+            aria-hidden={!expanded}
+            aria-label={`Notas de ${displayName}`}
+            className={styles.individualScores}
+            id={regionId}
+          >
+            <div className={styles.individualOverall}>
+              <span>Média pessoal</span>
+              <strong>{scoreFormatter.format(overall)}</strong>
+            </div>
+            <dl className={styles.individualScoreList}>
+              {SCORE_ROWS.map(({ key, label }) => (
+                <div className={styles.individualScore} key={key}>
+                  <dt>{label}</dt>
+                  <dd>{scoreFormatter.format(scores[key])}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        </div>
+      </div>
     </div>
   );
 }

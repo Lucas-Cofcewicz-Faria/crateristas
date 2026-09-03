@@ -24,7 +24,12 @@ export function PhotoGallery({ photos, restaurantName }: PhotoGalleryProps) {
   return (
     <section aria-label="Fotografias da visita" className={styles.gallery}>
       {orderedPhotos.map((photo, index) => (
-        <figure className={styles.photo} key={photo.id}>
+        <figure
+          className={styles.photo}
+          data-motion="excavation"
+          data-motion-index={Math.min(index, 5)}
+          key={photo.id}
+        >
           <Image
             alt={`Foto ${index + 1} da visita ao restaurante ${restaurantName}`}
             data-atmosphere-source={index === 0 ? 'true' : undefined}

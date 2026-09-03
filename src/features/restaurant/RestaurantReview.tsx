@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { MotionScope } from '@/components/motion/MotionScope';
 import type {
   PublicComment,
   PublicPhoto,
@@ -35,46 +36,48 @@ export function RestaurantReview({
 }: RestaurantReviewProps) {
   return (
     <RestaurantAtmosphere enabled={photos.length > 0}>
-      <article className={styles.reviewPage}>
-      <Link className={styles.backLink} href="/registros">
-        ← Voltar ao livro de registros
-      </Link>
+      <MotionScope>
+        <article className={styles.reviewPage}>
+          <Link className={styles.backLink} href="/registros">
+            ← Voltar ao livro de registros
+          </Link>
 
-      <header className={styles.reviewHeader}>
-        <p className={styles.eyebrow}>Evidências de uma visita publicada</p>
-        <h1>{restaurant.name}</h1>
-        <div className={styles.restaurantMeta}>
-          <span>{restaurant.cuisine}</span>
-          <span aria-hidden="true">•</span>
-          <span>{restaurant.neighborhood}, {restaurant.city}</span>
-        </div>
-        <p className={styles.visitDate}>
-          Visita em <time dateTime={visitedAt}>{formatVisitDate(visitedAt)}</time>
-        </p>
-        {restaurant.address ? <p className={styles.address}>{restaurant.address}</p> : null}
-      </header>
+          <header className={styles.reviewHeader}>
+            <p className={styles.eyebrow}>Evidências de uma visita publicada</p>
+            <h1 data-motion="inscription">{restaurant.name}</h1>
+            <div className={styles.restaurantMeta}>
+              <span>{restaurant.cuisine}</span>
+              <span aria-hidden="true">•</span>
+              <span>{restaurant.neighborhood}, {restaurant.city}</span>
+            </div>
+            <p className={styles.visitDate}>
+              Visita em <time dateTime={visitedAt}>{formatVisitDate(visitedAt)}</time>
+            </p>
+            {restaurant.address ? <p className={styles.address}>{restaurant.address}</p> : null}
+          </header>
 
-      <PhotoGallery photos={photos} restaurantName={restaurant.name} />
+          <PhotoGallery photos={photos} restaurantName={restaurant.name} />
 
-      <section aria-labelledby="evidencias-titulo" className={styles.evidenceSection}>
-        <header className={styles.evidenceHeader}>
-          <p className={styles.eyebrow}>Caderno coletivo</p>
-          <h2 id="evidencias-titulo">Vozes e medidas da mesa</h2>
-          <p>As impressões publicadas permanecem junto das médias coletivas da visita.</p>
-        </header>
-        <div className={styles.evidenceComposition}>
-          <div className={styles.scorePanel}>
-            <ScoreBreakdown
-              historical={historical}
-              overall={overall}
-              participantCount={participantCount}
-              scores={scores}
-            />
-          </div>
-          <CommentFragments comments={comments} />
-        </div>
-      </section>
-      </article>
+          <section aria-labelledby="evidencias-titulo" className={styles.evidenceSection}>
+            <header className={styles.evidenceHeader}>
+              <p className={styles.eyebrow}>Caderno coletivo</p>
+              <h2 id="evidencias-titulo">Vozes e medidas da mesa</h2>
+              <p>As impressões publicadas permanecem junto das médias coletivas da visita.</p>
+            </header>
+            <div className={styles.evidenceComposition}>
+              <div className={styles.scorePanel}>
+                <ScoreBreakdown
+                  historical={historical}
+                  overall={overall}
+                  participantCount={participantCount}
+                  scores={scores}
+                />
+              </div>
+              <CommentFragments comments={comments} />
+            </div>
+          </section>
+        </article>
+      </MotionScope>
     </RestaurantAtmosphere>
   );
 }

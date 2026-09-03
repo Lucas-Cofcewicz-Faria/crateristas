@@ -37,6 +37,9 @@ describe('ScoreRing', () => {
 
     expect(screen.getByRole('img', { name: 'Comida: 8,3 de 10' }))
       .toBeInTheDocument();
+    const ring = screen.getByRole('img', { name: 'Comida: 8,3 de 10' });
+    expect(ring.querySelector('[data-score-progress]'))
+      .toHaveAttribute('stroke-dasharray', '82.5 100');
     expect(screen.getByText('8,3')).toBeInTheDocument();
   });
 

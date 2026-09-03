@@ -83,6 +83,10 @@ describe('CommentFragments', () => {
     });
 
     expect(container.querySelectorAll('[class*="fragment--"]')).toHaveLength(6);
+    expect(fragments.map((fragment) => fragment.getAttribute('data-motion')))
+      .toEqual(fragments.map(() => 'constellation'));
+    expect(fragments.map((fragment) => fragment.getAttribute('data-motion-index')))
+      .toEqual(fragments.map((_, index) => String(index)));
   });
 
   it('usa avatar quando disponível e iniciais robustas', () => {
@@ -110,10 +114,13 @@ describe('CommentFragments', () => {
     const anaToggle = screen.getByRole('button', { name: 'Ver notas de Ana Souza' });
     const brunoToggle = screen.getByRole('button', { name: 'Ver notas de Bruno' });
     expect(anaToggle).toHaveAttribute('aria-expanded', 'false');
+    const anaPanel = document.querySelector('[data-score-disclosure="Ana Souza"]');
+    expect(anaPanel).toHaveAttribute('data-expanded', 'false');
 
     await user.click(anaToggle);
     const anaScores = screen.getByRole('region', { name: 'Notas de Ana Souza' });
     expect(anaToggle).toHaveAttribute('aria-expanded', 'true');
+    expect(anaPanel).toHaveAttribute('data-expanded', 'true');
     expect(within(anaScores).getByText('Média pessoal')).toBeInTheDocument();
     expect(within(anaScores).getByText('6,5')).toBeInTheDocument();
     for (const label of [

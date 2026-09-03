@@ -281,34 +281,56 @@
 
 .fragment--1 {
   grid-area: 1 / 1;
+  --fragment-x: 72px;
+  --fragment-y: 80px;
 }
 
 .fragment--2 {
   grid-area: 1 / 4;
+  --fragment-x: -72px;
+  --fragment-y: 80px;
 }
 
 .fragment--3 {
   grid-area: 2 / 1;
+  --fragment-x: 96px;
+  --fragment-y: 20px;
 }
 
 .fragment--4 {
   grid-area: 2 / 4;
+  --fragment-x: -96px;
+  --fragment-y: 20px;
 }
 
 .fragment--5 {
   grid-area: 3 / 1;
+  --fragment-x: 96px;
+  --fragment-y: -20px;
 }
 
 .fragment--6 {
   grid-area: 3 / 4;
+  --fragment-x: -96px;
+  --fragment-y: -20px;
 }
 
 .fragment--7 {
   grid-area: 4 / 1;
+  --fragment-x: 72px;
+  --fragment-y: -80px;
 }
 
 .fragment--8 {
   grid-area: 4 / 4;
+  --fragment-x: -72px;
+  --fragment-y: -80px;
+}
+
+.commentFragment[data-motion-state='pending'] {
+  --motion-x: var(--fragment-x);
+  --motion-y: var(--fragment-y);
+  --motion-scale: 0.96;
 }
 
 .commentAuthor {
@@ -414,6 +436,22 @@
   margin-top: 8px;
   padding-top: 14px;
   border-top: 1px solid var(--review-line);
+}
+
+.individualScoresClip {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 320ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 180ms ease;
+}
+
+.individualScoresClip > div { min-height: 0; overflow: hidden; }
+
+.individualScoresClip[data-expanded='true'] {
+  grid-template-rows: 1fr;
+  opacity: 1;
 }
 
 .individualOverall {
@@ -530,4 +568,6 @@
   .backLink {
     transition: none;
   }
+
+  .individualScoresClip { transition: none; }
 }

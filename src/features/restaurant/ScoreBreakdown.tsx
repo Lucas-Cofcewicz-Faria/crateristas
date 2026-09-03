@@ -25,6 +25,7 @@ export function ScoreBreakdown({
     <section
       aria-label="Avaliação coletiva"
       className={styles.scoreBreakdown}
+      data-motion="measure"
       role="region"
     >
       <p className={styles.scoreEyebrow}>

@@ -187,6 +187,15 @@
   stroke-width: 1.8;
 }
 
+[data-motion='measure'][data-motion-state='pending'] [data-score-progress] {
+  stroke-dashoffset: 100;
+}
+
+[data-motion='measure'][data-motion-state='visible'] [data-score-progress] {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 720ms cubic-bezier(0.16, 1, 0.3, 1) 100ms;
+}
+
 .scoreTrack {
   stroke: var(--line);
 }
@@ -240,6 +249,11 @@
 @media (prefers-reduced-motion: reduce) {
   .button,
   .input {
+    transition: none;
+  }
+
+  [data-score-progress] {
+    stroke-dashoffset: 0;
     transition: none;
   }
 }

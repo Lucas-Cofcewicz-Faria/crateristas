@@ -46,6 +46,8 @@ export function CommentFragments({ comments }: { comments: CommentFragment[] }):
         return (
           <li
             className={`${styles.commentFragment} ${styles[`fragment--${slot}`]}`}
+            data-motion="constellation"
+            data-motion-index={index}
             key={comment.memberId}
           >
             <figure>
