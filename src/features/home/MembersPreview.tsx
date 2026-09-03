@@ -10,7 +10,7 @@ export function MembersPreview({ members }: { members: readonly PublicMemberSumm
   return (
     <section aria-labelledby="members-preview-title" className={styles.membersPreview} id="sociedade">
       <header className={styles.sectionHeader}>
-        <h2 id="members-preview-title">Os oito Crateristas</h2>
+        <h2 data-motion="inscription" id="members-preview-title">Os oito Crateristas</h2>
         <Link className={styles.textAction} href="/historia#integrantes">Conheça os integrantes</Link>
       </header>
       {visibleMembers.length === 0 ? (
@@ -19,12 +19,18 @@ export function MembersPreview({ members }: { members: readonly PublicMemberSumm
         </div>
       ) : (
         <div aria-label="Prévia dos integrantes" className={styles.memberConstellation} role="list">
-          {visibleMembers.map((member) => {
+          {visibleMembers.map((member, index) => {
             const avatarUrl = getTrustedMemberAvatarUrl(member.avatarUrl);
             const memberNumber = String(member.memberNumber).padStart(2, '0');
 
             return (
-              <article className={styles.memberPortrait} key={member.slug} role="listitem">
+              <article
+                className={styles.memberPortrait}
+                data-motion="constellation"
+                data-motion-index={index}
+                key={member.slug}
+                role="listitem"
+              >
                 <div className={styles.portraitFrame}>
                   {avatarUrl ? (
                     <Image

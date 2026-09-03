@@ -59,9 +59,10 @@ export function RecentRestaurantsCarousel({ records }: RecentRestaurantsCarousel
         </div>
 
         <article
-          key={record.id}
-          className={styles.activeSlide}
           aria-label={`Registro de ${record.restaurant.name}`}
+          className={styles.activeSlide}
+          data-carousel-state="active"
+          key={record.id}
         >
           <div className={styles.activeImage}>
             {record.coverPhotoUrl ? (

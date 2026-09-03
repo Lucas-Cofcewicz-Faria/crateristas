@@ -235,6 +235,16 @@
   transform: translateY(42px);
 }
 
+.memberPortrait[data-motion-state='pending'] {
+  --motion-y: 44px;
+  --motion-scale: 0.97;
+}
+
+.historyPreview[data-motion-state='pending'] {
+  --motion-x: -48px;
+  --motion-y: 0;
+}
+
 .portraitFrame {
   position: relative;
   aspect-ratio: 4 / 5;
@@ -425,7 +435,10 @@
   overflow: hidden;
   border: 1px solid var(--line);
   background: var(--surface);
-  animation: carousel-record-enter 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.activeSlide[data-carousel-state='active'] {
+  animation: carousel-record-enter 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes carousel-record-enter {
@@ -624,6 +637,16 @@
 }
 
 @media (hover: hover) {
+  .activeImage img,
+  .portraitFrame img {
+    transition: transform 360ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .activeSlide:hover .activeImage img,
+  .memberPortrait:hover .portraitFrame img {
+    transform: scale(1.025);
+  }
+
   .primaryAction:hover,
   .carouselEmpty a:hover {
     border-color: var(--ember-bright);
@@ -722,7 +745,7 @@
     transition: none;
   }
 
-  .activeSlide {
+  .activeSlide[data-carousel-state='active'] {
     animation: none;
   }
 }

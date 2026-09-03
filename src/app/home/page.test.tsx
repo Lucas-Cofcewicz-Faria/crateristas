@@ -83,6 +83,15 @@ beforeEach(() => {
 });
 
 describe('/home', () => {
+  it('marca as camadas editoriais para a coreografia pública', async () => {
+    const { container } = render(await HomePage());
+    expect(screen.getByRole('heading', { name: 'Bem-vindo à cratera' }))
+      .toHaveAttribute('data-motion', 'inscription');
+    expect(screen.getByRole('heading', { name: 'Restaurantes mais recentes' }))
+      .toHaveAttribute('data-motion', 'inscription');
+    expect(container.querySelectorAll('[data-motion="constellation"]')).toHaveLength(1);
+  });
+
   it('inicia as três consultas em paralelo e renderiza a experiência pública', async () => {
     let releaseRecords: (value: PublicVisitSummary[]) => void = () => undefined;
     let releaseMembers: (value: PublicMemberSummary[]) => void = () => undefined;

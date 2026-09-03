@@ -29,6 +29,16 @@ function record(id: string, name: string): PublicVisitSummary {
 }
 
 describe('RecentRestaurantsCarousel', () => {
+  it('reinicia somente a continuidade visual do slide selecionado', async () => {
+    const user = userEvent.setup();
+    render(<RecentRestaurantsCarousel records={[record('1', 'A'), record('2', 'B')]} />);
+    expect(screen.getByRole('article', { name: 'Registro de A' }))
+      .toHaveAttribute('data-carousel-state', 'active');
+    await user.click(screen.getByRole('button', { name: 'Próximo restaurante' }));
+    expect(screen.getByRole('article', { name: 'Registro de B' }))
+      .toHaveAttribute('data-carousel-state', 'active');
+  });
+
   it('usa o nome como link principal do registro mesmo sem fotografia', () => {
     render(<RecentRestaurantsCarousel records={[record('1', 'A Cantina')]} />);
 

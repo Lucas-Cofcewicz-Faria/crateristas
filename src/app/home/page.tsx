@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { MotionScope } from '@/components/motion/MotionScope';
 import { PublicShell } from '@/components/shell/PublicShell';
 import { DepthIndicator, type DepthSection } from '@/features/home/DepthIndicator';
 import { HistoryPreview } from '@/features/home/HistoryPreview';
@@ -30,12 +31,12 @@ export default async function HomePage() {
 
   return (
     <PublicShell viewer={viewer ? 'member' : 'visitor'}>
-      <div className={styles.landing}>
+      <MotionScope className={styles.landing}>
         <DepthIndicator sections={DEPTH_SECTIONS} />
         <LandingHero />
         <section aria-labelledby="recent-title" className={styles.landingSection} id="restaurantes">
           <header className={styles.sectionHeader}>
-            <h2 id="recent-title">Restaurantes mais recentes</h2>
+            <h2 data-motion="inscription" id="recent-title">Restaurantes mais recentes</h2>
             <Link className={styles.textAction} href="/registros">Ver todos os registros</Link>
           </header>
           <RecentRestaurantsCarousel records={recentRestaurants} />
@@ -43,7 +44,9 @@ export default async function HomePage() {
         <HistoryPreview />
         <MembersPreview members={members} />
         <section aria-labelledby="closing-title" className={styles.closingCallout}>
-          <h2 id="closing-title">A próxima mesa ainda não foi registrada.</h2>
+          <h2 data-motion="inscription" id="closing-title">
+            A próxima mesa ainda não foi registrada.
+          </h2>
           <div>
             <Link className={styles.primaryAction} href="/registros">Explorar o arquivo</Link>
             <Link className={styles.textAction} href={viewer ? '/painel' : '/entrar'}>
@@ -51,7 +54,7 @@ export default async function HomePage() {
             </Link>
           </div>
         </section>
-      </div>
+      </MotionScope>
     </PublicShell>
   );
 }
