@@ -1,0 +1,38 @@
+.scope {
+  --motion-fast: 180ms;
+  --motion-routine: 360ms;
+  --motion-authored: 680ms;
+  --motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scope[data-motion-ready='true'] [data-motion-state='pending'] {
+  opacity: 0;
+  transform: translate3d(var(--motion-x, 0), var(--motion-y, 28px), 0)
+    scale(var(--motion-scale, 0.985));
+}
+
+.scope [data-motion-state='visible'] {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  transition:
+    opacity var(--motion-authored) var(--motion-ease),
+    transform var(--motion-authored) var(--motion-ease);
+  transition-delay: min(calc(var(--motion-index, 0) * 48ms), 288ms);
+}
+
+.scope[data-motion-paused='true'] [data-motion-loop] {
+  animation-play-state: paused !important;
+}
+
+.scope [data-motion-loop][data-motion-loop-state='paused'] {
+  animation-play-state: paused !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scope [data-motion] {
+    opacity: 1;
+    transform: none;
+    transition-duration: 120ms;
+    transition-delay: 0ms;
+  }
+}
