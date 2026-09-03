@@ -1,5 +1,31 @@
 .story {
+  position: relative;
+  isolation: isolate;
   overflow: clip;
+}
+
+.story::before {
+  position: fixed;
+  z-index: -1;
+  inset: 18% auto auto -12vw;
+  width: 34vw;
+  aspect-ratio: 1;
+  content: '';
+  border: 1px solid color-mix(in srgb, var(--ember), transparent 78%);
+  border-radius: 47% 53% 55% 45%;
+  pointer-events: none;
+  animation: history-contour-breathe 14s ease-in-out infinite;
+}
+
+@keyframes history-contour-breathe {
+  0%,
+  100% {
+    transform: scale(0.96) rotate(-2deg);
+  }
+
+  50% {
+    transform: scale(1.04) rotate(2deg);
+  }
 }
 
 .storyHero {
@@ -52,6 +78,16 @@
 .chapter:nth-child(even) .chapterIndex {
   grid-column: 2;
   grid-row: 1;
+}
+
+.chapter:nth-child(odd)[data-motion-state='pending'] {
+  --motion-x: -52px;
+  --motion-y: 0;
+}
+
+.chapter:nth-child(even)[data-motion-state='pending'] {
+  --motion-x: 52px;
+  --motion-y: 0;
 }
 
 .chapterIndex span {
@@ -205,6 +241,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .story::before {
+    animation: none;
+  }
+
   .membersHeader a,
   .storyFooter a,
   .retryButton {

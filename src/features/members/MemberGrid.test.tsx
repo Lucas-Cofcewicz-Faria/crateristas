@@ -28,6 +28,10 @@ describe('MemberGrid', () => {
     expect(cards).toHaveLength(2);
     expect(cards[0]).toHaveAccessibleName('Craterista nº 01: Ana Souza');
     expect(cards[1]).toHaveAccessibleName('Craterista nº 02: Bia');
+    const items = screen.getAllByRole('listitem');
+    expect(items[0]).toHaveAttribute('data-motion', 'constellation');
+    expect(items.map((item) => item.getAttribute('data-motion-index')))
+      .toEqual(items.map((_, index) => String(index)));
   });
 
   it('mostra um estado vazio público sem fabricar integrantes', () => {

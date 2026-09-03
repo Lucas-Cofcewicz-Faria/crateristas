@@ -35,4 +35,14 @@ describe('HistoryNarrative', () => {
     expect(document.getElementById('integrantes')).toBeInTheDocument();
     expect(scrollIntoView).toHaveBeenCalledOnce();
   });
+
+  it('marca capítulos na mesma ordem da narrativa', () => {
+    const { container } = render(<HistoryNarrative members={[]} showPanelLink={false} />);
+    const chapters = [...container.querySelectorAll('[data-history-chapter]')];
+    expect(chapters).toHaveLength(4);
+    expect(chapters.every((chapter) => chapter.getAttribute('data-motion') === 'excavation'))
+      .toBe(true);
+    expect(chapters.map((chapter) => chapter.getAttribute('data-motion-index')))
+      .toEqual(['0', '1', '2', '3']);
+  });
 });

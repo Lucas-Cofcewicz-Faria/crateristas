@@ -23,8 +23,13 @@ export function MemberGrid({ members }: MemberGridProps) {
 
   return (
     <div aria-label="Diretório dos Crateristas" className={styles.grid} role="list">
-      {visibleMembers.map((member) => (
-        <div key={member.slug} role="listitem">
+      {visibleMembers.map((member, index) => (
+        <div
+          data-motion="constellation"
+          data-motion-index={index}
+          key={member.slug}
+          role="listitem"
+        >
           <MemberCard
             avatarUrl={getTrustedMemberAvatarUrl(member.avatarUrl)}
             bio={member.bio}
