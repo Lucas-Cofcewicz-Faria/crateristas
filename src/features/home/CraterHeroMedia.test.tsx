@@ -1,5 +1,5 @@
 import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CraterHeroMedia, getHeroProgress } from './CraterHeroMedia';
 
 afterEach(cleanup);
@@ -12,9 +12,39 @@ describe('CraterHeroMedia', () => {
     expect(screen.getByText('Registro do local da Cratera')).toBeInTheDocument();
   });
 
-  it('limita o progresso da abertura entre zero e um', () => {
-    expect(getHeroProgress(0, 800, 800)).toBe(0);
-    expect(getHeroProgress(-400, 800, 800)).toBeCloseTo(0.5);
-    expect(getHeroProgress(-1200, 800, 800)).toBe(1);
+  it('limita o progresso da abertura ao intervalo rolável do estágio', () => {
+    expect(getHeroProgress(0, 1600, 800)).toBe(0);
+    expect(getHeroProgress(-400, 1600, 800)).toBeCloseTo(0.5);
+    expect(getHeroProgress(-1200, 1600, 800)).toBe(1);
+  });
+
+  it('calcula a abertura pelos limites do estágio, não pela figura sticky', () => {
+    vi.stubGlobal('innerHeight', 800);
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function getRect(this: HTMLElement) {
+      return {
+        bottom: this.hasAttribute('data-hero-stage') ? 1200 : 800,
+        height: this.hasAttribute('data-hero-stage') ? 1600 : 800,
+        left: 0,
+        right: 0,
+        toJSON: () => ({}),
+        top: this.hasAttribute('data-hero-stage') ? -400 : 0,
+        width: 0,
+        x: 0,
+        y: 0,
+      };
+    });
+
+    const { container } = render(
+      <div data-hero-stage>
+        <CraterHeroMedia />
+      </div>,
+    );
+
+    expect(container.querySelector('figure')).toHaveStyle('--hero-mask-size: 94%');
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 });

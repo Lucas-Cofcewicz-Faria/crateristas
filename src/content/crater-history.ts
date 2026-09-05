@@ -24,7 +24,7 @@ export const CRATER_HISTORY = {
       id: 'patrimonio',
       eyebrow: 'Capítulo IV',
       title: 'Patrimônio natural',
-      body: 'A grandeza da cratera não é apenas espiritual ou gastronômica. Sua geografia oferece uma forma excepcional de conservação da abundante fauna local de mosquitos, patrimônio vivo que acompanha silenciosamente as reuniões da Sociedade.',
+      body: 'A grandeza da cratera não é apenas espiritual ou gastronômica. Sua geografia conserva a abundante fauna local de mosquitos e, segundo o cânone da Sociedade, transforma os pombos que bebem de suas águas: eles desenvolvem um sabor inimaginável e passam a se reproduzir em velocidade absurda. Às quintas-feiras, são servidos com macarrão ao molho de tomate abençoado pela Cratera e um potinho de queijo sagrado, sempre distribuído em pequenas porções, como exige a tradição.',
     },
   ],
 } as const;

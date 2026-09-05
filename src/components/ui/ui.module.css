@@ -9,7 +9,8 @@
   font-weight: 800;
   letter-spacing: 0.02em;
   cursor: pointer;
-  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+  box-shadow: 0 2px 5px rgb(18 11 13 / 0.14);
+  transition: transform 140ms ease, box-shadow 140ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease;
 }
 
 .button:disabled {
@@ -26,6 +27,8 @@
 .button.primary:not(:disabled):hover {
   border-color: var(--ember-bright);
   background: var(--ember-bright);
+  box-shadow: 0 5px 12px color-mix(in srgb, var(--ember) 34%, transparent);
+  transform: translateY(-1px);
 }
 
 .button.secondary {
@@ -37,6 +40,8 @@
 .button.secondary:not(:disabled):hover {
   border-color: var(--ember);
   color: var(--ember-bright);
+  box-shadow: 0 5px 12px rgb(18 11 13 / 0.18);
+  transform: translateY(-1px);
 }
 
 .button.danger {
@@ -48,6 +53,18 @@
 .button.danger:not(:disabled):hover {
   background: var(--danger);
   color: var(--canvas);
+  box-shadow: 0 5px 12px color-mix(in srgb, var(--danger) 28%, transparent);
+  transform: translateY(-1px);
+}
+
+.button:not(:disabled):active {
+  box-shadow: 0 1px 3px rgb(18 11 13 / 0.16);
+  transform: translateY(1px);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--ember-bright);
+  outline-offset: 3px;
 }
 
 .button.small {
@@ -201,10 +218,22 @@
 }
 
 .scoreProgress {
-  stroke: var(--ember-bright);
   stroke-linecap: round;
   transform: rotate(-90deg);
   transform-origin: center;
+}
+
+.scoreProgressNeutral {
+  color: var(--line);
+}
+
+[data-motion='measure'][data-motion-state='visible'] .scoreGradientStop {
+  animation: score-color-arrive 1100ms ease-out both;
+}
+
+@keyframes score-color-arrive {
+  from { stop-color: var(--line); }
+  to { stop-color: var(--score-stop-color); }
 }
 
 .scoreValue,
@@ -244,9 +273,13 @@
 .large .scoreLabel {
   margin-top: 42px;
   font-size: 0.66rem;
+  white-space: normal;
 }
 
 @media (prefers-reduced-motion: reduce) {
+  [data-motion='measure'][data-motion-state='visible'] .scoreGradientStop {
+    animation: none;
+  }
   .button,
   .input {
     transition: none;
@@ -255,5 +288,10 @@
   .scoreProgress[data-score-progress] {
     stroke-dashoffset: 0;
     transition: none;
+  }
+
+  .button:not(:disabled):hover,
+  .button:not(:disabled):active {
+    transform: none;
   }
 }

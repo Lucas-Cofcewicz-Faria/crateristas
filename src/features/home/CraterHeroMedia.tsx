@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react';
 import styles from './home.module.css';
 
 export function getHeroProgress(rectTop: number, rectHeight: number, viewportHeight: number) {
-  const travel = Math.max(rectHeight, viewportHeight, 1);
+  const travel = Math.max(rectHeight - viewportHeight, 1);
   return Math.min(1, Math.max(0, -rectTop / travel));
 }
 
@@ -25,7 +25,8 @@ export function CraterHeroMedia() {
     let frame = 0;
     const update = () => {
       frame = 0;
-      const rect = root.getBoundingClientRect();
+      const stage = root.closest<HTMLElement>('[data-hero-stage]') ?? root;
+      const rect = stage.getBoundingClientRect();
       const progress = getHeroProgress(rect.top, rect.height, window.innerHeight);
       root.style.setProperty('--hero-mask-size', `${48 + progress * 92}%`);
       root.style.setProperty('--hero-scale', String(1.055 - progress * 0.055));
