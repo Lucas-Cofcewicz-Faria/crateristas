@@ -41,7 +41,8 @@ describe('CraterHeroMedia', () => {
     );
 
     expect(Number(container.querySelector('figure')?.style.getPropertyValue('--hero-scale')))
-      .toBeCloseTo(1.0275);
+      .toBeCloseTo(1.10);
+    expect(container.querySelector('figure')).toHaveStyle('--hero-pan: 0%');
   });
 
   afterEach(() => {

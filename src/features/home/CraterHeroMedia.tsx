@@ -18,6 +18,7 @@ export function CraterHeroMedia() {
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     if (reduced) {
       root.style.setProperty('--hero-scale', '1');
+      root.style.setProperty('--hero-pan', '0%');
       return undefined;
     }
 
@@ -27,7 +28,8 @@ export function CraterHeroMedia() {
       const stage = root.closest<HTMLElement>('[data-hero-stage]') ?? root;
       const rect = stage.getBoundingClientRect();
       const progress = getHeroProgress(rect.top, rect.height, window.innerHeight);
-      root.style.setProperty('--hero-scale', String(1.055 - progress * 0.055));
+      root.style.setProperty('--hero-scale', String(1.12 - progress * 0.04));
+      root.style.setProperty('--hero-pan', `${-3 + progress * 6}%`);
     };
     const schedule = () => {
       if (frame) return;
@@ -44,13 +46,13 @@ export function CraterHeroMedia() {
   }, []);
 
   return (
-    <figure className={styles.craterHeroMedia} data-motion="excavation" ref={rootRef}>
+    <figure className={styles.craterHeroMedia} ref={rootRef}>
       <div className={styles.craterHeroFrame}>
         <Image
           alt="Registro do local da Cratera"
           fill
           preload
-          sizes="(max-width: 1600px) 52vw, 766px"
+          sizes="100vw"
           src="/images/cratera.png"
         />
       </div>

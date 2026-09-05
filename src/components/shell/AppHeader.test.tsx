@@ -3,7 +3,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const dependencies = vi.hoisted(() => ({
   logoutAction: vi.fn(async () => undefined),
+  pathname: '/home',
 }));
+
+vi.mock('next/navigation', () => ({ usePathname: () => dependencies.pathname }));
 
 vi.mock('@/features/auth/actions', () => ({
   logoutAction: dependencies.logoutAction,
@@ -14,9 +17,17 @@ import { PublicShell } from './PublicShell';
 afterEach(() => {
   cleanup();
   dependencies.logoutAction.mockClear();
+  dependencies.pathname = '/home';
 });
 
 describe('AppHeader', () => {
+  it('identifica a seção atual também nas páginas de um restaurante', () => {
+    dependencies.pathname = '/restaurantes/casa-da-cratera';
+    render(<AppHeader viewer="visitor" />);
+    expect(screen.getByRole('link', { name: 'Registros' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'História' })).not.toHaveAttribute('aria-current');
+  });
+
   it('oferece a navegação pública e a entrada para visitantes', () => {
     render(<AppHeader viewer="visitor" />);
 

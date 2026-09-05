@@ -1,6 +1,9 @@
 import Link from 'next/link';
+import { ArrowUpRight } from 'lucide-react';
 import { CraterLogo } from '@/components/brand/CraterLogo';
 import { logoutAction } from '@/features/auth/actions';
+import { HeaderMotion } from './HeaderMotion';
+import { HeaderLinks } from './HeaderLinks';
 import styles from './shell.module.css';
 
 export type HeaderViewer = 'visitor' | 'member';
@@ -15,7 +18,7 @@ export function AppHeader({
   signOutAction = logoutAction,
 }: AppHeaderProps) {
   return (
-    <header className={styles.header}>
+    <HeaderMotion>
       <div className={styles.headerInner}>
         <Link className={styles.brand} href="/home" aria-label="Crateristas — início">
           <CraterLogo className={styles.brandMark} />
@@ -26,20 +29,20 @@ export function AppHeader({
         </Link>
 
         <nav className={styles.navigation} aria-label="Navegação principal">
-          <Link className={styles.navLink} href="/registros">Registros</Link>
-          <Link className={styles.navLink} href="/historia">História</Link>
+          <HeaderLinks member={viewer === 'member'} />
           {viewer === 'member' ? (
             <>
-              <Link className={styles.navLink} href="/painel">Painel</Link>
               <form action={signOutAction}>
                 <button className={styles.signOut} type="submit">Sair</button>
               </form>
             </>
           ) : (
-            <Link className={styles.signIn} href="/entrar">Entrar</Link>
+            <Link className={styles.signIn} href="/entrar">
+              <span>Entrar</span><ArrowUpRight aria-hidden="true" size={18} />
+            </Link>
           )}
         </nav>
       </div>
-    </header>
+    </HeaderMotion>
   );
 }
