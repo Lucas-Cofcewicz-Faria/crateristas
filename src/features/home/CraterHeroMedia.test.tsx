@@ -12,13 +12,13 @@ describe('CraterHeroMedia', () => {
     expect(screen.getByText('Registro do local da Cratera')).toBeInTheDocument();
   });
 
-  it('limita o progresso da abertura ao intervalo rolável do estágio', () => {
+  it('limita o progresso do zoom ao intervalo rolável do estágio', () => {
     expect(getHeroProgress(0, 1600, 800)).toBe(0);
     expect(getHeroProgress(-400, 1600, 800)).toBeCloseTo(0.5);
     expect(getHeroProgress(-1200, 1600, 800)).toBe(1);
   });
 
-  it('calcula a abertura pelos limites do estágio, não pela figura sticky', () => {
+  it('calcula o zoom pelos limites do estágio, não pela figura sticky', () => {
     vi.stubGlobal('innerHeight', 800);
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function getRect(this: HTMLElement) {
       return {
@@ -40,7 +40,8 @@ describe('CraterHeroMedia', () => {
       </div>,
     );
 
-    expect(container.querySelector('figure')).toHaveStyle('--hero-mask-size: 94%');
+    expect(Number(container.querySelector('figure')?.style.getPropertyValue('--hero-scale')))
+      .toBeCloseTo(1.0275);
   });
 
   afterEach(() => {

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CraterLogo } from '@/components/brand/CraterLogo';
 import { logoutAction } from '@/features/auth/actions';
 import styles from './shell.module.css';
 
@@ -17,7 +18,7 @@ export function AppHeader({
     <header className={styles.header}>
       <div className={styles.headerInner}>
         <Link className={styles.brand} href="/home" aria-label="Crateristas — início">
-          <span className={styles.brandMark} aria-hidden="true">C</span>
+          <CraterLogo className={styles.brandMark} />
           <span>
             <strong className={styles.brandName}>Crateristas</strong>
             <span className={styles.brandKicker}>Livro de registros</span>

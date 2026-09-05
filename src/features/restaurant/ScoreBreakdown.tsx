@@ -1,9 +1,9 @@
 import type { HistoricalScoreValues } from '@/domain/reviews/repository';
 import type { ScoreValues } from '@/domain/reviews/types';
 import { ScoreRing } from '@/components/ui/ScoreRing';
+import { ScoreText } from '@/components/ui/ScoreText';
 import {
   formatParticipation,
-  formatScore,
   SCORE_ITEMS,
 } from './restaurant-formatters';
 import styles from './restaurant.module.css';
@@ -38,7 +38,7 @@ export function ScoreBreakdown({
           <div className={styles.scoreItem} key={key}>
             <dt>{label}</dt>
             <dd className={scores?.[key] === null || !scores ? styles.unassessed : undefined}>
-              {formatScore(scores?.[key] ?? null)}
+              <ScoreText value={scores?.[key] ?? null} empty="Não avaliado" />
             </dd>
           </div>
         ))}

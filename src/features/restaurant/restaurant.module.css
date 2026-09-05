@@ -110,11 +110,36 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  animation: photoArrival 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: photoArrival 420ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.photo[data-direction='previous'] { --photo-travel: -22px; }
+.photo[data-whole-photo='true'] img { object-fit: contain; }
+
+.photoFitToggle {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--review-line);
+  border-radius: var(--radius-sm);
+  background: var(--canvas);
+  color: var(--ink);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background-color 180ms ease, border-color 180ms ease, scale 180ms ease;
+}
+
+.photoFitToggle:hover,
+.photoFitToggle:focus-visible { background: var(--review-surface); border-color: var(--review-accent-bright); }
+.photoFitToggle:active { scale: 0.97; }
+
 @keyframes photoArrival {
-  from { opacity: 0.65; transform: scale(1.015); }
+  from { opacity: 0.65; transform: translateX(var(--photo-travel, 22px)) scale(1.025); }
   to { opacity: 1; transform: scale(1); }
 }
 
@@ -320,7 +345,10 @@
   gap: 5px;
   padding: 12px;
   background: var(--canvas);
+  transition: background-color 200ms ease;
 }
+
+.scoreItem:hover { background: var(--review-surface); }
 
 .scoreItem dt {
   color: var(--ink-muted);
@@ -359,6 +387,25 @@
   border: 1px solid var(--review-line);
   border-radius: var(--radius-md);
   background: var(--review-surface);
+}
+
+.commentFragment > figure {
+  transition: translate 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.commentFragment:focus-within {
+  border-color: var(--review-accent-bright);
+  z-index: 2;
+}
+
+.commentFragment:focus-within > figure { translate: 0 -3px; }
+
+@media (hover: hover) {
+  .commentFragment:hover { border-color: var(--review-accent-bright); z-index: 2; }
+  .commentFragment:hover > figure { translate: 0 -3px; }
+  .galleryArrow svg { transition: translate 180ms ease; }
+  .galleryArrow:first-child:hover:not(:disabled) svg { translate: -3px 0; }
+  .galleryArrow:last-child:hover:not(:disabled) svg { translate: 3px 0; }
 }
 
 .fragment--1 {
@@ -490,6 +537,9 @@
 }
 
 .scoreToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   min-height: 40px;
   padding: 0;
   border: 0;
@@ -503,6 +553,18 @@
   text-decoration-color: color-mix(in srgb, var(--review-accent-bright), transparent 55%);
   text-underline-offset: 4px;
   transition: color 160ms ease, text-decoration-color 160ms ease, transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scoreToggle svg { transition: rotate 260ms cubic-bezier(0.16, 1, 0.3, 1); }
+.scoreToggle[aria-expanded='true'] svg { rotate: 180deg; }
+
+.individualScoresClip[data-expanded='true'] .individualScore {
+  animation: individual-score-arrive 300ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes individual-score-arrive {
+  from { opacity: 0; translate: 0 6px; }
+  to { opacity: 1; translate: 0 0; }
 }
 
 .scoreToggle:hover {
@@ -548,7 +610,7 @@
   color: var(--ink);
 }
 
-.individualOverall span {
+.individualOverall > span {
   font-size: 0.68rem;
   font-weight: 800;
 }
@@ -651,6 +713,15 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .commentFragment > figure,
+  .galleryArrow svg,
+  .scoreToggle svg,
+  .photoFitToggle { transition: none; }
+  .commentFragment:hover > figure,
+  .commentFragment:focus-within > figure,
+  .galleryArrow:hover:not(:disabled) svg { translate: none; }
+  .photoFitToggle:active { scale: none; }
+  .individualScoresClip[data-expanded='true'] .individualScore { animation: none; }
   .backLink,
   .scoreToggle,
   .galleryArrow,

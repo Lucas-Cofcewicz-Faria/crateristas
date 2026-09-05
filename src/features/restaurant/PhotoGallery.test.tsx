@@ -74,7 +74,7 @@ describe('PhotoGallery', () => {
 
     expect(screen.getAllByRole('img')).toHaveLength(1);
     expect(screen.getByRole('img').getAttribute('src')).toContain('prato.webp');
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Próxima fotografia' })).not.toBeInTheDocument();
 
     rerender(<PhotoGallery photos={[]} restaurantName="Casa da Cratera" />);
     expect(screen.getByText('Esta visita não possui fotografias publicadas.')).toBeInTheDocument();
@@ -85,7 +85,7 @@ describe('PhotoGallery', () => {
 
     expect(screen.getByRole('img')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Próxima fotografia' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ver foto inteira' })).toBeInTheDocument();
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
@@ -95,5 +95,18 @@ describe('PhotoGallery', () => {
     expect(screen.getByText('Esta visita não possui fotografias publicadas.'))
       .toBeInTheDocument();
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+
+  it('permite ver a foto inteira e voltar ao enquadramento sem trocar a fotografia', async () => {
+    const user = userEvent.setup();
+    render(<PhotoGallery photos={photos} restaurantName="Casa da Cratera" />);
+    const image = screen.getByRole('img');
+    await user.click(screen.getByRole('button', { name: 'Ver foto inteira' }));
+    expect(image.closest('figure')).toHaveAttribute('data-whole-photo', 'true');
+    const restore = screen.getByRole('button', { name: 'Preencher enquadramento' });
+    expect(restore).toHaveAttribute('aria-pressed', 'true');
+    await user.click(restore);
+    expect(image.closest('figure')).toHaveAttribute('data-whole-photo', 'false');
+    expect(screen.getByRole('img')).toBe(image);
   });
 });

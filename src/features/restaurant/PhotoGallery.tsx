@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Expand, Shrink } from 'lucide-react';
 import { useId, useState, type KeyboardEvent } from 'react';
 import type { PublicPhoto } from '@/domain/reviews/repository';
 import styles from './restaurant.module.css';
@@ -13,6 +13,8 @@ export interface PhotoGalleryProps {
 
 export function PhotoGallery({ photos, restaurantName }: PhotoGalleryProps) {
   const [activePhotoId, setActivePhotoId] = useState<string | null>(null);
+  const [showWholePhoto, setShowWholePhoto] = useState(false);
+  const [direction, setDirection] = useState('next');
   const photoId = useId();
   if (photos.length === 0) {
     return (
@@ -32,6 +34,7 @@ export function PhotoGallery({ photos, restaurantName }: PhotoGalleryProps) {
 
   const showPhoto = (index: number) => {
     const nextPhoto = orderedPhotos[Math.max(0, Math.min(index, orderedPhotos.length - 1))];
+    setDirection(index < activeIndex ? 'previous' : 'next');
     setActivePhotoId(nextPhoto.id);
   };
 
@@ -58,17 +61,23 @@ export function PhotoGallery({ photos, restaurantName }: PhotoGalleryProps) {
       onKeyDown={handleKeyDown}
       tabIndex={hasNavigation ? 0 : undefined}
     >
-      <figure className={styles.photo} id={photoId}>
+      <figure className={styles.photo} id={photoId} data-whole-photo={showWholePhoto} data-direction={direction}>
         <Image
           alt={`Foto ${activeIndex + 1} da visita ao restaurante ${restaurantName}`}
           data-atmosphere-source={activeIndex === 0 ? 'true' : undefined}
           height={800}
+          loading="eager"
           key={activePhoto.id}
           sizes="(max-width: 1536px) calc(100vw - 96px), 1440px"
           src={activePhoto.url}
           width={1200}
         />
         <figcaption>Registro {String(activeIndex + 1).padStart(2, '0')}</figcaption>
+        <button type="button" className={styles.photoFitToggle} aria-pressed={showWholePhoto}
+          aria-controls={photoId} onClick={() => setShowWholePhoto((current) => !current)}>
+          {showWholePhoto ? <Shrink aria-hidden="true" size={16} /> : <Expand aria-hidden="true" size={16} />}
+          {showWholePhoto ? 'Preencher enquadramento' : 'Ver foto inteira'}
+        </button>
       </figure>
       {hasNavigation && (
         <div className={styles.galleryControls}>

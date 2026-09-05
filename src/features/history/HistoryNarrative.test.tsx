@@ -1,4 +1,4 @@
-import { cleanup, render } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HistoryNarrative } from './HistoryNarrative';
 
@@ -40,9 +40,16 @@ describe('HistoryNarrative', () => {
     const { container } = render(<HistoryNarrative members={[]} showPanelLink={false} />);
     const chapters = [...container.querySelectorAll('[data-history-chapter]')];
     expect(chapters).toHaveLength(4);
-    expect(chapters.every((chapter) => chapter.getAttribute('data-motion') === 'excavation'))
-      .toBe(true);
-    expect(chapters.map((chapter) => chapter.getAttribute('data-motion-index')))
-      .toEqual(['0', '1', '2', '3']);
+    expect(chapters.map((chapter) => chapter.id))
+      .toEqual(['descoberta', 'peregrinacao', 'sociedade', 'patrimonio']);
+  });
+
+  it('reserva quatro fotografias sem publicar imagens vazias ou quebradas', () => {
+    render(<HistoryNarrative members={[]} showPanelLink={false} />);
+
+    expect(screen.getAllByText('Fotografia a adicionar')).toHaveLength(4);
+    expect(document.querySelector('img[src=""], img:not([src])')).toBeNull();
+    expect(screen.getByRole('navigation', { name: 'Capítulos da história' }))
+      .toBeInTheDocument();
   });
 });

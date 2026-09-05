@@ -16,6 +16,9 @@
 # generated code knowledge graph
 /graphify-out/
 
+# local visual verification captures
+/.impeccable/review/
+
 # isolated development worktrees
 /.worktrees/
 
