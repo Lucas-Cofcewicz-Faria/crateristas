@@ -48,7 +48,6 @@
   flex: 0 0 auto;
   padding: 0 18px;
   border: 1px solid var(--ember);
-  border-radius: var(--radius-sm);
   color: var(--ink);
   font-size: 0.8rem;
   font-weight: 800;
@@ -63,7 +62,7 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 22px;
+  gap: 40px 24px;
 }
 
 .grid > [role='listitem'] {
@@ -72,61 +71,57 @@
 
 .card {
   height: 100%;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--surface);
+  border-bottom: 1px solid var(--line);
 }
 
 .cardSummary {
-  min-height: 410px;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 30px 24px 24px;
-  text-align: center;
-}
-
-.avatarFrame,
-.avatar,
-.avatarFallback {
-  width: 128px;
-  height: 128px;
-  border-radius: 50%;
+  align-items: stretch;
 }
 
 .avatarFrame {
-  flex: 0 0 128px;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  flex: none;
   overflow: hidden;
   border: 1px solid var(--line);
-  background: var(--surface-raised);
+  background: var(--surface);
 }
 
 .avatar {
   object-fit: cover;
+  object-position: center 35%;
 }
 
 .avatarFallback {
+  width: 100%;
+  height: 100%;
   display: grid;
   place-items: center;
-  color: var(--ember-bright);
+  color: color-mix(in srgb, var(--ink-muted) 70%, var(--surface));
   font-family: var(--font-editorial), Georgia, serif;
-  font-size: 1.8rem;
+  font-size: clamp(3rem, 5vw, 5rem);
   font-weight: 650;
-  letter-spacing: 0.04em;
+  letter-spacing: -0.03em;
 }
 
 .identity {
   width: 100%;
   min-width: 0;
+  padding: 24px 0 20px;
 }
 
 .entryNumber {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
-  margin-top: 22px;
+  margin-top: 18px;
   color: var(--ember-bright);
   font-size: 0.66rem;
   font-weight: 800;
@@ -134,17 +129,17 @@
   text-transform: uppercase;
 }
 
+.entryNumber svg { width: 22px; height: 22px; }
+
 .identity h2 {
-  margin-top: 7px;
   color: var(--ink);
-  font-size: 1.55rem;
+  font-size: clamp(1.6rem, 2vw, 2.15rem);
   font-weight: 580;
   letter-spacing: -0.025em;
   line-height: 1.1;
 }
 
 .societyTitle {
-  min-height: 42px;
   margin-top: 8px;
   color: var(--ink-muted);
   font-family: var(--font-editorial), Georgia, serif;
@@ -153,7 +148,7 @@
 }
 
 .contributions {
-  margin-top: 15px;
+  margin-top: 9px;
   color: var(--ink-muted);
   font-size: 0.7rem;
   font-weight: 760;
@@ -161,16 +156,17 @@
 
 .expandButton {
   width: 100%;
-  min-height: 42px;
+  min-height: 48px;
   margin-top: auto;
-  padding: 8px 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-raised);
+  padding: 12px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: transparent;
   color: var(--ink);
   font: inherit;
   font-size: 0.75rem;
   font-weight: 800;
+  text-align: left;
   cursor: pointer;
   transition: border-color 160ms ease, color 160ms ease;
 }
@@ -181,7 +177,7 @@
 }
 
 .details {
-  padding: 24px;
+  padding: 24px 0;
   border-top: 1px solid var(--line);
   background: var(--canvas);
 }
@@ -212,7 +208,6 @@
   min-height: 340px;
   padding: 48px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
   background: var(--surface);
 }
 
@@ -262,7 +257,6 @@
   margin-top: 24px;
   padding: 0 20px;
   border: 1px solid var(--ember);
-  border-radius: var(--radius-sm);
   background: var(--ember);
   color: var(--canvas);
   font: inherit;
@@ -281,11 +275,38 @@
     gap: 16px;
   }
 
-  .cardSummary,
-  .details {
-    padding-right: 20px;
-    padding-left: 20px;
-  }
+}
+
+@media (max-width: 1023px) {
+  .directory,
+  .routeState { width: calc(100% - 64px); }
+  .directory { padding: 56px 0 80px; }
+  .directoryHeader { align-items: start; gap: 28px; }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px 24px; }
+  .identity h2,
+  .expandButton,
+  .bio { overflow-wrap: anywhere; }
+  .societyTitle,
+  .bio { font-size: 1rem; }
+  .contributions,
+  .favoriteCuisine { font-size: 0.8rem; }
+  .expandButton { font-size: 0.9rem; }
+  .routeState { min-height: 460px; padding: 64px 24px; }
+}
+
+@media (max-width: 639px) {
+  .directory,
+  .routeState { width: calc(100% - 40px); }
+  .directory { padding: 40px 0 64px; }
+  .directoryHeader { flex-direction: column; gap: 24px; margin-bottom: 32px; }
+  .directoryTitle { font-size: clamp(2.35rem, 9.5vw, 3.4rem); overflow-wrap: anywhere; }
+  .pendingLink { min-height: 48px; }
+  .grid { grid-template-columns: minmax(0, 1fr); gap: 40px; }
+  .identity { padding: 20px 0; }
+  .identity h2 { font-size: 1.8rem; }
+  .avatarFallback { font-size: 4rem; }
+  .emptyState { min-height: 280px; padding: 32px 20px; }
+  .routeState { padding: 48px 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

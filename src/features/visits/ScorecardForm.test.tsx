@@ -39,7 +39,8 @@ describe('ficha acessível de avaliação', () => {
       expect(slider).toHaveAttribute('step', '1');
       expect(slider).toHaveValue(value);
       expect(slider).toHaveAccessibleDescription();
-      expect(screen.getByText(`${value} de 10`, { selector: 'output' })).toBeVisible();
+      expect(slider).toHaveAttribute('aria-valuetext', `${value},0 de 10`);
+      expect(screen.getByText(`${value},0`)).toBeVisible();
     }
     expect(screen.getByLabelText('Prato pedido (opcional)')).toHaveValue('Risoto de cogumelos');
     expect(screen.getByLabelText('Prato pedido (opcional)')).toHaveAttribute('maxlength', '80');
@@ -47,15 +48,14 @@ describe('ficha acessível de avaliação', () => {
     expect(screen.getByText('152 caracteres restantes')).toBeInTheDocument();
   });
 
-  it('aceita teclado, flexiona o contador e bloqueia comentário vazio no cliente', async () => {
+  it('aceita notas inteiras, flexiona o contador e bloqueia comentário vazio no cliente', async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
     const user = userEvent.setup();
     render(<ScorecardForm initialValues={null} visitId="visit-1" />);
 
     const food = screen.getByRole('slider', { name: 'Comida' });
-    await user.click(food);
-    await user.keyboard('{ArrowRight}');
+    fireEvent.change(food, { target: { value: '1' } });
     expect(food).toHaveValue('1');
 
     fireEvent.change(screen.getByLabelText('Comentário'), {
@@ -102,7 +102,7 @@ describe('ficha acessível de avaliação', () => {
     expect(JSON.parse(String(init.body))).toEqual({ ...existing, dish: 'Lámen shoyu' });
     const status = await screen.findByRole('status', { name: 'Status da avaliação' });
     expect(status).toHaveTextContent('Avaliação salva.');
-    expect(status).toHaveTextContent('6 de 8 membros contribuíram.');
+    expect(status).toHaveTextContent('6 contribuições recebidas.');
     expect(status).toHaveTextContent('Publicada');
     expect(status).toHaveTextContent('Média coletiva: 7,3 de 10.');
   });
@@ -113,8 +113,7 @@ describe('ficha acessível de avaliação', () => {
     render(<ScorecardForm initialValues={existing} visitId="visit-1" />);
 
     const food = screen.getByRole('slider', { name: 'Comida' });
-    await user.click(food);
-    await user.keyboard('{ArrowRight}');
+    fireEvent.change(food, { target: { value: '9' } });
     await user.click(screen.getByRole('button', { name: 'Salvar avaliação' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(

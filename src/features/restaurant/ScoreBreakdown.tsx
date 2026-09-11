@@ -15,6 +15,15 @@ export interface ScoreBreakdownProps {
   historical?: boolean;
 }
 
+export function ScorePlate({ label, value, className = '' }: { label: string; value: number | null; className?: string }) {
+  return <div className={`${styles.scoreItem} ${className}`}>
+    <dt>{label}</dt>
+    <dd className={value === null ? styles.unassessed : undefined}>
+      <ScoreText value={value} empty="Não avaliado" />
+    </dd>
+  </div>;
+}
+
 export function ScoreBreakdown({
   scores,
   overall,
@@ -28,19 +37,12 @@ export function ScoreBreakdown({
       data-motion="measure"
       role="region"
     >
-      <p className={styles.scoreEyebrow}>
-        {historical ? 'Registro histórico' : 'Leitura coletiva'}
-      </p>
-      <ScoreRing label="Nota coletiva" size="large" value={overall} />
+      {historical && <p className={styles.historicalLabel}>Registro histórico</p>}
+      <ScoreRing hideLabel label="Avaliação coletiva" size="large" value={overall} />
       <p className={styles.participation}>{formatParticipation(participantCount)}</p>
       <dl className={styles.scoreList}>
         {SCORE_ITEMS.map(({ key, label }) => (
-          <div className={styles.scoreItem} key={key}>
-            <dt>{label}</dt>
-            <dd className={scores?.[key] === null || !scores ? styles.unassessed : undefined}>
-              <ScoreText value={scores?.[key] ?? null} empty="Não avaliado" />
-            </dd>
-          </div>
+          <ScorePlate key={key} label={label} value={scores?.[key] ?? null} />
         ))}
       </dl>
     </section>

@@ -176,7 +176,7 @@ describe('CommentFragments', () => {
       .toEqual(eightComments.map(({ comment }) => comment));
   });
 
-  it('limita a composição aos oito primeiros comentários sem reutilizar slots', () => {
+  it('permite consultar todos os participantes sem sobrepor as oito posições da mesa', async () => {
     const nineComments: CommentFragment[] = [
       ...comments,
       {
@@ -214,5 +214,10 @@ describe('CommentFragments', () => {
     expect(screen.queryByText('Este comentário excede o limite público da composição.'))
       .not.toBeInTheDocument();
     expect(new Set(fragments.map((fragment) => fragment.className)).size).toBe(8);
+    await userEvent.click(screen.getByRole('button', { name: 'Próximos integrantes' }));
+    expect(screen.getByText('Helena Costa')).toBeInTheDocument();
+    expect(screen.getByText('Lugar 09')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Integrantes anteriores' }));
+    expect(screen.getAllByRole('listitem')).toHaveLength(8);
   });
 });

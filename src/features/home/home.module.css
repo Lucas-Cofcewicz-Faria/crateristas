@@ -26,28 +26,31 @@
 .hero {
   position: relative;
   width: 100%;
-  min-height: calc(100vh - 88px);
 }
 
-.heroPinned {
+.loadingRecords { padding: 64px 48px; color: var(--ink-muted); text-align: center; }
+
+.heroScene {
   position: relative;
-  min-height: calc(100vh - 88px);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 36px;
-  padding: 48px 0;
 }
 
 .heroCopy {
-  position: relative;
+  position: absolute;
+  left: max(48px, calc((100% - var(--page-max)) / 2));
+  top: 50%;
+  translate: 0 -50%;
   z-index: 3;
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  align-items: end;
-  gap: 64px;
-  width: min(calc(100% - 96px), var(--page-max));
-  margin: 0 auto;
+  gap: 24px;
+  width: min(560px, 44%);
+  padding: clamp(28px, 3vw, 48px);
+  background: rgb(13 11 10 / 94%);
+  animation: hero-copy-arrival 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes hero-copy-arrival {
+  from { opacity: 0.75; clip-path: inset(0 0 10% 0); }
+  to { opacity: 1; clip-path: inset(0); }
 }
 
 .heroSummary { padding-bottom: 4px; }
@@ -56,7 +59,7 @@
 .hero h1 {
   max-width: 650px;
   color: var(--ink);
-  font-size: clamp(4.25rem, 6vw, 6rem);
+  font-size: clamp(3.4rem, 4.8vw, 5.5rem);
   font-weight: 520;
   letter-spacing: -0.04em;
   line-height: 0.94;
@@ -95,15 +98,13 @@
 .craterHeroFrame {
   position: relative;
   width: 100%;
-  height: clamp(300px, 45vh, 560px);
-  overflow: hidden;
   background: var(--surface);
 }
 
 .craterHeroFrame img {
-  object-fit: cover;
-  object-position: center 85%;
-  transform: translate3d(var(--hero-pan, -3%), 0, 0) scale(var(--hero-scale, 1.12));
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 .craterHeroMedia figcaption {
@@ -211,6 +212,26 @@
   font-weight: 800;
 }
 
+.historyAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 52px;
+  min-height: 64px;
+  margin-top: 36px;
+  padding: 0 24px;
+  border: 1px solid var(--ember-bright);
+  color: var(--ink);
+  font-size: 0.95rem;
+  font-weight: 750;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.historyAction svg { transition: translate 200ms ease; }
+.historyAction:hover, .historyAction:focus-visible { background: var(--ember-bright); color: var(--canvas); }
+.historyAction:hover svg, .historyAction:focus-visible svg { translate: 3px -3px; }
+.closingLogo { width: 84px; height: 84px; margin-bottom: 28px; color: var(--ember-bright); }
+
 .membersPreview {
   padding: 132px 0 150px;
 }
@@ -305,10 +326,12 @@
 .depthIndicator {
   position: fixed;
   top: 50%;
-  right: 28px;
+  right: 18px;
   z-index: 20;
   display: grid;
   gap: 14px;
+  padding: 18px 12px 18px 20px;
+  background: rgb(13 11 10 / 92%);
   transform: translateY(-50%);
 }
 
@@ -324,16 +347,6 @@
 
 .depthIndicator a[aria-current='location'] {
   color: var(--ember-bright);
-}
-
-.depthRule {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 10px;
-  z-index: -1;
-  width: 1px;
-  background: var(--line);
 }
 
 .routeState {
@@ -412,60 +425,43 @@
 
 .carouselStage {
   display: grid;
-  grid-template-columns: minmax(96px, 0.16fr) minmax(0, 0.68fr) minmax(96px, 0.16fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  gap: 24px;
-  min-height: 560px;
+  padding-block: 8px;
   overflow: hidden;
+  isolation: isolate;
 }
 
-.adjacentSlide {
-  min-height: 370px;
-  display: grid;
-  place-items: end center;
-  padding: 24px 12px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--ink-muted);
-  writing-mode: vertical-rl;
-}
-
-.activeSlide {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
-  overflow: hidden;
-  border: 1px solid var(--line);
-  background: var(--surface);
-}
-
-.activeSlide[data-carousel-state='active'] {
-  animation: carousel-record-enter 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes carousel-record-enter {
-  from {
-    opacity: 0.82;
-    clip-path: inset(0 3% 0 0);
-  }
-
-  to {
-    opacity: 1;
-    clip-path: inset(0);
-  }
-}
-
-.activeImage {
+.carouselSlide {
   position: relative;
-  min-height: 520px;
-  background: var(--surface-raised);
+  grid-area: 1 / 1;
+  justify-self: center;
+  width: min(68%, 980px);
+  min-width: 0;
+  z-index: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(calc(var(--slide-offset) * 96%)) scale(0.84);
+  transition: transform 620ms cubic-bezier(0.22, 1, 0.36, 1), opacity 420ms ease;
 }
 
-.activeImage img {
-  object-fit: cover;
+.carouselSlide[data-carousel-state='active'] {
+  z-index: 2;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0) scale(1);
 }
 
-.archiveFallback,
+.carouselSlide[data-carousel-state='previous'],
+.carouselSlide[data-carousel-state='next'] {
+  z-index: 1;
+  opacity: 0.65;
+  pointer-events: auto;
+}
+
+.previewTarget { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; padding: 0; background: transparent; cursor: pointer; }
+.carouselSlide:has(.previewTarget:hover) { opacity: 0.85; }
+
 .carouselEmpty {
   display: grid;
   place-content: center;
@@ -473,85 +469,15 @@
   text-align: center;
 }
 
-.archiveFallback {
-  height: 100%;
-  color: var(--ink-muted);
-}
-
-.archiveFallback span,
 .carouselEmpty > span {
   width: 64px;
   height: 64px;
   display: grid;
   place-items: center;
   margin-bottom: 18px;
-  border: 1px solid var(--ember);
-  border-radius: 50%;
   color: var(--ember-bright);
-  font-family: var(--font-editorial), Georgia, serif;
-  font-size: 1.7rem;
 }
-
-.activeCopy {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 52px 44px;
-}
-
-.restaurantMeta {
-  color: var(--ember-bright);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.activeCopy h3 {
-  margin-top: 18px;
-  color: var(--ink);
-  font-size: clamp(2.2rem, 3vw, 3.8rem);
-  font-weight: 560;
-  letter-spacing: -0.04em;
-  line-height: 0.98;
-}
-
-.restaurantLink {
-  color: inherit;
-  text-decoration-line: underline;
-  text-decoration-color: transparent;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.12em;
-  transition:
-    color 150ms ease,
-    text-decoration-color 150ms ease;
-}
-
-.activeCopy h3 + p {
-  margin-top: 28px;
-}
-
-.activeCopy p:not(.restaurantMeta, .collectiveScore) {
-  color: var(--ink-muted);
-  font-size: 0.86rem;
-}
-
-.collectiveScore {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  margin-top: 34px;
-  padding-top: 22px;
-  border-top: 1px solid var(--line);
-  color: var(--ink-muted);
-}
-
-.collectiveScore strong {
-  color: var(--ink);
-  font-family: var(--font-editorial), Georgia, serif;
-  font-size: 2.4rem;
-  font-weight: 560;
-}
+.carouselEmpty > span svg { width: 100%; height: 100%; }
 
 .carouselEmpty a {
   width: fit-content;
@@ -567,7 +493,6 @@
   font-weight: 800;
 }
 
-.restaurantLink:focus-visible,
 .carouselEmpty a:focus-visible,
 .carouselControls button:focus-visible,
 .carouselDots button:focus-visible {
@@ -660,12 +585,10 @@
 }
 
 @media (hover: hover) {
-  .activeImage img,
   .portraitFrame img {
     transition: transform 360ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .activeSlide:hover .activeImage img,
   .memberPortrait:hover .portraitFrame img {
     transform: scale(1.025);
   }
@@ -676,11 +599,6 @@
     background: var(--ember-bright);
     box-shadow: 0 10px 20px rgb(237 107 61 / 22%);
     transform: translateY(-2px);
-  }
-
-  .restaurantLink:hover {
-    color: var(--ember-bright);
-    text-decoration-color: currentColor;
   }
 
   .textAction:hover {
@@ -712,18 +630,6 @@
   }
 }
 
-@media (min-width: 1024px) {
-  .hero {
-    min-height: 200vh;
-  }
-
-  .heroPinned {
-    position: sticky;
-    top: 0;
-    min-height: 100vh;
-  }
-}
-
 .carouselEmpty {
   min-height: 420px;
   padding: 56px;
@@ -749,10 +655,7 @@
     width: min(calc(100% - 96px), var(--page-max));
   }
 
-  .heroPinned {
-    gap: 32px;
-  }
-  .heroCopy { gap: 40px; }
+  .heroCopy { gap: 20px; }
 
   .historyPreview {
     grid-template-columns: 180px minmax(0, 1fr);
@@ -768,9 +671,92 @@
   }
 }
 
+@media (max-width: 1023px) {
+  .landingSection,
+  .historyPreview,
+  .membersPreview,
+  .closingCallout { width: calc(100% - 64px); }
+
+  .heroCopy {
+    position: relative;
+    left: auto;
+    top: auto;
+    translate: none;
+    width: 100%;
+    padding: 56px 32px 40px;
+    background: var(--canvas);
+  }
+
+  .hero h1 { font-size: clamp(3rem, 7.5vw, 4.5rem); }
+  .heroLead { max-width: 60ch; }
+  .landingSection,
+  .membersPreview { padding: 80px 0; }
+  .landingSection .sectionHeader { margin-bottom: 32px; }
+  .landingSection .sectionHeader h2,
+  .historyPreview h2,
+  .sectionHeader h2 { font-size: clamp(2.7rem, 6vw, 4rem); }
+  .sectionHeader { align-items: start; gap: 24px; }
+  .textAction { min-height: 44px; align-items: center; }
+
+  .historyPreview {
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    padding: 80px 0;
+  }
+
+  .historyPreviewImage { grid-column: 1; margin-top: 8px; }
+
+  .marginNote { margin-top: 0; writing-mode: horizontal-tb; }
+  .historyExcerpt { font-size: 1.2rem; }
+  .carouselSlide { width: 82%; }
+  .carouselDots { flex-wrap: wrap; }
+  .closingCallout { min-height: 0; padding: 80px 24px; }
+  .closingCallout h2 { font-size: clamp(2.7rem, 6vw, 4rem); }
+  .routeState { min-height: 460px; padding: 64px 32px; }
+  .loadingRecords { padding: 48px 24px; }
+}
+
+@media (max-width: 639px) {
+  .landingSection,
+  .historyPreview,
+  .membersPreview,
+  .closingCallout { width: calc(100% - 40px); }
+
+  .heroCopy { padding: 40px 20px 32px; gap: 24px; }
+  .hero h1 { font-size: clamp(2.8rem, 11vw, 4rem); }
+  .heroLead { font-size: 1.05rem; }
+  .heroSummary .primaryAction { width: 100%; justify-content: space-between; }
+  .craterHeroMedia figcaption { right: 12px; bottom: 12px; font-size: 0.6rem; }
+  .landingSection,
+  .membersPreview,
+  .historyPreview { padding: 64px 0; }
+  .sectionHeader { flex-direction: column; gap: 16px; }
+  .sectionHeader .textAction { margin-top: 0; }
+  .landingSection .sectionHeader h2,
+  .historyPreview h2,
+  .sectionHeader h2 { font-size: clamp(2.35rem, 9.5vw, 3.4rem); overflow-wrap: anywhere; }
+  .historyExcerpt { margin-top: 24px; font-size: 1.1rem; }
+  .historyAction { width: 100%; gap: 16px; padding: 12px 16px; }
+  .historyAction svg { flex: none; }
+  .carouselControls { grid-template-columns: 48px minmax(0, 1fr) 48px; gap: 10px; }
+  .carouselControls p { font-size: 0.8rem; overflow-wrap: anywhere; }
+  .carouselDots { gap: 2px; margin-top: 8px; }
+  .carouselEmpty { min-height: 320px; padding: 32px 20px; }
+  .carouselEmpty h3 { font-size: 1.65rem; }
+  .carouselEmpty a { padding: 12px 16px; }
+  .closingCallout { padding: 64px 0; }
+  .closingCallout h2 { font-size: clamp(2.35rem, 9.5vw, 3.4rem); }
+  .closingCallout > div { width: 100%; flex-direction: column; gap: 16px; }
+  .closingCallout .primaryAction { width: 100%; justify-content: center; }
+  .routeState { padding: 48px 20px; }
+  .routeState h1 { font-size: 2.25rem; overflow-wrap: anywhere; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .hero { min-height: calc(100vh - 88px); }
-  .heroPinned { position: relative; min-height: calc(100vh - 88px); }
+  .heroCopy { animation: none; }
+  .historyAction, .historyAction svg { transition: none; }
+  .historyAction:hover svg, .historyAction:focus-visible svg { translate: none; }
 
   .primaryAction:hover,
   .primaryAction:active,
@@ -801,13 +787,10 @@
 
   .primaryAction,
   .textAction,
-  .restaurantLink,
   .carouselControls button,
   .carouselDots button {
     transition: none;
   }
 
-  .activeSlide[data-carousel-state='active'] {
-    animation: none;
-  }
+  .carouselSlide { transition: none; }
 }

@@ -40,7 +40,7 @@ describe('MemberGrid', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Nenhum craterista publicado');
   });
 
-  it('limita o diretório às oito entradas da sociedade', () => {
+  it('inclui integrantes cadastrados além do oitavo', () => {
     const members = Array.from({ length: 9 }, (_, index) => ({
       ...member,
       slug: `membro-${index + 1}`,
@@ -50,8 +50,8 @@ describe('MemberGrid', () => {
 
     render(<MemberGrid members={members} />);
 
-    expect(screen.getAllByRole('article')).toHaveLength(8);
-    expect(screen.queryByRole('heading', { name: 'Membro 9' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('article')).toHaveLength(9);
+    expect(screen.getByRole('heading', { name: 'Membro 9' })).toBeInTheDocument();
   });
 
   it.each([

@@ -1,9 +1,10 @@
-import Link from 'next/link';
-import { ArrowUpRight } from 'lucide-react';
+import { BrandHomeLink } from './BrandHomeLink';
+import { EntryLink } from './EntryLink';
 import { CraterLogo } from '@/components/brand/CraterLogo';
 import { logoutAction } from '@/features/auth/actions';
 import { HeaderMotion } from './HeaderMotion';
 import { HeaderLinks } from './HeaderLinks';
+import { HeaderNavigation } from './HeaderNavigation';
 import styles from './shell.module.css';
 
 export type HeaderViewer = 'visitor' | 'member';
@@ -20,15 +21,15 @@ export function AppHeader({
   return (
     <HeaderMotion>
       <div className={styles.headerInner}>
-        <Link className={styles.brand} href="/home" aria-label="Crateristas — início">
+        <BrandHomeLink className={styles.brand}>
           <CraterLogo className={styles.brandMark} />
           <span>
             <strong className={styles.brandName}>Crateristas</strong>
             <span className={styles.brandKicker}>Livro de registros</span>
           </span>
-        </Link>
+        </BrandHomeLink>
 
-        <nav className={styles.navigation} aria-label="Navegação principal">
+        <HeaderNavigation>
           <HeaderLinks member={viewer === 'member'} />
           {viewer === 'member' ? (
             <>
@@ -37,11 +38,9 @@ export function AppHeader({
               </form>
             </>
           ) : (
-            <Link className={styles.signIn} href="/entrar">
-              <span>Entrar</span><ArrowUpRight aria-hidden="true" size={18} />
-            </Link>
+            <EntryLink />
           )}
-        </nav>
+        </HeaderNavigation>
       </div>
     </HeaderMotion>
   );

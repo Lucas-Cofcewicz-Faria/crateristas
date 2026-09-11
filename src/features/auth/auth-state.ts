@@ -1,4 +1,5 @@
 export const LOGIN_ERROR_MESSAGE = 'E-mail ou senha inválidos.' as const;
+export const LOGIN_UNAVAILABLE_MESSAGE = 'Não foi possível entrar agora. Tente novamente em instantes.' as const;
 export const PASSWORD_RESET_SENT_MESSAGE =
   'Se o e-mail estiver cadastrado, enviaremos um link para definir uma nova senha.' as const;
 export const PASSWORD_RESET_REQUEST_ERROR_MESSAGE =
@@ -8,7 +9,7 @@ export const PASSWORD_RESET_INVALID_LINK_MESSAGE =
 export const PASSWORD_MAX_LENGTH = 128;
 
 export interface LoginState {
-  error: typeof LOGIN_ERROR_MESSAGE | null;
+  error: typeof LOGIN_ERROR_MESSAGE | typeof LOGIN_UNAVAILABLE_MESSAGE | null;
 }
 
 export type LoginAction = (

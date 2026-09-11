@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const dependencies = vi.hoisted(() => ({
   cookieDelete: vi.fn(),
@@ -31,6 +31,7 @@ vi.mock('@/lib/auth/server', () => ({
 import * as authActions from './actions';
 
 const { loginAction, logoutAction } = authActions;
+afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
 function credentials(email: FormDataEntryValue, password: FormDataEntryValue) {
   const formData = new FormData();
@@ -59,6 +60,8 @@ describe('loginAction', () => {
   beforeEach(() => {
     dependencies.redirect.mockClear();
     dependencies.signInEmail.mockReset();
+    dependencies.cookieGet.mockReset();
+    dependencies.cookies.mockResolvedValue({ get: dependencies.cookieGet, delete: dependencies.cookieDelete });
   });
 
   it.each([
@@ -117,10 +120,29 @@ describe('loginAction', () => {
       credentials('ana@example.com', 'Senha-privada-123!'),
     );
 
-    expect(result).toEqual({ error: 'E-mail ou senha inválidos.' });
+    expect(result).toEqual({ error: _case === 'retorno de credencial'
+      ? 'E-mail ou senha inválidos.'
+      : 'Não foi possível entrar agora. Tente novamente em instantes.' });
     expect(JSON.stringify(result)).not.toContain('Senha-privada-123!');
     expect(JSON.stringify(result)).not.toContain('NEON_AUTH');
     expect(dependencies.redirect).not.toHaveBeenCalled();
+  });
+
+  it('distingue indisponibilidade do provedor e registra somente diagnóstico seguro', async () => {
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    dependencies.signInEmail.mockResolvedValue({ data: null, error: {
+      status: 403, code: 'INVALID_ORIGIN', message: 'segredo senha e email privado',
+    } });
+    const result = await loginAction({ error: null }, credentials('ana@example.com', 'Senha-privada-123!'));
+    expect(result.error).toBe('Não foi possível entrar agora. Tente novamente em instantes.');
+    expect(warning).toHaveBeenCalledWith('[auth]', { operation: 'login', code: 'INVALID_ORIGIN', status: 403 });
+    expect(JSON.stringify(warning.mock.calls)).not.toMatch(/segredo|privado|Senha-privada|ana@example/);
+  });
+
+  it('reconhece invalid_credentials normalizado pelo SDK Neon instalado', async () => {
+    dependencies.signInEmail.mockResolvedValue({ data: null, error: { code: 'invalid_credentials', status: 401, message: 'Invalid email or password' } });
+    expect(await loginAction({ error: null }, credentials('test@example.invalid', 'synthetic-invalid-password')))
+      .toEqual({ error: 'E-mail ou senha inválidos.' });
   });
 });
 
@@ -174,6 +196,25 @@ describe('requestPasswordResetAction', () => {
       'x-forwarded-host': 'crateristas-git-develop-cofcewicz.vercel.app',
       'x-forwarded-proto': 'https',
     }));
+  });
+
+  it('usa o domínio acessado em vez do hostname temporário do deploy', async () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_URL', '');
+    vi.stubEnv('VERCEL_BRANCH_URL', '');
+    vi.stubEnv('VERCEL_URL', 'crateristas-temporario.vercel.app');
+    dependencies.headers.mockResolvedValue(new Headers({ host: 'crateristas.vercel.app', 'x-forwarded-proto': 'https' }));
+    dependencies.requestPasswordReset.mockImplementation(async ({ redirectTo }) => redirectTo === 'https://crateristas.vercel.app/redefinir-senha/callback'
+      ? { data: { status: true }, error: null }
+      : { data: null, error: { status: 403, code: 'INVALID_REDIRECT_URL' } });
+    expect(await authActions.requestPasswordResetAction({ status: 'idle', message: null }, emailAddress('test@example.invalid')))
+      .toMatchObject({ status: 'sent' });
+  });
+
+  it('respeita uma origem canônica explicitamente configurada', async () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://crateristas.vercel.app');
+    dependencies.requestPasswordReset.mockResolvedValue({ data: { status: true }, error: null });
+    await authActions.requestPasswordResetAction({ status: 'idle', message: null }, emailAddress('test@example.invalid'));
+    expect(dependencies.requestPasswordReset).toHaveBeenCalledWith({ email: 'test@example.invalid', redirectTo: 'https://crateristas.vercel.app/redefinir-senha/callback' });
   });
 
   it('rejeita um e-mail inválido antes de chamar o Neon Auth', async () => {

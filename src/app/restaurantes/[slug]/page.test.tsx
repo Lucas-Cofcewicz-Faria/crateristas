@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   MemberRecord,
@@ -8,6 +8,7 @@ import type {
 const dependencies = vi.hoisted(() => ({
   findOptionalMember: vi.fn(),
   getPublicVisitDetail: vi.fn(),
+  getRestaurantVisitPage: vi.fn(),
   notFound: vi.fn(() => {
     throw new Error('NEXT_NOT_FOUND_TEST');
   }),
@@ -19,6 +20,7 @@ vi.mock('@/lib/auth/access', () => ({
 
 vi.mock('./data', () => ({
   getPublicVisitDetail: dependencies.getPublicVisitDetail,
+  getRestaurantVisitPage: dependencies.getRestaurantVisitPage,
 }));
 
 vi.mock('next/navigation', async (importOriginal) => ({
@@ -95,29 +97,54 @@ describe('página pública de uma visita', () => {
   beforeEach(() => {
     dependencies.findOptionalMember.mockReset();
     dependencies.getPublicVisitDetail.mockReset();
+    dependencies.getRestaurantVisitPage.mockReset();
     dependencies.notFound.mockClear();
     dependencies.findOptionalMember.mockResolvedValue(null);
     dependencies.getPublicVisitDetail.mockResolvedValue(visit);
+    dependencies.getRestaurantVisitPage.mockResolvedValue({
+      visit,
+      restaurant: {
+        id: 'restaurant-1',
+        ...visit.restaurant,
+        menuEnabled: true,
+      },
+      visits: [{
+        id: visit.id,
+        slug: visit.slug,
+        visitedAt: visit.visitedAt,
+      }, {
+        id: 'visit-old',
+        slug: 'casa-da-cratera-2026-07-02',
+        visitedAt: '2026-07-02T00:00:00.000Z',
+      }],
+    });
   });
 
   it('aguarda o slug e compõe evidências públicas sem round-trip de API', async () => {
     render(await RestaurantPage({
-      params: Promise.resolve({ slug: 'casa-da-cratera-2026-08-10' }),
+      params: Promise.resolve({ slug: 'casa-da-cratera' }),
     }));
 
-    expect(dependencies.getPublicVisitDetail)
-      .toHaveBeenCalledWith('casa-da-cratera-2026-08-10');
+    expect(dependencies.getRestaurantVisitPage)
+      .toHaveBeenCalledWith('casa-da-cratera', undefined);
     expect(screen.getByRole('heading', { name: 'Casa da Cratera' })).toBeInTheDocument();
     expect(screen.getByText('Um jantar cuidadoso do começo ao fim.')).toBeInTheDocument();
     expect(screen.getByText('3 crateristas contribuíram')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Entrar' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Outras visitas' }));
+    expect(screen.getByRole('navigation', { name: 'Escolher data da visita' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Adicionar nova visita ao restaurante' }))
+      .toHaveAttribute('href', '/visitas/nova?restaurante=casa-da-cratera');
+    expect(screen.getByRole('link', { name: 'Menu' }))
+      .toHaveAttribute('href', '/restaurantes/casa-da-cratera/menu');
     expect(screen.queryByText(/veredito|nota individual/i)).not.toBeInTheDocument();
   });
 
   it('habilita o shell de membro somente para uma sessão provisionada', async () => {
     dependencies.findOptionalMember.mockResolvedValue(member);
 
-    render(await RestaurantPage({ params: Promise.resolve({ slug: visit.slug }) }));
+    render(await RestaurantPage({ params: Promise.resolve({ slug: visit.restaurant.slug }) }));
 
     expect(screen.getByRole('link', { name: 'Painel' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Entrar' })).not.toBeInTheDocument();
@@ -144,10 +171,34 @@ describe('página pública de uma visita', () => {
         overall: 7.5,
       },
     });
+    dependencies.getRestaurantVisitPage.mockResolvedValue({
+      visit: {
+        ...visit,
+        participantCount: 0,
+        averages: null,
+        overall: null,
+        comments: [],
+        historical: {
+          legacyReviewId: 'legacy-1',
+          payload: { scores: { food: 8, service: 6, ambience: 7, value: 9 } },
+          scores: {
+            food: 8,
+            service: 6,
+            ambience: 7,
+            value: 9,
+            access: null,
+            waitTime: null,
+          },
+          overall: 7.5,
+        },
+      },
+      restaurant: { id: 'restaurant-1', ...visit.restaurant, menuEnabled: false },
+      visits: [{ id: visit.id, slug: visit.slug, visitedAt: visit.visitedAt }],
+    });
 
-    render(await RestaurantPage({ params: Promise.resolve({ slug: visit.slug }) }));
+    render(await RestaurantPage({ params: Promise.resolve({ slug: visit.restaurant.slug }) }));
 
-    expect(screen.getByRole('img', { name: 'Nota coletiva: 7,5 de 10' }))
+    expect(screen.getByRole('img', { name: 'Avaliação coletiva: 7,5 de 10' }))
       .toBeInTheDocument();
     expect(screen.getAllByText('Não avaliado')).toHaveLength(2);
     expect(screen.getByText('Nenhum comentário foi publicado para esta visita.'))
@@ -156,7 +207,7 @@ describe('página pública de uma visita', () => {
   });
 
   it('não revela se um slug ausente corresponde a uma visita privada', async () => {
-    dependencies.getPublicVisitDetail.mockResolvedValue(null);
+    dependencies.getRestaurantVisitPage.mockResolvedValue(null);
 
     await expect(RestaurantPage({ params: Promise.resolve({ slug: 'visita-privada' }) }))
       .rejects.toThrow('NEXT_NOT_FOUND_TEST');
@@ -165,7 +216,7 @@ describe('página pública de uma visita', () => {
 
   it('gera metadata coletiva em pt-BR sem comentário ou atribuição individual', async () => {
     const metadata = await generateMetadata({
-      params: Promise.resolve({ slug: visit.slug }),
+      params: Promise.resolve({ slug: visit.restaurant.slug }),
     });
 
     expect(metadata).toEqual({

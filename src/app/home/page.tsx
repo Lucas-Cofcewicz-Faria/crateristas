@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { EntryLink } from '@/components/shell/EntryLink';
+import { CraterLogo } from '@/components/brand/CraterLogo';
 import { MotionScope } from '@/components/motion/MotionScope';
 import { PublicShell } from '@/components/shell/PublicShell';
 import { DepthIndicator, type DepthSection } from '@/features/home/DepthIndicator';
@@ -44,14 +46,15 @@ export default async function HomePage() {
         <HistoryPreview />
         <MembersPreview members={members} />
         <section aria-labelledby="closing-title" className={styles.closingCallout}>
+          <CraterLogo className={styles.closingLogo} />
           <h2 data-motion="inscription" id="closing-title">
             A próxima mesa ainda não foi registrada.
           </h2>
           <div>
             <Link className={styles.primaryAction} href="/registros">Explorar o arquivo</Link>
-            <Link className={styles.textAction} href={viewer ? '/painel' : '/entrar'}>
+            <EntryLink href={viewer ? '/painel' : '/entrar'}>
               {viewer ? 'Abrir seu painel' : 'Entrar como integrante'}
-            </Link>
+            </EntryLink>
           </div>
         </section>
       </MotionScope>

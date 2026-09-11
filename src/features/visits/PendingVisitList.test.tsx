@@ -28,13 +28,13 @@ describe('PendingVisitList', () => {
     render(<PendingVisitList emptyMessage="Sem pendências." visits={visits} />);
 
     const first = screen.getByRole('listitem', { name: 'Visita à Casa da Cratera' });
-    expect(within(first).getByText('5 de 6 avaliações')).toBeInTheDocument();
+    expect(within(first).getByText('5 avaliações')).toBeInTheDocument();
     expect(within(first).getByText('Em formação')).toBeInTheDocument();
     expect(within(first).getByRole('link', { name: 'Avaliar Casa da Cratera' }))
       .toHaveAttribute('href', '/visitas/visit-1/avaliar');
 
     const published = screen.getByRole('listitem', { name: 'Visita à Mesa Publicada' });
-    expect(within(published).getByText('1 de 1 avaliação')).toBeInTheDocument();
+    expect(within(published).getByText('1 avaliação')).toBeInTheDocument();
     expect(within(published).getByText('Publicada')).toBeInTheDocument();
   });
 

@@ -17,12 +17,12 @@ export interface HistoryPhotoSource {
  */
 export const HISTORY_PHOTOS: Record<HistoryChapterId, HistoryPhotoSource> = {
   descoberta: {
-    src: null,
+    src: '/images/history/cratera1.jpeg',
     alt: 'A cratera e o lugar da descoberta',
     caption: 'O lugar onde tudo começou',
   },
   peregrinacao: {
-    src: null,
+    src: '/images/history/cratera2.jpg',
     alt: 'O restaurante ou uma das visitas da turma',
     caption: 'O caminho que sempre fazemos de novo',
   },
@@ -32,8 +32,8 @@ export const HISTORY_PHOTOS: Record<HistoryChapterId, HistoryPhotoSource> = {
     caption: 'Os Discípulos e o Monarca Guizão',
   },
   patrimonio: {
-    src: null,
+    src: '/images/history/cratera3.jpg',
     alt: 'A fauna local ou o ritual gastronômico de quinta-feira',
-    caption: 'Patrimônio natural e gastronômico da Sociedade',
+    caption: 'Animal nativo da cratera em seu habitat natural',
   },
 };

@@ -153,26 +153,13 @@ class InMemoryReviewRepository implements ReviewRepository {
       [...this.scorecards.values()]
         .filter((scorecard) => scorecard.visitId === input.visitId),
     );
-    const next = participantCount >= input.quorum
-      ? input.transitionAtQuorum
-      : { state: this.visit.publicationState, reason: this.visit.publicationReason };
-    const changed = next.state !== this.visit.publicationState;
-    if (changed) {
-      await this.updatePublication(input.visitId, next.state, next.reason, null);
-      await this.recordPublicationEvent({
-        visitId: input.visitId,
-        actorId: null,
-        action: 'quorum_publish',
-        participantCount,
-      });
-    }
     return {
       visitId: input.visitId,
       publicationState: this.visit.publicationState,
       publicationReason: this.visit.publicationReason,
       participantCount,
       aggregate,
-      publicationChanged: changed,
+      publicationChanged: false,
     };
   }
 
@@ -318,6 +305,10 @@ class InMemoryReviewRepository implements ReviewRepository {
   }
 
   async listVisitsForAdministration() {
+    return [];
+  }
+
+  async listVisitsForManagement() {
     return [];
   }
 
@@ -468,14 +459,14 @@ describe('createReviewService', () => {
     expect(repository.photos.size).toBe(0);
   });
 
-  it('publishes the sixth scorecard and keeps individual scores private', async () => {
+  it('keeps the sixth scorecard private until an administrator publishes', async () => {
     const repository = repositoryWithScores(5);
     const service = createReviewService(repository);
 
     const result = await service.submitScorecard(members[5], visitId, validScorecard);
 
     expect(result).toMatchObject({
-      publicationState: 'published',
+      publicationState: 'private',
       participantCount: 6,
       aggregate: {
         participantCount: 6,
@@ -484,9 +475,8 @@ describe('createReviewService', () => {
       },
     });
     const publicVisit = await repository.getPublicVisitBySlug('casa-teste');
-    expect(publicVisit).not.toHaveProperty('scorecards');
-    expect(publicVisit?.comments[0]).not.toHaveProperty('food');
-    expect(repository.events).toHaveLength(1);
+    expect(publicVisit).toBeNull();
+    expect(repository.events).toHaveLength(0);
   });
 
   it('edits only the actor scorecard without increasing the participant count', async () => {

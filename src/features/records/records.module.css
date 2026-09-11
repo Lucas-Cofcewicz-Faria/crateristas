@@ -1,7 +1,7 @@
 .archive {
   width: min(calc(100% - 96px), var(--page-max));
   margin: 0 auto;
-  padding: 72px 0 96px;
+  padding: 88px 0 112px;
 }
 
 .archiveHeader {
@@ -40,10 +40,9 @@
   align-items: end;
   gap: 18px;
   margin-bottom: 44px;
-  padding: 24px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--surface);
+  padding: 28px 0;
+  border-block: 1px solid var(--line);
+  --radius-sm: 0;
 }
 
 .filterActions {
@@ -69,6 +68,20 @@
   color: var(--ember-bright);
 }
 
+button.clearFilters {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.twoFieldFilters .filterActions button[type='submit'] {
+  border-color: var(--review-accent-bright, var(--ember));
+  background: var(--review-accent-bright, var(--ember));
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -83,16 +96,32 @@
 .card {
   height: 100%;
   overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--surface);
+  border: 1px solid var(--record-line, var(--line));
+  background: var(--record-surface, var(--surface));
+  transition: background-color 420ms ease, border-color 420ms ease;
+}
+
+.cardDestination {
+  display: block;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.twoFieldFilters {
+  grid-template-columns: minmax(300px, 1.4fr) minmax(200px, 0.8fr) auto;
+}
+
+.cardDestination:focus-visible {
+  outline: 2px solid var(--record-accent, var(--ember-bright));
+  outline-offset: -4px;
 }
 
 .cardImage {
   position: relative;
-  height: 248px;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--record-line, var(--line));
   background: var(--surface-raised);
 }
 
@@ -111,16 +140,10 @@
   color: var(--ink-muted);
 }
 
-.imagePlaceholder span {
+.imagePlaceholder svg {
   width: 58px;
   height: 58px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 50%;
   color: var(--ember-bright);
-  font-family: var(--font-editorial), Georgia, serif;
-  font-size: 1.7rem;
 }
 
 .imagePlaceholder p {
@@ -133,10 +156,10 @@
 .cardBody {
   min-height: 245px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 28px;
+  padding: 32px;
 }
 
 .cardCopy {
@@ -145,9 +168,10 @@
 
 .recordMeta {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  color: var(--ember-bright);
+  color: var(--record-accent, var(--ember-bright));
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -157,7 +181,7 @@
 .cardTitle {
   margin-top: 11px;
   color: var(--ink);
-  font-size: 1.72rem;
+  font-size: clamp(1.8rem, 2.2vw, 2.4rem);
   font-weight: 580;
   letter-spacing: -0.025em;
   line-height: 1.12;
@@ -165,7 +189,7 @@
 
 .visitDate,
 .contribution {
-  color: var(--ink-muted);
+  color: color-mix(in srgb, var(--ink) 76%, var(--record-surface, var(--surface)));
   font-size: 0.78rem;
 }
 
@@ -178,21 +202,34 @@
 }
 
 .cardLink {
-  min-height: 42px;
+  min-height: 48px;
   display: inline-flex;
   align-items: center;
   margin-top: 20px;
+  gap: 24px;
   padding: 0 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--record-accent, var(--ember));
   color: var(--ink);
   font-size: 0.78rem;
   font-weight: 800;
 }
 
-.cardLink:hover {
-  border-color: var(--ember);
-  color: var(--ember-bright);
+.cardDestination:hover .cardLink,
+.cardDestination:focus-visible .cardLink {
+  background: var(--record-accent, var(--ember-bright));
+  color: var(--canvas);
+}
+
+.cardLink { transition: background-color 180ms ease, color 180ms ease; }
+.cardLink svg { flex: none; transition: translate 220ms cubic-bezier(0.16, 1, 0.3, 1); }
+.cardDestination:hover .cardLink svg,
+.cardDestination:focus-visible .cardLink svg { translate: 3px -3px; }
+.cardDestination:active .cardLink svg { translate: 1px -1px; }
+.cardBody > [role='img'] { --score-font-size: 2.5rem; }
+
+.card ::selection {
+  background: var(--record-accent, var(--ember));
+  color: var(--canvas);
 }
 
 .emptyState,
@@ -207,7 +244,6 @@
   min-height: 340px;
   padding: 48px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
   background: var(--surface);
 }
 
@@ -257,7 +293,6 @@
   margin-top: 24px;
   padding: 0 20px;
   border: 1px solid var(--ember);
-  border-radius: var(--radius-sm);
   background: var(--ember);
   color: var(--canvas);
   font: inherit;
@@ -277,15 +312,15 @@
   }
 
   .card:hover {
-    border-color: color-mix(in srgb, var(--ember), var(--line) 45%);
+    border-color: var(--record-accent, var(--ember));
   }
 }
 
 @media (max-width: 1280px) {
   .filters {
-    grid-template-columns: minmax(260px, 1.2fr) repeat(2, minmax(180px, 0.8fr)) 178px;
+    grid-template-columns: minmax(180px, 1.2fr) repeat(2, minmax(140px, 0.8fr)) 178px;
     gap: 14px;
-    padding: 20px;
+    padding: 24px 0;
   }
 
   .cardBody {
@@ -293,7 +328,58 @@
   }
 }
 
+@media (max-width: 1023px) {
+  .archive,
+  .routeState { width: min(calc(100% - 48px), var(--page-max)); }
+  .archive { padding: 48px 0 72px; }
+  .archiveHeader { margin-bottom: 28px; }
+  .archiveTitle { font-size: clamp(2.5rem, 6vw, 4rem); overflow-wrap: anywhere; }
+  .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 16px; }
+  .filters > *,
+  .filterActions { min-width: 0; }
+  .filters input { min-width: 0; min-height: 48px; font-size: 1rem; }
+  .filterActions { grid-template-columns: minmax(0, 1fr); }
+  .clearFilters { min-height: 44px; font-size: 0.875rem; }
+  .grid { gap: 20px; }
+  .grid > * { min-width: 0; }
+  .cardBody { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 100px; gap: 12px; padding: 20px; }
+  .cardCopy { display: contents; }
+  .recordMeta { grid-column: 1; grid-row: 1; font-size: 0.75rem; overflow-wrap: anywhere; }
+  .cardTitle { grid-column: 1 / -1; grid-row: 2; margin-top: 0; font-size: clamp(1.5rem, 3vw, 2rem); overflow-wrap: anywhere; }
+  .cardBody > [role='img'] { grid-column: 2; grid-row: 1; align-self: start; width: 100px; height: 100px; --score-ring-size: 100px; --score-font-size: 2rem; }
+  .visitDate,
+  .contribution,
+  .cardLink { grid-column: 1 / -1; margin-top: 0; }
+  .visitDate,
+  .contribution { font-size: 0.875rem; line-height: 1.5; }
+  .cardLink { justify-content: space-between; gap: 12px; margin-top: 8px; font-size: 0.875rem; }
+  .emptyState { min-height: 300px; padding: 32px 24px; }
+  .routeState { min-height: 480px; padding: 48px 24px; }
+}
+
+@media (max-width: 767px) {
+  .archive,
+  .routeState { width: calc(100% - 32px); }
+  .archive { padding: 32px 0 56px; }
+  .archiveTitle { font-size: clamp(2.3rem, 8vw, 3.5rem); }
+  .archiveLead { margin-top: 16px; line-height: 1.6; }
+  .filters { grid-template-columns: minmax(0, 1fr); margin-bottom: 28px; }
+  .filterActions { gap: 8px; }
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .cardTitle { font-size: 1.875rem; }
+  .cardBody { padding: 20px 16px; }
+  .emptyState { padding: 28px 20px; }
+  .emptyState h2,
+  .routeState h1 { overflow-wrap: anywhere; }
+  .routeState { padding: 40px 16px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .cardLink svg { transition: none; }
+  .cardDestination:hover .cardLink svg,
+  .cardDestination:focus-visible .cardLink svg,
+  .cardDestination:active .cardLink svg { translate: none; }
+  .card,
   .cardImage img {
     transition: none;
   }

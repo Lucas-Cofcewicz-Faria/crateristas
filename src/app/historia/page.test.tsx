@@ -82,7 +82,7 @@ describe('/historia', () => {
     for (const title of ['A descoberta', 'A peregrinação', 'A sociedade', 'Patrimônio natural']) {
       expect(screen.getByRole('heading', { name: title })).toBeInTheDocument();
     }
-    expect(screen.getByRole('heading', { name: 'Os oito Crateristas' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '1 Craterista' })).toBeInTheDocument();
     expect(screen.getByRole('article', { name: 'Craterista nº 01: Ana Souza' }))
       .toBeInTheDocument();
   });

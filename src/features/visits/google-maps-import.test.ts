@@ -34,6 +34,114 @@ function cancellableResponse(
 afterEach(() => vi.useRealTimers());
 
 describe('política de importação do Google Maps', () => {
+  it('importa o nome da ficha local compartilhada sem buscar a página de pesquisa', async () => {
+    const shareUrl = 'https://share.google/GnSYZGLN39QHe4pOw';
+    const resolverUrl = 'https://www.google.com/share.google?q=GnSYZGLN39QHe4pOw';
+    const share = cancellableResponse(302, { location: resolverUrl });
+    const resolver = cancellableResponse(301, {
+      location: 'https://www.google.com/search?client=opera-gx&kgmid=/g/11ssryf0v_&q=Oue+Sushi&source=sh/x/loc/uni/m1/1',
+    });
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(share.response)
+      .mockResolvedValueOnce(resolver.response);
+
+    await expect(importGoogleMapsSuggestions(shareUrl, { fetchImpl }))
+      .resolves.toEqual({ name: 'Oue Sushi' });
+    expect(fetchImpl.mock.calls.map(([url]) => url)).toEqual([shareUrl, resolverUrl]);
+    expect(share.wasCancelled()).toBe(true);
+    expect(resolver.wasCancelled()).toBe(true);
+  });
+
+  it('preserva sugestões completas quando o redirecionador share.google termina em Maps', async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(new Response(null, { status: 302, headers: {
+        location: 'https://www.google.com/share.google?q=abc',
+      } }))
+      .mockResolvedValueOnce(new Response(null, { status: 301, headers: {
+        location: 'https://www.google.com/maps/place/Mesa+Boa',
+      } }))
+      .mockResolvedValueOnce(htmlResponse(
+        '<meta property="og:title" content="Mesa Boa · Rua Um, 8 - Centro, São Paulo - SP">',
+      ));
+
+    await expect(importGoogleMapsSuggestions('https://share.google/abc', { fetchImpl }))
+      .resolves.toEqual({
+        name: 'Mesa Boa', address: 'Rua Um, 8 - Centro, São Paulo - SP',
+        neighborhood: 'Centro', city: 'São Paulo',
+      });
+  });
+
+  it('aceita ficha local diretamente do share sem buscar a pesquisa', async () => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(new Response(null, {
+      status: 302, headers: {
+        location: 'https://www.google.com/search?q=Oue+Sushi&kgmid=/g/11ssryf0v_&source=sh/x/loc/uni/m1/1',
+      },
+    }));
+    await expect(importGoogleMapsSuggestions('https://share.google/abc', { fetchImpl }))
+      .resolves.toEqual({ name: 'Oue Sushi' });
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    'https://www.google.com/share.google?q=abc',
+    'https://www.google.com/search?q=Mesa&kgmid=/g/abc&source=sh/x/loc/uni/m1/1',
+  ])('não libera os destinos de share a partir de uma URL Maps: %s', async (location) => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(new Response(null, {
+      status: 302, headers: { location },
+    }));
+    await expect(importGoogleMapsSuggestions('https://www.google.com/maps/place/Mesa', { fetchImpl }))
+      .rejects.toBeInstanceOf(GoogleMapsInputError);
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
+  it('não importa metadados de uma página terminal do redirecionador', async () => {
+    const terminal = cancellableResponse(200);
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(new Response(null, { status: 302, headers: {
+        location: 'https://www.google.com/share.google?q=abc',
+      } }))
+      .mockResolvedValueOnce(terminal.response);
+    await expect(importGoogleMapsSuggestions('https://share.google/abc', { fetchImpl }))
+      .rejects.toBeInstanceOf(GoogleMapsUpstreamError);
+    expect(terminal.wasCancelled()).toBe(true);
+  });
+
+  it.each([
+    'https://www.google.com/share.google?q=outro-token',
+    'https://www.google.com/share.google?q=abc&url=https://127.0.0.1',
+    'https://www.google.com/share.google?q=abc&q=abc',
+    'https://www.google.com.br/share.google?q=abc',
+    'https://www.google.com.evil.test/share.google?q=abc',
+    'http://www.google.com/share.google?q=abc',
+    'https://user:pass@www.google.com/share.google?q=abc',
+    'https://www.google.com:8443/share.google?q=abc',
+  ])('rejeita redirecionador que não corresponde ao share original: %s', async (location) => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response(null, {
+      status: 302, headers: { location },
+    }));
+    await expect(importGoogleMapsSuggestions('https://share.google/abc', { fetchImpl }))
+      .rejects.toBeInstanceOf(GoogleMapsInputError);
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    'https://www.google.com/search?q=Mesa',
+    'https://www.google.com/search?q=Mesa&kgmid=/g/abc',
+    'https://www.google.com/search?q=Mesa&kgmid=invalid&source=sh/x/loc/uni/m1/1',
+    'https://www.google.com/search?q=&kgmid=/g/abc&source=sh/x/loc/uni/m1/1',
+    'https://www.google.com.evil.test/search?q=Mesa&kgmid=/g/abc&source=sh/x/loc/uni/m1/1',
+    'https://127.0.0.1/latest',
+  ])('não segue destino genérico ou inseguro após o redirecionador: %s', async (location) => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(new Response(null, { status: 302, headers: {
+        location: 'https://www.google.com/share.google?q=abc',
+      } }))
+      .mockResolvedValueOnce(new Response(null, { status: 301, headers: { location } }));
+    await expect(importGoogleMapsSuggestions('https://share.google/abc', { fetchImpl }))
+      .rejects.toBeInstanceOf(GoogleMapsInputError);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
   it.each([
     'http://www.google.com/maps/place/Mesa',
     'https://user:pass@www.google.com/maps/place/Mesa',
@@ -45,6 +153,8 @@ describe('política de importação do Google Maps', () => {
     'https://127.0.0.1/maps/place/Mesa',
     '//www.google.com/maps/place/Mesa',
     'https://www.google.com/search?q=Mesa',
+    'https://www.google.com/share.google?q=abc',
+    'https://www.google.com/search?q=Mesa&kgmid=/g/abc&source=sh/x/loc/uni/m1/1',
     'https://goo.gl/not-maps',
     'https://maps.app.goo.gl/',
   ])('rejeita URL fora da allowlist antes de buscar: %s', async (url) => {

@@ -46,7 +46,7 @@
 }
 
 .brandName {
-  color: var(--ink);
+  color: var(--ember-bright);
   font-family: var(--font-editorial), Georgia, serif;
   font-size: 1.3rem;
   font-weight: 600;
@@ -70,6 +70,81 @@
 
 .navigation {
   gap: 38px;
+}
+
+.navigationRoot { min-width: 0; }
+.menuToggle { display: none; }
+.craterEntrance { display: none; }
+
+@media (max-width: 1023px) {
+  .headerInner,
+  .footerInner { width: calc(100% - 40px); }
+  .headerInner { min-height: 76px; gap: 16px; }
+  .brand { gap: 10px; min-width: 0; }
+  .brandMark { width: 42px; height: 42px; }
+  .brandKicker { font-size: 0.6rem; letter-spacing: 0.08em; }
+  .menuToggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid #6e5a49;
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+    font-size: 0.875rem;
+  }
+  .menuToggle[aria-expanded='true'] { border-color: var(--ember-bright); color: var(--ember-bright); }
+  .navigation {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    display: none;
+    align-items: stretch;
+    gap: 20px;
+    max-height: calc(100dvh - 76px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 12px 20px 24px;
+    border-bottom: 1px solid var(--line);
+    background: var(--nav-surface);
+  }
+  .navigationRoot[data-mobile-open='true'] .navigation { display: flex; flex-direction: column; }
+  .navigation .linkRail { display: grid; gap: 0; }
+  .navigation .navLink { min-height: 48px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .navigation .navLink[aria-current='page'] { color: var(--ember-bright); }
+  .navigation .navIndicator,
+  .navigation .navLink::after { display: none; }
+  .navigation .signIn,
+  .navigation .signOut { width: 100%; min-height: 48px; }
+  .footer .footerInner { padding: 32px 0 max(24px, env(safe-area-inset-bottom)); gap: 24px; flex-wrap: wrap; }
+  .footer .footerNav { gap: 24px; flex-wrap: wrap; }
+  .footerNav a { display: inline-flex; align-items: center; min-height: 44px; }
+  .craterEntrance {
+    display: flex;
+    justify-content: center;
+    padding: 0 20px max(24px, env(safe-area-inset-bottom));
+  }
+  .craterEntrance a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--ink-muted);
+    font-size: 0.8rem;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  .craterEntrance a:hover { color: var(--ember-bright); }
+}
+
+@media (max-width: 374px) {
+  .headerInner { width: calc(100% - 24px); gap: 10px; }
+  .headerInner .brandName { font-size: 1.15rem; }
+  .headerInner .brandKicker { display: none; }
+  .menuToggle { gap: 6px; padding-inline: 10px; }
 }
 
 .linkRail { position: relative; display: flex; align-items: center; gap: 32px; }
@@ -200,7 +275,7 @@
 }
 
 .footerTitle {
-  color: var(--ink);
+  color: var(--ember-bright);
   font-family: var(--font-editorial), Georgia, serif;
   font-size: 1.15rem;
   font-weight: 600;

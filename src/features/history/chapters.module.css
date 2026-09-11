@@ -115,15 +115,20 @@
 }
 .pilgrimageHeading { display: grid; grid-template-columns: 0.95fr 1.05fr; gap: 76px; align-items: start; }
 .pilgrimageHeading .body { margin-top: 0; }
-.route { margin: 48px 0 36px; }
-.route > svg { width: 100%; height: 80px; overflow: visible; }
+.route { position: relative; margin: 48px 0 36px; }
+.route > svg { position: absolute; top: 72px; left: 68px; width: calc(100% - 136px); height: 56px; overflow: visible; }
 .routeTrack { stroke: var(--chapter-line); stroke-width: 1; stroke-dasharray: 3 6; }
 .routeInk { stroke: var(--chapter-accent); stroke-width: 2; }
-.routeStops { fill: var(--chapter-accent); }
-.route ol { display: flex; justify-content: space-between; margin-top: 8px; list-style: none; color: var(--chapter-accent); font-size: 0.8rem; font-weight: 750; }
-.pilgrimagePhoto { --photo-ratio: 16 / 5; }
+.route ol { position: relative; display: flex; justify-content: space-between; list-style: none; color: var(--chapter-accent); font-size: 0.9rem; font-weight: 750; }
+.route li { display: grid; grid-template-rows: 72px 56px auto; justify-items: center; align-items: center; width: 136px; }
+.routeBrand { display: flex; align-items: center; justify-content: center; width: 136px; height: 72px; }
+.routeBrand img { width: auto; max-width: 136px; height: auto; max-height: 58px; object-fit: contain; }
+.routeBrand > svg { width: 64px; height: 64px; }
+/* HTML markers keep equal screen-space dimensions even when the route SVG stretches. */
+.routeStop { width: 16px; height: 16px; border: 3px solid var(--chapter-paper); border-radius: 50%; background: var(--chapter-accent); box-shadow: 0 0 0 1px var(--chapter-accent); }
+.pilgrimagePhoto { --photo-ratio: 4 / 3; }
 .pilgrimage[data-chapter-seen='true'] .routeInk { stroke-dasharray: 1; animation: trace-contour 1600ms ease-in-out backwards; }
-.pilgrimage[data-chapter-seen='true'] .routeStops { animation: route-arrival 1600ms ease-out backwards; }
+.pilgrimage[data-chapter-seen='true'] .routeStop { animation: route-arrival 1600ms ease-out backwards; }
 @keyframes route-arrival { from { opacity: 0; } to { opacity: 1; } }
 
 /* III — o documento central e seu selo, sem transformar a página em cartões. */
@@ -171,16 +176,19 @@
   --chapter-accent: #b3c87f;
 }
 .heritageLayout { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 76px; }
-.heritageCopy { position: relative; padding-bottom: 100px; }
+.heritageCopy { position: relative; }
 .heritagePhoto { --photo-ratio: 5 / 4; }
-.water { position: absolute; z-index: -1; bottom: -60px; left: -80px; width: 400px; height: 180px; pointer-events: none; opacity: 0.32; }
-.water span { position: absolute; inset: 12%; border: 1px solid var(--chapter-accent); border-radius: 50%; }
-.water span:nth-child(2) { inset: 24%; }
-.water span:nth-child(3) { inset: 36%; }
-.heritage[data-chapter-seen='true'] .water span { animation: water-ripple 1800ms ease-out 2; }
-.heritage[data-chapter-seen='true'] .water span:nth-child(2) { animation-delay: 180ms; }
-.heritage[data-chapter-seen='true'] .water span:nth-child(3) { animation-delay: 360ms; }
-@keyframes water-ripple { from { transform: scale(0.75); opacity: 0.25; } 50% { opacity: 1; } to { transform: scale(1.15); opacity: 0.25; } }
+.branchBorder {
+  position: absolute;
+  inset: 40px auto 40px 12px;
+  width: 56px;
+  height: calc(100% - 80px);
+  color: var(--chapter-accent);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.heritage[data-chapter-seen='true'] .branchBorder path { stroke-dasharray: 1; animation: border-grow 1400ms cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+@keyframes border-grow { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
 .fieldNotes { margin-top: 36px; border-top: 1px solid var(--chapter-line); }
 .fieldNote { border-bottom: 1px solid var(--chapter-line); }
 .fieldNote summary { display: flex; align-items: center; gap: 16px; min-height: 64px; padding: 16px 4px; color: var(--chapter-ink); font-size: 0.88rem; font-weight: 650; cursor: pointer; list-style: none; transition: color 180ms ease; }
@@ -203,16 +211,85 @@
   .heritageLayout { gap: 48px; }
   .chapter { padding: 88px 0; }
   .seal { right: -16px; }
+  .branchBorder { left: 4px; width: 32px; }
+}
+
+@media (max-width: 1023px) {
+  .inner,
+  .discoveryLayout,
+  .heritageLayout { width: calc(100% - 64px); }
+  .chapter { padding: 72px 0; scroll-margin-top: 88px; }
+  .chapter h2 { font-size: clamp(2.7rem, 6.5vw, 4rem); }
+  .discoveryLayout,
+  .pilgrimageHeading,
+  .heritageLayout { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+  .discoveryCopy { padding-bottom: 0; }
+  .topography { left: -120px; bottom: -100px; width: 360px; opacity: 0.2; }
+  .discoveryPhoto { --photo-ratio: 4 / 3; }
+  .pilgrimagePhoto,
+  .societyPhoto { --photo-ratio: 16 / 9; }
+  .body { font-size: 1.1rem; margin-top: 24px; }
+  .branchBorder { left: 3px; width: 20px; }
+  .seal { top: 14px; right: 14px; bottom: auto; width: 108px; gap: 5px; }
+  .seal strong { font-size: 1.2rem; }
+}
+
+@media (max-width: 639px) {
+  .inner,
+  .discoveryLayout,
+  .heritageLayout { width: calc(100% - 40px); }
+  .chapter { padding: 56px 0; }
+  .chapter h2 { font-size: clamp(2.3rem, 9.5vw, 3.4rem); overflow-wrap: anywhere; }
+  .body { font-size: 1.05rem; line-height: 1.75; }
+  .photoPlaceholder { gap: 10px; padding: 20px; }
+  .photoPlaceholder > p { font-size: 0.85rem; }
+  .photo figcaption { font-size: 0.95rem; }
+  .pilgrimagePhoto,
+  .societyPhoto { --photo-ratio: 4 / 3; }
+
+  /* O percurso vira uma linha de leitura vertical sem perder suas três paradas. */
+  .route { margin: 32px 0; }
+  .route > svg { display: none; }
+  .route::before {
+    position: absolute;
+    top: 42px;
+    bottom: 42px;
+    left: 11px;
+    border-left: 1px dashed var(--chapter-accent);
+    content: '';
+  }
+  .route ol { flex-direction: column; gap: 20px; }
+  .route li {
+    width: 100%;
+    grid-template-columns: 24px 108px minmax(0, 1fr);
+    grid-template-rows: 84px;
+    column-gap: 12px;
+    justify-items: start;
+  }
+  .routeBrand { grid-column: 2; grid-row: 1; width: 108px; }
+  .routeBrand img { max-width: 108px; }
+  .routeStop { grid-column: 1; grid-row: 1; justify-self: center; }
+  .route li > span:last-child { grid-column: 3; grid-row: 1; font-size: 0.9rem; }
+
+  .charter > .body { margin: 24px auto 32px; }
+  .societyPhoto figcaption { padding-right: 0; }
+  .seal { top: 12px; right: 12px; width: 96px; margin: 0; }
+  .seal span { font-size: 0.6rem; }
+  .seal strong { font-size: 1.1rem; }
+  .branchBorder { left: -8px; width: 24px; opacity: 0.28; }
+  .fieldNotes { margin-top: 28px; }
+  .fieldNote summary { font-size: 1rem; gap: 12px; }
+  .noteBody { margin-left: 0; font-size: 1rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .chapter[data-chapter-seen='true'] .topography path,
   .chapter[data-chapter-seen='true'] .discoveryPhoto .photoFrame,
   .chapter[data-chapter-seen='true'] .routeInk,
-  .chapter[data-chapter-seen='true'] .routeStops,
+  .chapter[data-chapter-seen='true'] .routeStop,
   .chapter[data-chapter-seen='true'] .crest path,
   .chapter[data-chapter-seen='true'] .seal,
-  .chapter[data-chapter-seen='true'] .water span,
+  .chapter[data-chapter-seen='true'] .branchBorder path,
   .fieldNote[open] .noteBody { animation: none; }
   .noteArrow,
   .fieldNote summary { transition: none; }

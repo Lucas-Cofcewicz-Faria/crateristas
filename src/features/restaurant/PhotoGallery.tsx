@@ -9,18 +9,19 @@ import styles from './restaurant.module.css';
 export interface PhotoGalleryProps {
   photos: PublicPhoto[];
   restaurantName: string;
+  subject?: 'visit' | 'dish';
 }
 
-export function PhotoGallery({ photos, restaurantName }: PhotoGalleryProps) {
+export function PhotoGallery({ photos, restaurantName, subject = 'visit' }: PhotoGalleryProps) {
   const [activePhotoId, setActivePhotoId] = useState<string | null>(null);
   const [showWholePhoto, setShowWholePhoto] = useState(false);
   const [direction, setDirection] = useState('next');
   const photoId = useId();
   if (photos.length === 0) {
     return (
-      <section aria-label="Fotografias da visita" className={styles.photoPlaceholder}>
+      <section aria-label={subject === 'dish' ? 'Fotografias do prato' : 'Fotografias da visita'} className={styles.photoPlaceholder}>
         <span aria-hidden="true">C</span>
-        <p>Esta visita não possui fotografias publicadas.</p>
+        <p>{subject === 'dish' ? 'Este prato ainda não possui fotografias.' : 'Esta visita não possui fotografias publicadas.'}</p>
       </section>
     );
   }
@@ -54,7 +55,7 @@ export function PhotoGallery({ photos, restaurantName }: PhotoGalleryProps) {
 
   return (
     <section
-      aria-label="Fotografias da visita"
+      aria-label={subject === 'dish' ? 'Fotografias do prato' : 'Fotografias da visita'}
       aria-roledescription={hasNavigation ? 'carrossel' : undefined}
       className={styles.gallery}
       data-motion="excavation"
@@ -63,12 +64,12 @@ export function PhotoGallery({ photos, restaurantName }: PhotoGalleryProps) {
     >
       <figure className={styles.photo} id={photoId} data-whole-photo={showWholePhoto} data-direction={direction}>
         <Image
-          alt={`Foto ${activeIndex + 1} da visita ao restaurante ${restaurantName}`}
+          alt={subject === 'dish' ? `Foto ${activeIndex + 1} de ${restaurantName}` : `Foto ${activeIndex + 1} da visita ao restaurante ${restaurantName}`}
           data-atmosphere-source={activeIndex === 0 ? 'true' : undefined}
           height={800}
           loading="eager"
           key={activePhoto.id}
-          sizes="(max-width: 1536px) calc(100vw - 96px), 1440px"
+          sizes="(max-width: 767px) calc(100vw - 32px), (max-width: 1023px) calc(100vw - 48px), (max-width: 1536px) calc(100vw - 96px), 1440px"
           src={activePhoto.url}
           width={1200}
         />

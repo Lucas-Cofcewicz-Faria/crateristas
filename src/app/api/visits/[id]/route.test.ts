@@ -42,7 +42,7 @@ function deletionRequest(confirmation: string, expectedParticipantCount = 3): Re
   });
 }
 
-function makeHarness(actor = member('admin')) {
+function makeHarness(actor = member('admin'), expectedCount = target.participantCount) {
   let databasePresent = true;
   const blobPathnames = new Set(target.photoPathnames);
   let failBlob = false;
@@ -58,7 +58,7 @@ function makeHarness(actor = member('admin')) {
         throw error;
       }
       if (!databasePresent || id !== visitId) return null;
-      if (expectedParticipantCount !== target.participantCount) {
+      if (expectedParticipantCount !== expectedCount) {
         const error = new Error('A quantidade de avaliações mudou.');
         error.name = 'VisitDeletionConflictError';
         throw error;
@@ -95,6 +95,13 @@ function makeHarness(actor = member('admin')) {
 }
 
 describe('DELETE /api/visits/[id]', () => {
+  it('permite ao administrador excluir registros com mais de oito avaliações', async () => {
+    const harness = makeHarness(member('admin'), 12);
+    const response = await harness.handlers.DELETE(deletionRequest('Deletar review', 12), { params: Promise.resolve({ id: visitId }) });
+    expect(response.status).toBe(204);
+    expect(harness.databaseIsPresent()).toBe(false);
+  });
+
   it('exige a frase exata antes de consultar ou apagar qualquer dado', async () => {
     const harness = makeHarness();
 

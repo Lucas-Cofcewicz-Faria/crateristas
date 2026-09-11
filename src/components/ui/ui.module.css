@@ -82,6 +82,13 @@
   width: 100%;
 }
 
+@media (max-width: 1023px), (pointer: coarse) {
+  .button.small { min-height: 44px; }
+  .button { white-space: normal; }
+  .field { min-width: 0; }
+  .input { min-width: 0; font-size: 16px; }
+}
+
 .field {
   display: grid;
   gap: 8px;
@@ -186,8 +193,8 @@
 }
 
 .scoreRing.large {
-  width: 132px;
-  height: 132px;
+  width: var(--score-ring-size, 132px);
+  height: var(--score-ring-size, 132px);
 }
 
 .scoreGraphic {
@@ -227,13 +234,16 @@
   color: var(--line);
 }
 
-[data-motion='measure'][data-motion-state='visible'] .scoreGradientStop {
-  animation: score-color-arrive 1100ms ease-out both;
+.scoreGradientStop {
+  animation: score-color-wave 4.8s ease-in-out var(--score-stop-delay, 0s) infinite;
+  animation-play-state: paused;
 }
 
-@keyframes score-color-arrive {
-  from { stop-color: var(--line); }
-  to { stop-color: var(--score-stop-color); }
+.scoreRing[data-score-motion='running'] .scoreGradientStop { animation-play-state: running; }
+
+@keyframes score-color-wave {
+  0%, 100% { stop-color: var(--score-stop-color); }
+  50% { stop-color: color-mix(in srgb, var(--score-stop-color), var(--ink) 28%); }
 }
 
 .scoreValue,
@@ -247,7 +257,8 @@
   color: color-mix(in srgb, var(--score-text-base), var(--ink) 55%);
   font-variant-numeric: tabular-nums;
   background-position: 0% 50%;
-  transition: background-position 400ms ease;
+  animation: score-text-wave 4.8s ease-in-out infinite;
+  animation-play-state: paused;
 }
 
 @supports (background-clip: text) {
@@ -263,16 +274,11 @@
   }
 }
 
-[data-motion-state='visible'] .scoreText,
-[data-expanded='true'] .scoreText {
-  animation: score-text-reveal 1000ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
-}
+.scoreText[data-score-motion='running'] { animation-play-state: running; }
 
-.scoreText:hover { background-position: 100% 50%; }
-
-@keyframes score-text-reveal {
-  from { background-position: 100% 50%; opacity: 0.5; }
-  to { background-position: 0% 50%; opacity: 1; }
+@keyframes score-text-wave {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 @media (forced-colors: active) {
@@ -290,7 +296,11 @@
 
 .large .scoreValue {
   margin-top: -12px;
-  font-size: 2rem;
+  font-size: var(--score-font-size, 2rem);
+}
+
+.scoreNumberOnly .scoreValue {
+  margin-top: 0;
 }
 
 .scoreLabel {
@@ -314,12 +324,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-motion-state='visible'] .scoreText,
-  [data-expanded='true'] .scoreText { animation: none; }
-  .scoreText { transition: none; }
-  [data-motion='measure'][data-motion-state='visible'] .scoreGradientStop {
-    animation: none;
-  }
+  .scoreText,
+  .scoreGradientStop { animation: none; }
   .button,
   .input {
     transition: none;

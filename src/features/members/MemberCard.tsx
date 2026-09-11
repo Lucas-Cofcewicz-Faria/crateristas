@@ -1,10 +1,10 @@
 'use client';
 
-import Image from 'next/image';
 import { useId, useState } from 'react';
 import type { SocietyFragmentEntry } from '@/content/society';
 import { SocietyFragment } from '@/components/society/SocietyFragment';
-import { SocietyMark } from '@/components/society/SocietyMark';
+import { CraterLogo } from '@/components/brand/CraterLogo';
+import { MemberPortrait } from './MemberPortrait';
 import styles from './members.module.css';
 
 export interface MemberCardProps {
@@ -16,15 +16,6 @@ export interface MemberCardProps {
   publicContributionCount: number;
   societyTitle: string | null;
   societyFragment: SocietyFragmentEntry | null;
-}
-
-function getInitials(displayName: string): string {
-  return displayName
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toLocaleUpperCase('pt-BR'))
-    .join('');
 }
 
 export function MemberCard({
@@ -50,34 +41,15 @@ export function MemberCard({
       className={styles.card}
     >
       <div className={styles.cardSummary}>
-        <div className={styles.avatarFrame}>
-          {avatarUrl ? (
-            <Image
-              alt={`Retrato de ${displayName}`}
-              className={styles.avatar}
-              height={128}
-              sizes="128px"
-              src={avatarUrl}
-              width={128}
-            />
-          ) : (
-            <span
-              aria-label={`Iniciais de ${displayName}: ${getInitials(displayName)}`}
-              className={styles.avatarFallback}
-              role="img"
-            >
-              {getInitials(displayName)}
-            </span>
-          )}
-        </div>
+        <MemberPortrait avatarUrl={avatarUrl} displayName={displayName} />
 
         <div className={styles.identity}>
-          <p className={styles.entryNumber}>
-            <SocietyMark />
-            <span>Craterista nº {entryNumber}</span>
-          </p>
           <h2>{displayName}</h2>
           {societyTitle ? <p className={styles.societyTitle}>{societyTitle}</p> : null}
+          <p className={styles.entryNumber}>
+            <CraterLogo />
+            <span>Craterista nº {entryNumber}</span>
+          </p>
           <p className={styles.contributions}>{contributionLabel}</p>
         </div>
 

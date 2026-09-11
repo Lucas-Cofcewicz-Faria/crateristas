@@ -5,15 +5,15 @@ import styles from './home.module.css';
 
 export function LandingHero() {
   return (
-    <section aria-labelledby="home-title" className={styles.hero} data-hero-stage id="entrada">
-      <div className={styles.heroPinned}>
+    <section aria-labelledby="home-title" className={styles.hero} id="entrada">
+      <div className={styles.heroScene}>
         <div className={styles.heroCopy}>
-          <h1 data-motion="inscription" id="home-title">Bem-vindo à cratera</h1>
+          <h1 id="home-title">Bem-vindo à cratera</h1>
           <div className={styles.heroSummary}>
-            <p className={styles.heroLead} data-motion="inscription" data-motion-index="1">
-              Uma sociedade reunida à mesa, oito notas por visita e um buraco que continua sem explicação.
+            <p className={styles.heroLead}>
+              Uma sociedade reunida à mesa, diferentes impressões por visita e um buraco que continua sem explicação.
             </p>
-            <div data-motion="inscription" data-motion-index="2">
+            <div>
               <Link className={`${styles.primaryAction} ${styles.exploreAction}`} href="/registros">
                 <span>Explorar restaurantes</span>
                 <span aria-hidden="true" className={styles.exploreArrow}><ArrowRight size={20} /></span>

@@ -6,7 +6,9 @@ import type {
   PublicRestaurantSummary,
 } from '@/domain/reviews/repository';
 import type { DisplayScoreValues } from './restaurant-formatters';
-import { formatVisitDate } from './restaurant-formatters';
+import type { RestaurantVisitOption } from '@/features/restaurants/catalog-types';
+import { VisitDateSelector } from './VisitDateSelector';
+import navigationStyles from './visit-navigation.module.css';
 import { CommentFragments } from './CommentFragments';
 import { PhotoGallery } from './PhotoGallery';
 import { ScoreBreakdown } from './ScoreBreakdown';
@@ -22,6 +24,9 @@ export interface RestaurantReviewProps {
   historical: boolean;
   photos: PublicPhoto[];
   comments: PublicComment[];
+  visits?: RestaurantVisitOption[];
+  selectedVisitId?: string;
+  menuEnabled?: boolean;
 }
 
 export function RestaurantReview({
@@ -33,6 +38,9 @@ export function RestaurantReview({
   historical,
   photos,
   comments,
+  visits = [],
+  selectedVisitId,
+  menuEnabled = false,
 }: RestaurantReviewProps) {
   return (
     <RestaurantAtmosphere enabled={photos.length > 0}>
@@ -43,26 +51,25 @@ export function RestaurantReview({
           </Link>
 
           <header className={styles.reviewHeader}>
-            <p className={styles.eyebrow}>Evidências de uma visita publicada</p>
             <h1 data-motion="inscription">{restaurant.name}</h1>
             <div className={styles.restaurantMeta}>
               <span>{restaurant.cuisine}</span>
               <span aria-hidden="true">•</span>
               <span>{restaurant.neighborhood}, {restaurant.city}</span>
             </div>
-            <p className={styles.visitDate}>
-              Visita em <time dateTime={visitedAt}>{formatVisitDate(visitedAt)}</time>
-            </p>
             {restaurant.address ? <p className={styles.address}>{restaurant.address}</p> : null}
           </header>
 
+          <div className={navigationStyles.visitToolbar}>
+            <VisitDateSelector visitedAt={visitedAt} restaurantSlug={restaurant.slug} visits={visits} selectedVisitId={selectedVisitId} />
+            {menuEnabled ? <Link className={navigationStyles.menuLink} href={`/restaurantes/${restaurant.slug}/menu`}>Menu</Link> : null}
+          </div>
           <PhotoGallery photos={photos} restaurantName={restaurant.name} />
 
           <section aria-labelledby="evidencias-titulo" className={styles.evidenceSection}>
             <header className={styles.evidenceHeader}>
-              <p className={styles.eyebrow}>Caderno coletivo</p>
-              <h2 id="evidencias-titulo">Vozes e medidas da mesa</h2>
-              <p>As impressões publicadas permanecem junto das médias coletivas da visita.</p>
+              <h2 id="evidencias-titulo">Avaliação coletiva</h2>
+              <p>Uma mesa, diferentes impressões. Explore o que cada craterista pediu, comentou e avaliou.</p>
             </header>
             <div className={styles.evidenceComposition}>
               <div className={styles.scorePanel}>
@@ -76,6 +83,9 @@ export function RestaurantReview({
               <CommentFragments comments={comments} />
             </div>
           </section>
+          <nav className={navigationStyles.actions} aria-label="Continuar neste restaurante">
+            <Link href={`/visitas/nova?restaurante=${restaurant.slug}`}>Adicionar nova visita ao restaurante</Link>
+          </nav>
         </article>
       </MotionScope>
     </RestaurantAtmosphere>

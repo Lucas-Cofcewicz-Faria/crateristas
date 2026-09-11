@@ -19,7 +19,7 @@ export function MemberGrid({ members }: MemberGridProps) {
     );
   }
 
-  const visibleMembers = members.slice(0, 8);
+  const visibleMembers = members;
 
   return (
     <div aria-label="Diretório dos Crateristas" className={styles.grid} role="list">

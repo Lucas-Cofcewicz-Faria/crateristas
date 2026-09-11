@@ -3,6 +3,17 @@
   gap: 22px;
 }
 
+.form input { border-radius: 0; background: #111213; }
+.form input:focus { background: #1d1e20; }
+.form button[type='submit'] {
+  border-radius: 0;
+  justify-content: space-between;
+  min-height: 54px;
+  box-shadow: none;
+}
+.form button[type='submit'] svg { transition: translate 200ms ease; }
+.form button[type='submit']:not(:disabled):hover svg { translate: 2px -2px; }
+
 .formError {
   padding: 12px 14px;
   border: 1px solid var(--danger);
@@ -55,11 +66,11 @@
 
 .loginPage {
   width: min(calc(100% - 96px), var(--page-max));
-  min-height: 620px;
+  min-height: calc(100vh - 88px);
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(420px, 0.72fr);
+  grid-template-columns: minmax(0, 1fr) minmax(400px, 0.75fr);
   align-items: center;
-  gap: 96px;
+  gap: clamp(64px, 8vw, 140px);
   margin: 0 auto;
   padding: 72px 0 96px;
 }
@@ -67,6 +78,8 @@
 .loginCopy {
   max-width: 650px;
 }
+
+.loginMark { width: 112px; height: 112px; margin-bottom: 36px; color: var(--ember-bright); }
 
 .eyebrow {
   margin-bottom: 12px;
@@ -79,7 +92,7 @@
 
 .loginCopy h1 {
   color: var(--ink);
-  font-size: clamp(3rem, 4.5vw, 4.8rem);
+  font-size: clamp(3.6rem, 5.5vw, 6rem);
   font-weight: 560;
   letter-spacing: -0.035em;
   line-height: 0.98;
@@ -93,15 +106,51 @@
 }
 
 .loginCard {
-  padding: 34px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--surface);
+  padding: clamp(32px, 4vw, 56px);
+  border: 1px solid #353331;
+  background: #171819;
 }
 
 .loginCard h2 {
-  margin-bottom: 24px;
+  margin-bottom: 34px;
   color: var(--ink);
-  font-size: 1.65rem;
+  font-size: 2.25rem;
   font-weight: 580;
+}
+
+@media (max-width: 1023px) {
+  .loginPage {
+    width: calc(100% - 48px);
+    min-height: auto;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 36px;
+    padding: 44px 0 64px;
+  }
+  .loginCopy, .loginCard, .form, .form > * { min-width: 0; }
+  .loginCopy { max-width: 650px; }
+  .loginMark { width: 72px; height: 72px; margin-bottom: 24px; }
+  .loginCopy h1 { font-size: clamp(2.75rem, 7vw, 4rem); overflow-wrap: anywhere; }
+  .loginCard { width: 100%; max-width: 650px; padding: 32px; }
+  .loginCard h2 { margin-bottom: 24px; font-size: 2rem; }
+  .form input { min-width: 0; font-size: 16px; }
+  .form button { min-height: 44px; white-space: normal; overflow-wrap: anywhere; }
+  .form button svg { flex-shrink: 0; }
+  .textLink { display: inline-flex; align-items: center; min-height: 44px; }
+  .formError, .formSuccess, .invalidLinkPanel { overflow-wrap: anywhere; }
+}
+
+@media (max-width: 767px) {
+  .loginPage { width: calc(100% - 32px); gap: 28px; padding: 32px 0 48px; }
+  .loginCopy h1 { font-size: clamp(2.5rem, 10vw, 3.5rem); }
+  .loginCopy p:last-child { margin-top: 16px; line-height: 1.65; }
+  .loginMark { width: 56px; height: 56px; margin-bottom: 20px; }
+  .loginCard { padding: 24px 20px; }
+  .loginCard h2 { font-size: 1.75rem; }
+  .form { gap: 18px; }
+  .form button[type='submit'] { padding: 12px 16px; gap: 12px; text-align: left; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .form button[type='submit'] svg { transition: none; }
+  .form button[type='submit']:not(:disabled):hover svg { translate: none; }
 }

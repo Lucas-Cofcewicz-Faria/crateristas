@@ -21,6 +21,39 @@ afterEach(() => {
 });
 
 describe('AppHeader', () => {
+  it('reserva o acesso opcional 3D ao final do rodapé da home', () => {
+    const view = render(<PublicShell viewer="visitor"><h1>Home</h1></PublicShell>);
+    const link = screen.getByRole('link', { name: 'Visitar a cratera em 3D', hidden: true });
+    expect(link).toHaveAttribute('href', '/?explorar=1');
+    expect(screen.getByRole('contentinfo')).toContainElement(link);
+    expect(screen.getByRole('banner')).not.toContainElement(link);
+    dependencies.pathname = '/registros';
+    view.rerender(<PublicShell viewer="visitor"><h1>Registros</h1></PublicShell>);
+    expect(screen.queryByRole('link', { name: 'Visitar a cratera em 3D', hidden: true })).not.toBeInTheDocument();
+  });
+
+  it('abre o menu compacto e o fecha com Escape ou ao escolher uma página', () => {
+    render(<AppHeader viewer="visitor" />);
+    const toggle = screen.getByLabelText('Abrir menu');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveFocus();
+    fireEvent.click(toggle);
+    fireEvent.click(screen.getByRole('link', { name: 'Registros' }));
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('retorna suavemente ao início sem recarregar a home atual', () => {
+    const scroll = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    render(<AppHeader viewer="visitor" />);
+    fireEvent.click(screen.getByRole('link', { name: 'Crateristas — início' }));
+    expect(scroll).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+    scroll.mockRestore();
+  });
+
   it('identifica a seção atual também nas páginas de um restaurante', () => {
     dependencies.pathname = '/restaurantes/casa-da-cratera';
     render(<AppHeader viewer="visitor" />);

@@ -68,7 +68,19 @@ function hasMapsPath(url: URL): boolean {
   return /^\/maps(?:\/|$)/.test(url.pathname);
 }
 
-function parseAllowedUrl(input: string): URL {
+function isShareResolver(url: URL): boolean {
+  return url.hostname === 'www.google.com' && url.pathname === '/share.google';
+}
+
+function isSharedLocalPlace(url: URL): boolean {
+  return url.hostname === 'www.google.com'
+    && url.pathname === '/search'
+    && /^\/[gm]\/[A-Za-z0-9_-]+$/.test(url.searchParams.get('kgmid') ?? '')
+    && /^sh\/x\/loc\//.test(url.searchParams.get('source') ?? '')
+    && Boolean(safeText(url.searchParams.get('q') ?? ''));
+}
+
+function parseAllowedUrl(input: string, redirectedFrom?: URL): URL {
   if (!input || input.trim() !== input || input.startsWith('//') || input.includes('#')) {
     throw new GoogleMapsInputError();
   }
@@ -81,6 +93,18 @@ function parseAllowedUrl(input: string): URL {
   const hostname = url.hostname.toLowerCase();
   if (url.protocol !== 'https:' || url.username || url.password || url.port || url.hash) {
     throw new GoogleMapsInputError();
+  }
+  // This resolver is only reachable from the matching, already validated share token.
+  // It is not a general Google URL entry point.
+  if (isShareResolver(url)
+    && redirectedFrom?.hostname === 'share.google'
+    && url.searchParams.size === 1
+    && url.searchParams.get('q') === redirectedFrom.pathname.replace(/^\/|\/$/g, '')) {
+    return url;
+  }
+  if (redirectedFrom && (redirectedFrom.hostname === 'share.google' || isShareResolver(redirectedFrom))
+    && isSharedLocalPlace(url)) {
+    return url;
   }
   if (SHORT_HOSTS.has(hostname)) {
     if (!/^\/[A-Za-z0-9_-]+\/?$/.test(url.pathname)) throw new GoogleMapsInputError();
@@ -104,7 +128,7 @@ function resolveAllowedRedirect(location: string, current: URL): URL {
   } catch {
     throw new GoogleMapsInputError();
   }
-  return parseAllowedUrl(resolved.href);
+  return parseAllowedUrl(resolved.href, current);
 }
 
 async function readLimitedBody(response: Response): Promise<string> {
@@ -257,9 +281,12 @@ export async function importGoogleMapsSuggestions(
         if (!location) throw new GoogleMapsUpstreamError();
         current = resolveAllowedRedirect(location, current);
         redirectCount += 1;
+        // A shared local Search card provides a name, not Maps metadata. Use only
+        // that editable suggestion; never fetch Google Search or guess a Maps place.
+        if (isSharedLocalPlace(current)) return extractSuggestions(current, '');
         continue;
       }
-      if (!response.ok || current.hostname === 'share.google') {
+      if (!response.ok || current.hostname === 'share.google' || isShareResolver(current)) {
         await cancelResponseBody(response);
         throw new GoogleMapsUpstreamError();
       }

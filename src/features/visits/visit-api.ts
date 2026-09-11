@@ -3,7 +3,6 @@ import { VISIT_DELETION_CONFIRMATION } from '@/domain/reviews/deletion';
 import type { PublicPhoto } from '@/domain/reviews/repository';
 import type { CreateVisitInput, ScorecardInput } from '@/domain/reviews/schemas';
 import {
-  CRATERISTAS_GROUP_SIZE,
   type PublicationState,
   type ScoreValues,
 } from '@/domain/reviews/types';
@@ -63,7 +62,7 @@ const createdVisitResponseSchema = z.object({
   slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   publicationState: publicationStateSchema,
 });
-const participantCountSchema = z.number().int().min(1).max(CRATERISTAS_GROUP_SIZE);
+const participantCountSchema = z.number().int().min(1);
 const aggregateScoreSchema = z.number().finite().min(0).max(10);
 const scoreAveragesSchema = z.object({
   food: aggregateScoreSchema,

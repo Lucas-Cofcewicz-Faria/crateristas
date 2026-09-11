@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { upload } from '@vercel/blob/client';
 import { Button } from '@/components/ui/Button';
+import { FilePicker } from '@/components/ui/FilePicker';
 import type { PublicPhoto } from '@/domain/reviews/repository';
 import { compressVisitImage } from './compress-image';
 import {
@@ -157,8 +158,7 @@ export function PhotoUploader({ visitId, initialPhotos, canManage }: PhotoUpload
   return (
     <section className={styles.photoSection} aria-labelledby="photos-title">
       <header className={styles.sectionIntro}>
-        <p className={styles.eyebrow}>Evidências da mesa</p>
-        <h2 id="photos-title">Fotos da visita</h2>
+        <h3 id="photos-title">Fotos da visita</h3>
         <p>Até cinco imagens JPEG, PNG ou WebP, comprimidas antes do envio.</p>
       </header>
 
@@ -171,7 +171,7 @@ export function PhotoUploader({ visitId, initialPhotos, canManage }: PhotoUpload
               <Image
                 alt={`Foto ${index + 1} da visita`}
                 height={220}
-                sizes="(max-width: 1200px) 25vw, 260px"
+                sizes="(max-width: 767px) 50vw, (max-width: 1023px) 33vw, (max-width: 1200px) 25vw, 260px"
                 src={photo.url}
                 width={320}
               />
@@ -193,19 +193,15 @@ export function PhotoUploader({ visitId, initialPhotos, canManage }: PhotoUpload
 
       {canManage && availableSlots > 0 ? (
         <div className={styles.photoActions}>
-          <label htmlFor="visit-photos">Selecionar fotos</label>
-          <input
+          <FilePicker
+            label="Selecionar fotos"
             accept="image/jpeg,image/png,image/webp"
             disabled={mutationPending || selected.some((photo) => photo.uploadedPathname !== null)}
             id="visit-photos"
             multiple
             onChange={handleSelection}
             ref={inputRef}
-            type="file"
           />
-          {selected.length > 0 ? (
-            <p>{selected.map(({ file }) => file.name).join(', ')}</p>
-          ) : null}
           <Button disabled={mutationPending || selected.length === 0} onClick={handleUpload}>
             {uploading
               ? 'Enviando...'
@@ -215,6 +211,9 @@ export function PhotoUploader({ visitId, initialPhotos, canManage }: PhotoUpload
                   : `Continuar envio de ${selected.length} fotos`
                 : `Enviar ${selected.length} ${selected.length === 1 ? 'foto' : 'fotos'}`}
           </Button>
+          {selected.length > 0 ? (
+            <p>{selected.map(({ file }) => file.name).join(', ')}</p>
+          ) : null}
         </div>
       ) : null}
 

@@ -34,13 +34,29 @@ const managed = [{
 }];
 
 describe('DashboardView', () => {
-  it('mostra as três filas com contagens reais e a criação de visita', () => {
+  it('mantém as seções e convites administrativos sem a navegação duplicada', () => {
+    const { rerender } = render(<DashboardView awaiting={[]} forming={[]} recent={[]} managed={[]} memberName="Ana" isAdmin adminTools={<p>Convite do grupo</p>} />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Meu painel' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Seções do painel' })).not.toBeInTheDocument();
+    for (const name of ['Participar', 'Em formação', 'Publicadas', 'Gerenciar', 'Convites']) {
+      expect(screen.queryByRole('link', { name })).not.toBeInTheDocument();
+    }
+    expect(screen.getByRole('region', { name: 'Visitas para participar' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Em formação' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Publicadas recentemente' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Gerenciar reviews' })).toBeInTheDocument();
+    expect(screen.getByText('Convite do grupo')).toBeInTheDocument();
+    rerender(<DashboardView awaiting={[]} forming={[]} recent={[]} managed={[]} memberName="Ana" isAdmin={false} adminTools={<p>Convite do grupo</p>} />);
+    expect(screen.queryByText('Convite do grupo')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Convites' })).not.toBeInTheDocument();
+  });
+  it('mostra as filas, a criação e o gerenciamento de reviews para integrantes', () => {
     render(
       <DashboardView
         awaiting={pending}
         forming={[]}
         isAdmin={false}
-        managed={[]}
+        managed={managed}
         memberName="Ana"
         recent={recent}
       />,
@@ -48,7 +64,7 @@ describe('DashboardView', () => {
 
     expect(screen.getByRole('link', { name: 'Nova visita' }))
       .toHaveAttribute('href', '/visitas/nova');
-    const awaitingSection = screen.getByRole('region', { name: 'Aguardando sua avaliação' });
+    const awaitingSection = screen.getByRole('region', { name: 'Visitas para participar' });
     const formingSection = screen.getByRole('region', { name: 'Em formação' });
     const recentSection = screen.getByRole('region', { name: 'Publicadas recentemente' });
     expect(within(awaitingSection).getByLabelText('1 item')).toBeInTheDocument();
@@ -58,6 +74,10 @@ describe('DashboardView', () => {
     expect(within(recentSection).getByText(/1 avaliação · visita em/)).toBeInTheDocument();
     expect(within(recentSection).getByRole('link', { name: 'Abrir Mesa Publicada' }))
       .toHaveAttribute('href', '/restaurantes/publicada');
+    const management = screen.getByRole('region', { name: 'Gerenciar reviews' });
+    expect(within(management).getByRole('link', { name: 'Gerenciar Mesa Oculta' }))
+      .toHaveAttribute('href', '/visitas/visit-hidden/avaliar');
+    expect(within(management).queryByText(/avaliações serão apagadas/)).not.toBeInTheDocument();
     expect(screen.queryByText(/administrador|administração/i)).not.toBeInTheDocument();
   });
 

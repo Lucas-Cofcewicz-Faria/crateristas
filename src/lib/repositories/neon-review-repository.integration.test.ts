@@ -22,9 +22,6 @@ function atomicSubmission(): AtomicScorecardSubmissionInput {
     visitId: randomUUID(),
     memberId: randomUUID(),
     scorecard,
-    expectedPublicationState: 'private',
-    quorum: 6,
-    transitionAtQuorum: { state: 'published', reason: 'quorum' },
   };
 }
 
@@ -1006,7 +1003,7 @@ describe('NeonReviewRepository', () => {
       },
     ]);
     expect(capturedSql).toContain("v.publication_state = 'private'");
-    expect(capturedSql).toMatch(/HAVING COUNT\(s\.id\) < v\.quorum/);
+    expect(capturedSql).not.toContain('HAVING');
     expect(capturedSql).toContain('COALESCE(BOOL_OR(own.member_id = $1), FALSE)');
     expect(capturedSql).not.toContain('NOT EXISTS');
   });
@@ -1098,7 +1095,7 @@ describeIntegration('NeonReviewRepository database constraints', () => {
     },
   );
 
-  it('keeps the SQL quorum transition equivalent to the domain rule for the first score', async () => {
+  it('keeps the first score private and edits its averages without publication', async () => {
     if (!sql) throw new Error('TEST_DATABASE_URL ausente.');
     const suffix = atomicMemberId.slice(0, 8);
     await sql.transaction((transaction) => [
@@ -1132,21 +1129,18 @@ describeIntegration('NeonReviewRepository database constraints', () => {
       visitId: atomicVisitId,
       memberId: atomicMemberId,
       scorecard,
-      expectedPublicationState: 'private',
-      quorum: 1,
-      transitionAtQuorum: { state: 'published', reason: 'quorum' },
     });
 
     expect(result).toMatchObject({
-      publicationState: 'published',
-      publicationReason: 'quorum',
+      publicationState: 'private',
+      publicationReason: null,
       participantCount: 1,
       aggregate: {
         participantCount: 1,
         averages: { food: 8, service: 7, ambience: 9, value: 6, access: 5, waitTime: 4 },
         overall: 6.5,
       },
-      publicationChanged: true,
+      publicationChanged: false,
     });
 
     const updated = await repository.submitScorecardAtomically({
@@ -1161,13 +1155,10 @@ describeIntegration('NeonReviewRepository database constraints', () => {
         access: 6,
         waitTime: 7,
       },
-      expectedPublicationState: 'published',
-      quorum: 1,
-      transitionAtQuorum: { state: 'published', reason: 'quorum' },
     });
 
     expect(updated).toMatchObject({
-      publicationState: 'published',
+      publicationState: 'private',
       participantCount: 1,
       aggregate: {
         participantCount: 1,
@@ -1182,7 +1173,7 @@ describeIntegration('NeonReviewRepository database constraints', () => {
        WHERE visit_id = $1 AND action = 'quorum_publish'`,
       [atomicVisitId],
     );
-    expect(Number(events[0]?.event_count)).toBe(1);
+    expect(Number(events[0]?.event_count)).toBe(0);
   });
 
   it('persists the optional dish and exposes the complete individual scorecard on published detail', async () => {
@@ -1378,7 +1369,7 @@ describeIntegration('NeonReviewRepository database constraints', () => {
     expect(counts.map((row) => Number(row.photo_count)).sort()).toEqual([5, 5]);
   });
 
-  it('retries concurrent scorecards and records a single quorum event', async () => {
+  it('saves concurrent scorecards without publishing or recording quorum events', async () => {
     if (!sql) throw new Error('TEST_DATABASE_URL ausente.');
     const suffix = concurrentVisitId.slice(0, 8);
     await sql.transaction((transaction) => [
@@ -1417,17 +1408,11 @@ describeIntegration('NeonReviewRepository database constraints', () => {
         visitId: concurrentVisitId,
         memberId: concurrentMemberA,
         scorecard,
-        expectedPublicationState: 'private',
-        quorum: 2,
-        transitionAtQuorum: { state: 'published', reason: 'quorum' },
       }),
       repository.submitScorecardAtomically({
         visitId: concurrentVisitId,
         memberId: concurrentMemberB,
         scorecard,
-        expectedPublicationState: 'private',
-        quorum: 2,
-        transitionAtQuorum: { state: 'published', reason: 'quorum' },
       }),
     ]);
 
@@ -1444,9 +1429,9 @@ describeIntegration('NeonReviewRepository database constraints', () => {
       [concurrentVisitId],
     );
     expect(result).toMatchObject({
-      publication_state: 'published',
+      publication_state: 'private',
       participant_count: 2,
-      event_count: 1,
+      event_count: 0,
     });
   });
 
@@ -1530,9 +1515,6 @@ describeIntegration('NeonReviewRepository database constraints', () => {
       visitId: deletionVisitId,
       memberId: deletionAdminId,
       scorecard,
-      expectedPublicationState: 'hidden',
-      quorum: 6,
-      transitionAtQuorum: { state: 'hidden', reason: null },
     })).rejects.toThrow('Visita não encontrada.');
 
     await expect(repository.deleteVisit(deletionVisitId, deletionAdminId, [photoPathname]))

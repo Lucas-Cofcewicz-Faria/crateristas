@@ -1,6 +1,7 @@
 import { generateKeyPairSync, sign } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { POST } from './route';
+vi.mock('@/features/auth/invite-repository', () => ({ isInvitedEmail: async () => false }));
 
 const NOW = Date.parse('2026-08-11T18:00:00.000Z');
 const KID = 'chave-rota-01';

@@ -1,4 +1,7 @@
 import Link from 'next/link';
+import { CraterLogo } from '@/components/brand/CraterLogo';
+import { BrandHomeLink } from './BrandHomeLink';
+import { CraterEntranceLink } from './CraterEntranceLink';
 import { SocietyFragment } from '@/components/society/SocietyFragment';
 import { SOCIETY_FRAGMENTS } from '@/content/society';
 import styles from './shell.module.css';
@@ -8,7 +11,10 @@ export function AppFooter() {
     <footer className={styles.footer}>
       <div className={styles.footerInner}>
         <div>
-          <strong className={styles.footerTitle}>Crateristas</strong>
+          <BrandHomeLink className={styles.brand} label="Voltar ao início dos Crateristas">
+            <CraterLogo className={styles.brandMark} />
+            <strong className={styles.footerTitle}>Crateristas</strong>
+          </BrandHomeLink>
           <p className={styles.footerNote}>Relatos de mesa, preservados à beira da cratera.</p>
           <SocietyFragment
             fragment={SOCIETY_FRAGMENTS[1]}
@@ -20,6 +26,7 @@ export function AppFooter() {
           <Link href="/historia">História</Link>
         </nav>
       </div>
+      <CraterEntranceLink />
     </footer>
   );
 }

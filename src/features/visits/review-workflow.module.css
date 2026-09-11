@@ -1,4 +1,6 @@
 .workflowPage {
+  --radius-sm: 0;
+  --radius-md: 0;
   width: min(calc(100% - 96px), var(--page-max));
   margin: 0 auto;
   padding: 64px 0 96px;
@@ -43,6 +45,39 @@
   margin-top: 14px;
 }
 
+.visitDate {
+  display: block;
+  margin-top: 10px;
+  color: var(--ink-muted);
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.restaurantNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-top: 20px;
+}
+
+.restaurantNav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ember-bright);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-underline-offset: 5px;
+}
+
+.restaurantNav a:hover { color: var(--ink); }
+
+.restaurantNav a:focus-visible,
+.fieldGroup select:focus-visible {
+  outline: 2px solid var(--ember-bright);
+  outline-offset: 4px;
+}
+
 .visitSummary {
   display: grid;
   justify-items: end;
@@ -52,19 +87,46 @@
 }
 
 .formCard {
+  --radius-sm: 0;
+  --radius-md: 0;
   display: grid;
   gap: 28px;
   margin-top: 36px;
-  padding: 32px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--surface);
+  padding: 0;
+  max-width: 960px;
 }
 
 .formGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
+}
+
+.selectedRestaurant {
+  padding-block: 24px;
+  border-block: 1px solid var(--line);
+}
+
+.selectedRestaurant h2 {
+  color: var(--ink);
+  font-size: 1.6rem;
+  font-weight: 580;
+}
+
+.selectedRestaurant p {
+  margin-top: 8px;
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.visitOptions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
 }
 
 .mapsImporter {
@@ -127,11 +189,11 @@
 }
 
 .scorecardSection {
+  --radius-sm: 0;
+  --radius-md: 0;
   margin-top: 36px;
-  padding: 32px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--surface);
+  padding: 0 0 36px;
+  border-bottom: 1px solid var(--line);
 }
 
 .sectionIntro h2 {
@@ -155,19 +217,9 @@
 .scoreGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+  gap: 24px 48px;
 }
 
-.scoreControl {
-  display: grid;
-  gap: 10px;
-  padding: 18px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-raised);
-}
-
-.scoreHeading,
 .commentHeading,
 .saveStatus {
   display: flex;
@@ -176,25 +228,12 @@
   gap: 20px;
 }
 
-.scoreHeading label,
 .commentHeading label {
   color: var(--ink);
   font-size: 0.84rem;
   font-weight: 800;
 }
 
-.scoreHeading output {
-  color: var(--ember-bright);
-  font-size: 0.78rem;
-  font-weight: 800;
-}
-
-.scoreControl input {
-  width: 100%;
-  accent-color: var(--ember);
-}
-
-.scoreControl p,
 .commentHeading span,
 .saveStatus p {
   color: var(--ink-muted);
@@ -278,11 +317,15 @@
 }
 
 .photoSection {
-  margin-top: 28px;
-  padding: 32px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--surface);
+  margin-top: 36px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+
+.photoSection h3 {
+  color: var(--ink);
+  font-size: 1.35rem;
+  font-weight: 580;
 }
 
 .photoEmpty {
@@ -324,24 +367,9 @@
   margin-top: 24px;
 }
 
-.photoActions label,
 .photoActions p {
   grid-column: 1 / -1;
-}
-
-.photoActions label {
-  color: var(--ink);
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
-.photoActions input {
-  min-height: 44px;
-  padding: 9px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-raised);
-  color: var(--ink);
+  overflow-wrap: anywhere;
 }
 
 .photoActions p,
@@ -366,10 +394,8 @@
   justify-content: space-between;
   gap: 32px;
   margin-top: 28px;
-  padding: 28px 32px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--surface);
+  padding: 0 0 28px;
+  border-bottom: 1px solid var(--line);
 }
 
 .adminSection h2 {
@@ -393,10 +419,7 @@
   justify-content: space-between;
   gap: 32px;
   margin-top: 20px;
-  padding: 28px 32px;
-  border: 1px solid color-mix(in srgb, var(--danger), transparent 48%);
-  border-radius: var(--radius-md);
-  background: var(--surface);
+  padding: 12px 0;
 }
 
 .deletionSection h2 {
@@ -515,4 +538,55 @@
 .retryButton:hover {
   border-color: var(--ember-bright);
   background: var(--ember-bright);
+}
+
+@media (max-width: 1023px) {
+  .workflowPage { width: calc(100% - 48px); padding: 44px 0 64px; --radius-sm: 0; --radius-md: 0; }
+  .workflowHeader { align-items: flex-start; gap: 24px; }
+  .workflowHeader > div, .formGrid > *, .importRow > *, .fieldGroup,
+  .scorecardForm > *, .scoreGrid > *, .photoGrid > *, .photoActions > *,
+  .adminSection > div, .deletionSection > div { min-width: 0; }
+  .workflowHeader h1 { font-size: clamp(2.25rem, 5vw, 3.25rem); overflow-wrap: anywhere; }
+  .workflowPage p, .workflowPage h2, .confirmDialog { overflow-wrap: anywhere; }
+  .visitSummary { flex-shrink: 0; }
+  .photoGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .workflowPage input, .workflowPage select, .workflowPage textarea,
+  .confirmDialog input { min-width: 0; font-size: 16px; }
+  .workflowPage button, .confirmDialog button { min-height: 44px; white-space: normal; padding-block: 10px; }
+  .adminSection, .deletionSection { align-items: flex-start; flex-wrap: wrap; gap: 20px; }
+  .adminSection > div, .deletionSection > div { flex: 1 1 100%; }
+  .dialogBackdrop { padding: 24px; }
+  .confirmDialog { max-height: calc(100dvh - 48px); overflow-y: auto; overscroll-behavior: contain; }
+  .routeState { width: calc(100% - 48px); min-height: 50vh; padding: 48px 24px; }
+}
+
+@media (max-width: 767px) {
+  .workflowPage { width: calc(100% - 32px); padding: 32px 0 48px; }
+  .workflowHeader { flex-direction: column; gap: 20px; padding-bottom: 24px; }
+  .workflowHeader h1 { font-size: clamp(2rem, 8vw, 2.75rem); line-height: 1.12; }
+  .visitSummary { justify-items: start; gap: 10px; }
+  .formCard, .scorecardSection { margin-top: 24px; padding: 0 0 24px; }
+  .photoSection { margin-top: 28px; padding-top: 24px; }
+  .formGrid, .scoreGrid, .importRow, .photoActions, .visitOptions { grid-template-columns: minmax(0, 1fr); }
+  .formGrid { gap: 20px; }
+  .formCard, .scorecardForm { gap: 24px; }
+  .scorecardForm { margin-top: 24px; }
+  .scoreGrid { gap: 20px; }
+  .sectionIntro h2 { font-size: 1.6rem; }
+  .commentHeading, .saveStatus { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .formActions { display: grid; }
+  .formActions button, .importRow button, .photoActions button { width: 100%; }
+  .photoGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; }
+  .photoCard img { height: auto; aspect-ratio: 1; }
+  .photoActions { gap: 12px; }
+  .photoEmpty { padding: 20px 16px; }
+  .adminSection, .deletionSection { flex-direction: column; align-items: stretch; padding: 8px 0 24px; }
+  .adminSection > button, .deletionSection > button { width: 100%; }
+  .dialogBackdrop { padding: 16px; }
+  .confirmDialog { max-height: calc(100dvh - 32px); padding: 24px 20px; }
+  .confirmDialog h3 { font-size: 1.35rem; }
+  .dialogActions { flex-direction: column; gap: 10px; }
+  .dialogActions button { width: 100%; }
+  .routeState { width: calc(100% - 32px); padding: 40px 16px; overflow-wrap: anywhere; }
+  .routeState h1 { font-size: 1.8rem; }
 }

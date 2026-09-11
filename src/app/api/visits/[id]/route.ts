@@ -50,9 +50,8 @@ async function parseConfirmation(request: Request): Promise<number> {
   const keys = Object.keys(record).sort();
   if (keys.join(',') !== 'confirmation,expectedParticipantCount'
     || record.confirmation !== VISIT_DELETION_CONFIRMATION
-    || !Number.isInteger(record.expectedParticipantCount)
-    || Number(record.expectedParticipantCount) < 0
-    || Number(record.expectedParticipantCount) > 8) {
+    || !Number.isSafeInteger(record.expectedParticipantCount)
+    || Number(record.expectedParticipantCount) < 0) {
     throw new VisitDeletionRequestError('Confirme a exclusão com a frase solicitada.');
   }
   return Number(record.expectedParticipantCount);

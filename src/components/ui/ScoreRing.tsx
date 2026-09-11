@@ -1,13 +1,17 @@
+'use client';
+
 import { useId, type CSSProperties } from 'react';
 import styles from './ui.module.css';
 import { SCORE_COLORS, normalizeScore, scoreColorFor } from './score-color';
 import { ScoreText } from './ScoreText';
+import { useScoreMotion } from './useScoreMotion';
 export { scoreColorFor } from './score-color';
 
 export interface ScoreRingProps {
   value: number | null;
   label: string;
   size?: 'small' | 'large';
+  hideLabel?: boolean;
 }
 
 const scoreFormatter = new Intl.NumberFormat('pt-BR', {
@@ -16,7 +20,8 @@ const scoreFormatter = new Intl.NumberFormat('pt-BR', {
 });
 
 
-export function ScoreRing({ value, label, size = 'small' }: ScoreRingProps) {
+export function ScoreRing({ value, label, size = 'small', hideLabel = false }: ScoreRingProps) {
+  const motionRef = useScoreMotion<HTMLDivElement>();
   const normalizedValue = normalizeScore(value);
   const gradientId = `score-gradient-${useId().replace(/[^A-Za-z0-9_-]/g, '')}`;
   const formattedValue = normalizedValue === null ? '—' : scoreFormatter.format(normalizedValue);
@@ -30,8 +35,10 @@ export function ScoreRing({ value, label, size = 'small' }: ScoreRingProps) {
 
   return (
     <div
+      ref={motionRef}
+      data-score-motion="paused"
       aria-label={accessibleLabel}
-      className={`${styles.scoreRing} ${styles[size]}`}
+      className={`${styles.scoreRing} ${styles[size]} ${hideLabel ? styles.scoreNumberOnly : ''}`}
       role="img"
     >
       <svg className={styles.scoreGraphic} viewBox="0 0 44 44" aria-hidden="true">
@@ -43,7 +50,7 @@ export function ScoreRing({ value, label, size = 'small' }: ScoreRingProps) {
                 offset={`${index * 50}%`}
                 stopColor={color}
                 className={styles.scoreGradientStop}
-                style={{ '--score-stop-color': color } as CSSProperties}
+                style={{ '--score-stop-color': color, '--score-stop-delay': `${index * -1.6}s` } as CSSProperties}
               />
             ))}
           </linearGradient>
@@ -62,7 +69,7 @@ export function ScoreRing({ value, label, size = 'small' }: ScoreRingProps) {
         />
       </svg>
       <span className={styles.scoreValue} aria-hidden="true"><ScoreText value={normalizedValue} /></span>
-      <span className={styles.scoreLabel} aria-hidden="true">{label}</span>
+      {!hideLabel && <span className={styles.scoreLabel} aria-hidden="true">{label}</span>}
     </div>
   );
 }

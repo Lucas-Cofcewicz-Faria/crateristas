@@ -9,10 +9,11 @@ import {
   getVisitScoreSnapshot,
 } from '@/features/restaurant/restaurant-formatters';
 import { findOptionalMember } from '@/lib/auth/access';
-import { getPublicVisitDetail } from './data';
+import { getPublicVisitDetail, getRestaurantVisitPage } from './data';
 
 type RestaurantPageProps = {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ visita?: string }>;
 };
 
 function metadataForVisit(visit: PublicVisitDetail): Metadata {
@@ -30,20 +31,21 @@ function metadataForVisit(visit: PublicVisitDetail): Metadata {
   };
 }
 
-export async function generateMetadata({ params }: RestaurantPageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: RestaurantPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const visit = await getPublicVisitDetail(slug);
+  const visit = await getPublicVisitDetail(slug, (await searchParams)?.visita);
   if (!visit) notFound();
   return metadataForVisit(visit);
 }
 
-export default async function RestaurantPage({ params }: RestaurantPageProps) {
+export default async function RestaurantPage({ params, searchParams }: RestaurantPageProps) {
   const { slug } = await params;
-  const [visit, member] = await Promise.all([
-    getPublicVisitDetail(slug),
+  const [page, member] = await Promise.all([
+    getRestaurantVisitPage(slug, (await searchParams)?.visita),
     findOptionalMember(),
   ]);
-  if (!visit) notFound();
+  if (!page) notFound();
+  const { visit, restaurant, visits } = page;
 
   const scoreSnapshot = getVisitScoreSnapshot(visit);
 
@@ -58,6 +60,9 @@ export default async function RestaurantPage({ params }: RestaurantPageProps) {
         restaurant={visit.restaurant}
         scores={scoreSnapshot.scores}
         visitedAt={visit.visitedAt}
+        visits={visits}
+        selectedVisitId={visit.id}
+        menuEnabled={restaurant.menuEnabled}
       />
     </PublicShell>
   );

@@ -1,0 +1,41 @@
+.manager { margin-top: 28px; padding: 28px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); --radius-sm: 0; --radius-md: 0; }
+.header { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; padding-bottom: 24px; }
+.header h2 { margin-bottom: 12px; font-size: 1.75rem; font-weight: 560; scroll-margin-top: 130px; }
+.header p, .confirmation p { max-width: 68ch; color: var(--ink-muted); line-height: 1.65; }
+.count { flex-shrink: 0; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.list, .removed ul { list-style: none; padding: 0; margin: 0; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 20px 28px; padding: 24px 0; border-top: 1px solid var(--line); }
+.identity { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.identity h3 { font-size: 1.2rem; font-weight: 550; overflow-wrap: anywhere; }
+.identity p { margin-top: 6px; color: var(--ink-muted); font-size: 0.9rem; }
+.portrait { width: 56px; flex-shrink: 0; }
+.portrait > div { aspect-ratio: 1; }
+.portrait span { font-size: 1.25rem; }
+.protected { color: var(--ink-muted); font-size: 0.85rem; }
+.removeControl button, .actions button { border-radius: 0; min-height: 48px; gap: 10px; }
+.confirmation { grid-column: 1 / -1; display: grid; gap: 16px; padding: 24px; background: var(--surface-raised); animation: confirm-reveal 200ms cubic-bezier(0.16, 1, 0.3, 1); }
+.confirmation h3 { font-size: 1.15rem; overflow-wrap: anywhere; }
+.confirmation label { margin-top: 8px; line-height: 1.5; }
+.confirmation input:not([type='hidden']) { width: min(100%, 440px); min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 0; background: var(--canvas); color: var(--ink); font: inherit; font-size: 16px; caret-color: var(--ember-bright); }
+.confirmation input:focus-visible, .removed summary:focus-visible, .header h2:focus-visible { outline: 2px solid var(--ember-bright); outline-offset: 4px; }
+.actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.feedback { padding: 16px 0; line-height: 1.6; color: var(--ink); }
+.confirmation .error { color: var(--ink); font-weight: 600; }
+.removed { border-top: 1px solid var(--line); margin-top: 12px; }
+.removed summary { cursor: pointer; padding: 16px 0; min-height: 48px; color: var(--ink-muted); transition: color 180ms ease; }
+.removed summary:hover { color: var(--ember-bright); }
+.removed li { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; overflow-wrap: anywhere; }
+.removed li span:last-child { color: var(--ink-muted); font-size: 0.85rem; }
+@keyframes confirm-reveal { from { clip-path: inset(0 0 12% 0); } to { clip-path: inset(0); } }
+@media (max-width: 767px) {
+  .manager { margin-top: 20px; padding: 24px 20px; }
+  .header { gap: 12px; flex-wrap: wrap; }
+  .header h2 { font-size: 1.55rem; }
+  .row { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .removeControl button, .actions button { width: 100%; }
+  .confirmation { padding: 20px 16px; }
+  .confirmation label, .header p { overflow-wrap: anywhere; }
+  .actions { flex-direction: column; }
+  .removed li { flex-direction: column; gap: 6px; }
+}
+@media (prefers-reduced-motion: reduce) { .confirmation { animation: none; } .removed summary { transition: none; } }

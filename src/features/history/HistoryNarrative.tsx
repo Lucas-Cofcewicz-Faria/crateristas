@@ -21,8 +21,9 @@ export function HistoryNarrative({ members, showPanelLink }: HistoryNarrativePro
           <p data-motion="excavation">{CRATER_HISTORY.excerpt}</p>
           <nav aria-label="Capítulos da história" className={styles.chapterNavigation}>
             {CRATER_HISTORY.chapters.map((chapter) => (
-              <Link href={`#${chapter.id}`} key={chapter.id}>{chapter.title}</Link>
+              <Link data-chapter={chapter.id} href={`#${chapter.id}`} key={chapter.id}>{chapter.title}</Link>
             ))}
+            <Link data-chapter="integrantes" href="#integrantes">Os Crateristas</Link>
           </nav>
         </header>
 
@@ -31,7 +32,7 @@ export function HistoryNarrative({ members, showPanelLink }: HistoryNarrativePro
         <HistoryHashTarget />
         <section aria-labelledby="members-title" className={styles.members} id="integrantes">
           <header className={styles.membersHeader}>
-            <h2 id="members-title">Os oito Crateristas</h2>
+            <h2 id="members-title">{members.length} {members.length === 1 ? 'Craterista' : 'Crateristas'}</h2>
             {showPanelLink ? <Link href="/painel">Suas avaliações pendentes</Link> : null}
           </header>
           <MemberGrid members={[...members]} />

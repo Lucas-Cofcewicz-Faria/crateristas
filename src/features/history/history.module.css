@@ -36,24 +36,37 @@
 .chapterNavigation {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px 32px;
+  gap: 12px;
   margin-top: 40px;
 }
 
 .chapterNavigation a {
+  --shortcut-paper: #171411;
+  --shortcut-accent: #d68d60;
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  border-bottom: 1px solid var(--line);
-  color: var(--ink-muted);
+  min-height: 48px;
+  padding: 12px 18px;
+  border: 1px solid var(--shortcut-accent);
+  border-radius: 0;
+  background: var(--shortcut-paper);
+  color: var(--shortcut-accent);
   font-size: 0.85rem;
-  transition: color 180ms ease, border-color 180ms ease;
+  font-weight: 650;
+  transition: color 180ms ease, background-color 180ms ease;
 }
 
+.chapterNavigation a[data-chapter='peregrinacao'] { --shortcut-paper: #e9dfca; --shortcut-accent: #963f22; }
+.chapterNavigation a[data-chapter='sociedade'] { --shortcut-paper: #341a24; --shortcut-accent: #d6b778; }
+.chapterNavigation a[data-chapter='patrimonio'] { --shortcut-paper: #1c3027; --shortcut-accent: #b3c87f; }
+.chapterNavigation a[data-chapter='integrantes'] { --shortcut-paper: var(--canvas); --shortcut-accent: var(--ember-bright); }
+
 .chapterNavigation a:hover,
-.chapterNavigation a:focus-visible { color: var(--ember-bright); border-color: currentColor; }
+.chapterNavigation a:focus-visible { color: var(--shortcut-paper); background: var(--shortcut-accent); }
+.chapterNavigation a:focus-visible { outline-color: var(--shortcut-accent); }
 
 .members {
+  scroll-margin-top: 96px;
   width: min(calc(100% - 96px), var(--page-max));
   margin: 0 auto;
   padding: 132px 0 150px;
@@ -168,6 +181,39 @@
   .storyHero {
     width: min(calc(100% - 96px), 1120px);
   }
+}
+
+@media (max-width: 1023px) {
+  .storyHero,
+  .members { width: calc(100% - 64px); }
+  .storyHero { min-height: 0; padding: 80px 0; }
+  .storyHero h1 { font-size: clamp(3rem, 7.5vw, 4.5rem); }
+  .storyHero > p { margin-top: 28px; font-size: 1.2rem; }
+  .members { padding: 80px 0; }
+  .membersHeader { align-items: start; gap: 24px; margin-bottom: 32px; }
+  .membersHeader h2 { font-size: clamp(2.7rem, 6vw, 4rem); }
+  .storyFooter { min-height: 0; padding: 80px 32px; }
+  .storyFooter h2 { font-size: clamp(2.7rem, 6vw, 4rem); }
+  .routeState { min-height: 460px; padding: 64px 32px; }
+}
+
+@media (max-width: 639px) {
+  .storyHero,
+  .members { width: calc(100% - 40px); }
+  .storyHero { padding: 48px 0 56px; }
+  .storyHero h1 { font-size: clamp(2.8rem, 11vw, 4rem); overflow-wrap: anywhere; }
+  .storyHero > p { font-size: 1.1rem; }
+  .chapterNavigation { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 28px; }
+  .chapterNavigation a { font-size: 0.95rem; }
+  .members { padding: 64px 0; }
+  .membersHeader { flex-direction: column; gap: 20px; }
+  .membersHeader h2 { font-size: clamp(2.35rem, 9.5vw, 3.4rem); }
+  .membersHeader a { min-height: 48px; }
+  .storyFooter { padding: 64px 20px; }
+  .storyFooter h2 { font-size: clamp(2.35rem, 9.5vw, 3.4rem); }
+  .storyFooter a { width: 100%; min-height: 48px; }
+  .routeState { padding: 48px 20px; }
+  .routeState h1 { font-size: 2.25rem; overflow-wrap: anywhere; }
 }
 
 @media (prefers-reduced-motion: reduce) {

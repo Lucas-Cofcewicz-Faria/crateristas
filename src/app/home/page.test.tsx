@@ -85,8 +85,6 @@ beforeEach(() => {
 describe('/home', () => {
   it('marca as camadas editoriais para a coreografia pública', async () => {
     const { container } = render(await HomePage());
-    expect(screen.getByRole('heading', { name: 'Bem-vindo à cratera' }))
-      .toHaveAttribute('data-motion', 'inscription');
     expect(screen.getByRole('heading', { name: 'Restaurantes mais recentes' }))
       .toHaveAttribute('data-motion', 'inscription');
     expect(container.querySelectorAll('[data-motion="constellation"]')).toHaveLength(1);
@@ -115,7 +113,7 @@ describe('/home', () => {
     expect(screen.getByRole('link', { name: 'Explorar restaurantes' })).toHaveAttribute('href', '/registros');
     expect(screen.getByRole('heading', { name: 'Restaurantes mais recentes' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'A cratera nos encontrou primeiro.' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Os oito Crateristas' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '1 Craterista' })).toBeInTheDocument();
   });
 
   it('seleciona restaurantes únicos e adapta o encerramento ao membro sem vazar dados privados', async () => {

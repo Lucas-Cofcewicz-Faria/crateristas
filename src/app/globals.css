@@ -84,15 +84,15 @@ svg {
 }
 
 .desktop-frame {
-  min-width: 1024px;
+  min-width: 0;
   min-height: 100vh;
   background: var(--canvas);
 }
 
-@media (min-width: 1024px) {
-  .desktop-frame {
-    min-width: 0;
-  }
+@media (max-width: 1023px) {
+  html { scroll-padding-top: 88px; }
+  input, select, textarea { font-size: 16px; }
+  button, a, summary { touch-action: manipulation; }
 }
 
 @keyframes float {

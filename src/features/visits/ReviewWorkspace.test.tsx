@@ -63,19 +63,28 @@ it('coordena auto-publicação e PATCH entre resumo, ficha e controle admin', as
       ownScorecard={ownScorecard}
       quorum={6}
       restaurantName="Mesa Coordenada"
+      restaurantSlug="mesa-coordenada"
+      menuEnabled
+      visitedAt="2026-09-09"
       visitId={visitId}
     />,
   );
 
   const summary = screen.getByRole('region', { name: 'Resumo da visita' });
+  const scorecard = screen.getByRole('region', { name: 'Ficha de avaliação' });
+  const photos = within(scorecard).getByRole('region', { name: 'Fotos da visita' });
+  expect(photos.closest('form')).toBeNull();
+  expect(screen.getByText('9 de setembro de 2026')).toHaveAttribute('datetime', '2026-09-09');
+  expect(screen.getByRole('link', { name: 'Menu' })).toHaveAttribute('href', '/restaurantes/mesa-coordenada/menu');
+  expect(screen.getByRole('link', { name: 'Nova visita' })).toHaveAttribute('href', '/visitas/nova?restaurante=mesa-coordenada');
   expect(within(summary).getByText('Em formação')).toBeInTheDocument();
-  expect(within(summary).getByText('5 de 6 membros contribuíram')).toBeInTheDocument();
+  expect(within(summary).getByText('5 contribuições recebidas')).toBeInTheDocument();
 
   await user.click(screen.getByRole('button', { name: 'Salvar avaliação' }));
 
   await vi.waitFor(() => {
     expect(within(summary).getByText('Publicada')).toBeInTheDocument();
-    expect(within(summary).getByText('6 de 6 membros contribuíram')).toBeInTheDocument();
+    expect(within(summary).getByText('6 contribuições recebidas')).toBeInTheDocument();
   });
   expect(screen.getByRole('button', { name: 'Ocultar' })).toBeInTheDocument();
   const deletion = screen.getByRole('region', { name: 'Excluir review' });

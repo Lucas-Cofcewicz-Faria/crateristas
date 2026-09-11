@@ -47,8 +47,7 @@
   margin: 48px 0 44px;
 }
 
-.eyebrow,
-.scoreEyebrow {
+.eyebrow {
   color: var(--review-accent-bright);
   font-size: 0.7rem;
   font-weight: 800;
@@ -101,7 +100,7 @@
   height: clamp(360px, 48vw, 640px);
   overflow: hidden;
   border: 1px solid var(--review-line);
-  border-radius: var(--radius-md);
+  border-radius: 0;
   background: var(--review-surface);
 }
 
@@ -126,7 +125,7 @@
   min-height: 44px;
   padding: 0 16px;
   border: 1px solid var(--review-line);
-  border-radius: var(--radius-sm);
+  border-radius: 0;
   background: var(--canvas);
   color: var(--ink);
   font-size: 0.75rem;
@@ -224,7 +223,7 @@
   bottom: 14px;
   padding: 5px 8px;
   border: 1px solid var(--review-line);
-  border-radius: var(--radius-sm);
+  border-radius: 0;
   background: var(--canvas);
   color: var(--ink-muted);
   font-size: 0.62rem;
@@ -241,7 +240,7 @@
   gap: 18px;
   margin-bottom: 88px;
   border: 1px solid var(--review-line);
-  border-radius: var(--radius-md);
+  border-radius: 0;
   background: var(--review-surface);
   color: var(--ink-muted);
 }
@@ -269,15 +268,15 @@
 }
 
 .evidenceHeader {
-  max-width: 680px;
-  margin: 0 auto 42px;
+  max-width: 720px;
+  margin: 0 auto 64px;
   text-align: center;
 }
 
 .evidenceHeader h2 {
   margin-top: 10px;
   color: var(--ink);
-  font-size: 2.8rem;
+  font-size: clamp(3rem, 4vw, 4.4rem);
   font-weight: 560;
   letter-spacing: -0.035em;
 }
@@ -289,40 +288,62 @@
 }
 
 .evidenceComposition {
-  min-height: 720px;
+  position: relative;
   display: grid;
-}
-
-.scorePanel,
-.commentList,
-.emptyComments {
-  grid-area: 1 / 1;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(4, auto);
+  gap: 24px;
+  isolation: isolate;
 }
 
 .scorePanel {
+  container-type: inline-size;
+  grid-area: 2 / 2 / 4 / 4;
   z-index: 1;
-  width: min(560px, 42%);
-  place-self: center;
+  width: 100%;
+  aspect-ratio: 1;
+  justify-self: center;
+  align-self: center;
+  display: grid;
+  align-content: center;
+  padding: 24px;
+  border: 1px solid var(--review-line);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--review-surface) 65%, var(--canvas));
 }
 
 .scoreBreakdown {
-  padding: 34px;
-  border: 1px solid var(--review-accent);
-  border-radius: var(--radius-md);
-  background: var(--review-surface);
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
   text-align: center;
+  --score-ring-size: clamp(144px, 32cqi, 192px);
+  --score-font-size: clamp(2.75rem, 8cqi, 4rem);
+  --category-size: clamp(88px, 21cqi, 120px);
 }
 
-.scoreEyebrow {
-  margin-bottom: 18px;
+.historicalLabel {
+  position: absolute;
+  inset: auto 0 calc(50% + var(--score-ring-size) / 2 + 8px);
+  color: var(--ink-muted);
+  font-size: 0.8rem;
 }
 
 .scoreBreakdown > [role='img'] {
-  margin: 0 auto;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
 }
 
 .participation {
-  margin: 18px 0 22px;
+  position: absolute;
+  top: calc(50% + var(--score-ring-size) / 2 + 8px);
+  left: 0;
+  width: 100%;
+  margin: 0;
   color: var(--ink-muted);
   font-size: 0.74rem;
   font-weight: 750;
@@ -330,38 +351,56 @@
 
 .scoreList {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1px;
-  overflow: hidden;
-  border: 1px solid var(--review-line);
-  border-radius: var(--radius-sm);
-  background: var(--review-line);
+  height: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .scoreItem {
-  min-height: 76px;
+  position: relative;
+  place-self: center;
+  width: var(--category-size);
+  min-width: 0;
+  aspect-ratio: 1;
   display: grid;
   align-content: center;
-  gap: 5px;
-  padding: 12px;
+  justify-items: center;
+  gap: 8px;
+  padding: 18px 12px;
+  border: 1px solid var(--review-line);
+  border-radius: 0;
   background: var(--canvas);
-  transition: background-color 200ms ease;
+  text-align: center;
+  transition: background-color 200ms ease, border-color 200ms ease;
 }
 
-.scoreItem:hover { background: var(--review-surface); }
+.scoreList > .scoreItem { grid-row: 1; }
+.scoreList > .scoreItem:nth-child(n + 4) { grid-row: 3; }
+
+/* Each category is a plate; the inset rim remains decorative. */
+.scoreItem::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px solid color-mix(in srgb, var(--review-line), transparent 45%);
+  border-radius: inherit;
+  pointer-events: none;
+}
+.scoreItem:hover { background: var(--review-surface); border-color: var(--review-accent-bright); }
 
 .scoreItem dt {
   color: var(--ink-muted);
-  font-size: 0.63rem;
-  font-weight: 760;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 0.74rem;
+  font-weight: 550;
+  max-width: 13ch;
+  line-height: 1.25;
 }
 
 .scoreItem dd {
   color: var(--ink);
   font-family: var(--font-editorial), Georgia, serif;
-  font-size: 1.05rem;
+  font-size: 1.5rem;
   font-weight: 650;
 }
 
@@ -373,20 +412,38 @@
 }
 
 .commentList {
-  min-height: 720px;
+  grid-area: 1 / 1 / 5 / 5;
   display: grid;
-  grid-template-columns: minmax(245px, 1fr) minmax(280px, 1.15fr) minmax(280px, 1.15fr) minmax(245px, 1fr);
-  grid-template-rows: repeat(4, minmax(145px, auto));
-  gap: 18px 26px;
+  grid-template-columns: subgrid;
+  grid-template-rows: subgrid;
+  gap: inherit;
   list-style: none;
 }
 
+.commentPagination {
+  grid-column: 1 / -1;
+  grid-row: 5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  padding-top: 24px;
+  color: var(--review-accent-bright);
+}
+.commentPagination button { border-radius: 0; }
+
 .commentFragment {
-  align-self: center;
-  padding: 18px;
+  position: relative;
+  align-self: start;
+  justify-self: center;
+  width: calc(100% - 24px);
+  min-width: 0;
+  padding: 16px;
+  aspect-ratio: 1;
   border: 1px solid var(--review-line);
-  border-radius: var(--radius-md);
+  border-radius: 0;
   background: var(--review-surface);
+  transition: border-color 220ms ease;
 }
 
 .commentFragment > figure {
@@ -409,51 +466,51 @@
 }
 
 .fragment--1 {
-  grid-area: 1 / 1;
-  --fragment-x: 72px;
-  --fragment-y: 80px;
+  grid-area: 1 / 2;
+  --fragment-x: 16px;
+  --fragment-y: 0px;
 }
 
 .fragment--2 {
-  grid-area: 1 / 4;
-  --fragment-x: -72px;
-  --fragment-y: 80px;
+  grid-area: 1 / 3;
+  --fragment-x: -16px;
+  --fragment-y: 0px;
 }
 
 .fragment--3 {
   grid-area: 2 / 1;
-  --fragment-x: 96px;
-  --fragment-y: 20px;
+  --fragment-x: 16px;
+  --fragment-y: 0px;
 }
 
 .fragment--4 {
   grid-area: 2 / 4;
-  --fragment-x: -96px;
-  --fragment-y: 20px;
+  --fragment-x: -16px;
+  --fragment-y: 0px;
 }
 
 .fragment--5 {
   grid-area: 3 / 1;
-  --fragment-x: 96px;
-  --fragment-y: -20px;
+  --fragment-x: 16px;
+  --fragment-y: 0px;
 }
 
 .fragment--6 {
   grid-area: 3 / 4;
-  --fragment-x: -96px;
-  --fragment-y: -20px;
+  --fragment-x: -16px;
+  --fragment-y: 0px;
 }
 
 .fragment--7 {
-  grid-area: 4 / 1;
-  --fragment-x: 72px;
-  --fragment-y: -80px;
+  grid-area: 4 / 2;
+  --fragment-x: 16px;
+  --fragment-y: 0px;
 }
 
 .fragment--8 {
-  grid-area: 4 / 4;
-  --fragment-x: -72px;
-  --fragment-y: -80px;
+  grid-area: 4 / 3;
+  --fragment-x: -16px;
+  --fragment-y: 0px;
 }
 
 .commentFragment[data-motion-state='pending'] {
@@ -492,20 +549,23 @@
 }
 
 .commentAuthor figcaption {
-  overflow: hidden;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
   color: var(--ink);
-  font-size: 0.76rem;
-  font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 0.94rem;
+  overflow-wrap: anywhere;
 }
+
+.seatLabel { color: var(--review-accent-bright); font-size: 0.65rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; }
 
 .commentFragment blockquote {
   margin-top: 13px;
   color: var(--ink-muted);
   font-family: var(--font-editorial), Georgia, serif;
-  font-size: 0.88rem;
-  line-height: 1.5;
+  font-size: 1rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .commentDish {
@@ -540,16 +600,17 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 40px;
-  padding: 0;
-  border: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--review-line);
+  border-radius: 0;
   background: transparent;
   color: var(--review-accent-bright);
   font: inherit;
   font-size: 0.7rem;
   font-weight: 800;
   cursor: pointer;
-  text-decoration: underline;
+  text-decoration: none;
   text-decoration-color: color-mix(in srgb, var(--review-accent-bright), transparent 55%);
   text-underline-offset: 4px;
   transition: color 160ms ease, text-decoration-color 160ms ease, transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -649,6 +710,7 @@
 }
 
 .emptyComments {
+  grid-area: 5 / 1 / 6 / -1;
   align-self: end;
   justify-self: center;
   margin-bottom: 28px;
@@ -703,16 +765,91 @@
 
 @media (max-width: 1280px) {
   .scorePanel {
-    width: 46%;
+    padding: 24px;
   }
 
-  .commentList {
-    grid-template-columns: minmax(230px, 1fr) minmax(250px, 1.1fr) minmax(250px, 1.1fr) minmax(230px, 1fr);
-    gap: 16px 20px;
-  }
+  .scoreItem dt { font-size: 0.7rem; }
+}
+
+@media (max-width: 1023px) {
+  .reviewPage,
+  .routeState { width: min(calc(100% - 48px), var(--page-max)); }
+  .reviewPage { padding: 32px 0 72px; }
+  .backLink { min-height: 44px; align-items: center; }
+  .reviewHeader { margin: 32px 0; }
+  .reviewHeader h1 { font-size: clamp(2.5rem, 7vw, 4.5rem); letter-spacing: -0.035em; overflow-wrap: anywhere; }
+  .restaurantMeta { flex-wrap: wrap; gap: 8px; line-height: 1.5; }
+  .restaurantMeta > span { overflow-wrap: anywhere; }
+  .address { overflow-wrap: anywhere; }
+  .gallery,
+  .photoPlaceholder { margin-bottom: 48px; }
+  .photo { height: auto; aspect-ratio: 4 / 3; }
+  .photo img { position: absolute; inset: 0; }
+  .photoPlaceholder { min-height: 260px; padding: 24px; text-align: center; }
+  .evidenceSection { padding-top: 40px; }
+  .evidenceHeader { margin-bottom: 32px; }
+  .evidenceHeader h2 { font-size: clamp(2.2rem, 5vw, 3.5rem); line-height: 1.1; }
+  .evidenceHeader > p:last-child { font-size: 1rem; line-height: 1.6; }
+  .evidenceComposition { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; gap: 24px; }
+  .scorePanel { grid-area: auto; width: 100%; aspect-ratio: auto; padding: 24px; }
+  .scoreBreakdown { aspect-ratio: auto; --score-ring-size: 164px; --score-font-size: 3.25rem; }
+  .historicalLabel { position: static; margin-bottom: 12px; }
+  .scoreBreakdown > [role='img'] { position: relative; top: auto; left: auto; transform: none; margin: 0 auto; }
+  .participation { position: static; margin-top: 8px; font-size: 0.875rem; }
+  .scoreList { height: auto; grid-template-rows: auto; gap: 12px; margin-top: 24px; }
+  .scoreItem,
+  .scoreList > .scoreItem,
+  .scoreList > .scoreItem:nth-child(n + 4) { grid-row: auto; width: 100%; max-width: 180px; padding: 18px 12px; }
+  .scoreItem dt { font-size: 0.875rem; overflow-wrap: anywhere; }
+  .scoreItem dd { font-size: 1.75rem; }
+  .scoreItem dd.unassessed { font-size: 0.8rem; }
+  .commentList { grid-area: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto; gap: 20px; }
+  .commentFragment { grid-area: auto; width: 100%; padding: 20px; --fragment-x: 0px; --fragment-y: 20px; }
+  .commentAuthor figcaption { font-size: 1rem; }
+  .seatLabel { font-size: 0.75rem; }
+  .commentDish span { font-size: 0.75rem; }
+  .commentDish strong { font-size: 0.9375rem; }
+  .scoreToggle { font-size: 0.875rem; }
+  .individualOverall > span,
+  .individualScore dt { font-size: 0.8rem; overflow-wrap: anywhere; }
+  .individualScore dd { font-size: 1rem; }
+  .commentPagination { grid-area: auto; flex-wrap: wrap; gap: 12px; padding-top: 0; text-align: center; }
+  .commentPagination button { min-height: 44px; }
+  .emptyComments { grid-area: auto; margin: 0; font-size: 1rem; text-align: center; }
+  .routeState { min-height: 480px; padding: 48px 24px; }
+  .routeState a,
+  .retryButton { min-height: 44px; }
+}
+
+@media (max-width: 767px) {
+  .reviewPage,
+  .routeState { width: calc(100% - 32px); }
+  .reviewHeader { margin: 24px 0; }
+  .reviewHeader h1 { font-size: clamp(2.25rem, 9vw, 3.8rem); }
+  .restaurantMeta { margin-top: 20px; font-size: 0.75rem; letter-spacing: 0.04em; }
+  .visitDate,
+  .address { font-size: 0.9375rem; line-height: 1.5; }
+  .photoFitToggle { top: 10px; right: 10px; max-width: calc(100% - 20px); padding: 0 12px; }
+  .galleryControls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  .galleryStatus { font-size: 0.8125rem; }
+  .galleryArrows { grid-column: 2; grid-row: 1; }
+  .galleryIndicators { grid-column: 1 / -1; justify-content: flex-start; }
+  .galleryIndicator,
+  .galleryArrow { flex: 0 0 44px; }
+  .scorePanel { padding: 20px 16px; }
+  .scoreList { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .commentList { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .commentFragment { padding: 20px; }
+  .commentPagination { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .commentPagination p { grid-row: 1; }
+  .commentPagination button { width: 100%; }
+  .routeState { padding: 40px 16px; }
+  .routeState h1 { font-size: 1.9rem; overflow-wrap: anywhere; }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .commentFragment,
+  .scoreItem { transition: none; }
   .commentFragment > figure,
   .galleryArrow svg,
   .scoreToggle svg,

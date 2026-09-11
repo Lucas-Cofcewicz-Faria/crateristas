@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { ArrowUpRight } from 'lucide-react';
 import { useActionState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
@@ -39,6 +40,7 @@ export function LoginForm({ action }: LoginFormProps) {
       ) : null}
       <Button disabled={isPending} fullWidth type="submit">
         {isPending ? 'Entrando...' : 'Entrar'}
+        <ArrowUpRight aria-hidden="true" size={20} />
       </Button>
       <Link className={styles.textLink} href="/recuperar-senha">
         Esqueci minha senha

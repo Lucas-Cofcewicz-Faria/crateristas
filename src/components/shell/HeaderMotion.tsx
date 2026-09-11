@@ -18,7 +18,8 @@ export function HeaderMotion({ children }: { children: ReactNode }) {
       frame = 0;
       const current = Math.max(0, window.scrollY);
       header.dataset.scrolled = String(current > 16);
-      if (current < 140 || header.contains(document.activeElement)) {
+      if (current < 140 || header.contains(document.activeElement)
+        || header.querySelector('[data-mobile-open="true"]')) {
         header.dataset.hidden = 'false';
         anchor = current;
       } else if (current > anchor + 14) {

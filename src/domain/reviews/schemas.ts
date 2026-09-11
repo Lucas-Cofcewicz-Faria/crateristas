@@ -18,6 +18,8 @@ const optionalText = (field: string, maximum: number) => z.string({ error: `${fi
   .optional();
 
 export const createVisitSchema = z.object({
+  restaurantId: z.uuid().optional(),
+  menuEnabled: z.boolean().optional(),
   restaurantName: requiredText('O nome do restaurante', 160),
   cuisine: requiredText('A culinária', 100),
   neighborhood: requiredText('O bairro', 120),

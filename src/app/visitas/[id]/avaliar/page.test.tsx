@@ -6,6 +6,7 @@ const dependencies = vi.hoisted(() => ({
   requireMember: vi.fn(),
   getReviewRepository: vi.fn(),
   getVisitReviewWorkspace: vi.fn(),
+  getRestaurantForVisit: vi.fn(),
   refresh: vi.fn(),
 }));
 
@@ -16,8 +17,12 @@ vi.mock('@/features/auth/actions', () => ({
 vi.mock('@/lib/reviews/server', () => ({
   getReviewRepository: dependencies.getReviewRepository,
 }));
+vi.mock('@/features/restaurants/catalog', () => ({
+  getRestaurantForVisit: dependencies.getRestaurantForVisit,
+}));
 vi.mock('next/navigation', () => ({
   notFound: vi.fn(() => { throw new Error('not_found'); }),
+  usePathname: () => '/visitas/visit-1/avaliar',
   useRouter: () => ({ refresh: dependencies.refresh }),
 }));
 
@@ -69,6 +74,17 @@ describe('página privada de avaliação', () => {
     vi.clearAllMocks();
     dependencies.requireMember.mockResolvedValue(member);
     dependencies.getVisitReviewWorkspace.mockResolvedValue(workspace);
+    dependencies.getRestaurantForVisit.mockResolvedValue({
+      id: 'restaurant-1',
+      slug: 'mesa-segura',
+      name: 'Mesa Segura',
+      cuisine: 'Brasileira',
+      neighborhood: 'Centro',
+      city: 'São Paulo',
+      address: null,
+      priceBand: null,
+      menuEnabled: true,
+    });
     dependencies.getReviewRepository.mockReturnValue({
       getVisitReviewWorkspace: dependencies.getVisitReviewWorkspace,
     });
@@ -92,13 +108,17 @@ describe('página privada de avaliação', () => {
 
     render(await pagePromise);
     expect(screen.getByRole('heading', { name: 'Avaliar Mesa Segura' })).toBeInTheDocument();
+    expect(dependencies.getRestaurantForVisit).toHaveBeenCalledWith('visit-1');
+    expect(screen.getByText('10 de agosto de 2026')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Menu' }))
+      .toHaveAttribute('href', '/restaurantes/mesa-segura/menu');
     expect(screen.getByText('Em formação')).toBeInTheDocument();
-    expect(screen.getByText('2 de 6 membros contribuíram')).toBeInTheDocument();
+    expect(screen.getByText('2 contribuições recebidas')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Ficha de avaliação' })).toBeInTheDocument();
     expect(screen.getByRole('slider', { name: 'Comida' })).toHaveValue('8');
     expect(screen.getByRole('heading', { name: 'Fotos da visita' })).toBeInTheDocument();
     expect(screen.getByLabelText('Selecionar fotos')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Publicar antecipadamente' }))
+    expect(screen.queryByRole('button', { name: 'Publicar' }))
       .not.toBeInTheDocument();
   });
 
@@ -107,7 +127,7 @@ describe('página privada de avaliação', () => {
 
     render(await EvaluateVisitPage({ params: Promise.resolve({ id: 'visit-1' }) }));
 
-    expect(screen.getByRole('button', { name: 'Publicar antecipadamente' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Publicar' })).toBeInTheDocument();
   });
 
   it('não consulta nem renderiza dados quando a autorização falha', async () => {
@@ -117,6 +137,7 @@ describe('página privada de avaliação', () => {
       .rejects.toThrow('Não autorizado');
     expect(dependencies.getReviewRepository).not.toHaveBeenCalled();
     expect(dependencies.getVisitReviewWorkspace).not.toHaveBeenCalled();
+    expect(dependencies.getRestaurantForVisit).not.toHaveBeenCalled();
   });
 
   it('oferece estados de carregamento e recuperação em pt-BR', () => {

@@ -1,0 +1,243 @@
+.reviewPanel,
+.photoUploader {
+  --radius-sm: 0;
+  --radius-md: 0;
+  width: 100%;
+  color: var(--ink);
+}
+
+.reviewPanel {
+  max-width: 1040px;
+  padding-block: 8px 48px;
+  border-bottom: 1px solid var(--line);
+}
+
+.intro {
+  display: grid;
+  gap: 8px;
+  max-width: 72ch;
+}
+
+.intro h2,
+.photoIntro h2 {
+  color: var(--ink);
+  font-weight: 580;
+  letter-spacing: -0.025em;
+}
+
+.intro h2 { font-size: clamp(1.9rem, 3vw, 2.75rem); }
+.intro p,
+.photoIntro p,
+.itemSummary p {
+  color: var(--ink-muted);
+  font-size: 0.84rem;
+  line-height: 1.65;
+}
+
+.form {
+  display: grid;
+  gap: 32px;
+  margin-top: 32px;
+}
+
+.details,
+.scores,
+.optionalScores {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.details,
+.scoreGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px 32px;
+}
+
+.details legend,
+.scores legend,
+.optionalScores legend {
+  width: 100%;
+  margin-bottom: 18px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--review-accent-bright, var(--ember-bright));
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.field {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.wideField { grid-column: 1 / -1; }
+
+.field label,
+.commentHeading label {
+  color: var(--ink);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.field input,
+.field textarea,
+.commentField textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  outline: none;
+  background: var(--surface-raised);
+  color: var(--ink);
+  caret-color: var(--review-accent-bright, var(--ember-bright));
+}
+
+.field input { min-height: 48px; padding: 0 14px; }
+.field textarea,
+.commentField textarea { padding: 14px; resize: vertical; line-height: 1.6; }
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--ink-muted);
+  opacity: 1;
+}
+
+.field input:focus,
+.field textarea:focus,
+.commentField textarea:focus {
+  border-color: var(--review-accent-bright, var(--ember-bright));
+}
+
+.priceControl {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  border: 1px solid var(--line);
+  background: var(--surface-raised);
+}
+
+.priceControl:focus-within { border-color: var(--review-accent-bright, var(--ember-bright)); }
+.priceControl span { padding-left: 14px; color: var(--ink-muted); font-size: 0.82rem; }
+.priceControl input { border: 0; background: transparent; }
+
+.itemSummary {
+  display: grid;
+  gap: 8px;
+  padding-block: 20px;
+  border-block: 1px solid var(--line);
+}
+
+.itemSummary span {
+  color: var(--review-accent-bright, var(--ember-bright));
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.scoreGrid { gap: 28px 48px; }
+
+.optionalScores {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.optionalScores legend { grid-column: 1 / -1; }
+
+.optionalCriterion {
+  display: grid;
+  align-content: start;
+  gap: 22px;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.rngControl { display: grid; gap: 10px; }
+
+.commentField { display: grid; gap: 10px; }
+.commentHeading { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; }
+.commentHeading span,
+.selectedFile,
+.feedback,
+.photoLimit { color: var(--ink-muted); font-size: 0.76rem; }
+.commentField textarea[aria-invalid='true'] { border-color: var(--danger); }
+
+.actions { display: flex; justify-content: flex-end; }
+.error { color: var(--danger); font-size: 0.82rem; line-height: 1.5; }
+
+.photoUploader {
+  max-width: 1040px;
+  padding-block: 32px 40px;
+  border-bottom: 1px solid var(--line);
+}
+
+.photoIntro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px;
+}
+
+.photoIntro h2 { font-size: 1.65rem; }
+.photoIntro p { margin-top: 6px; }
+.photoIntro > span {
+  flex-shrink: 0;
+  min-width: 64px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  color: var(--review-accent-bright, var(--ember-bright));
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.photoControls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px 18px;
+  margin-top: 24px;
+}
+
+.selection { display: flex; align-items: center; justify-content: space-between; gap: 16px; grid-column: 1 / -1; min-width: 0; }
+.selectedFile { overflow-wrap: anywhere; }
+.photoHint { margin-top: 12px; color: var(--ink-muted); font-size: 0.82rem; line-height: 1.5; }
+.photoLimit,
+.feedback,
+.photoUploader > .error { margin-top: 18px; }
+
+@media (max-width: 767px) {
+  .reviewPanel { padding-bottom: 36px; }
+  .form { gap: 28px; margin-top: 28px; }
+  .details,
+  .scoreGrid,
+  .optionalScores,
+  .photoControls { grid-template-columns: minmax(0, 1fr); }
+  .details,
+  .scoreGrid { gap: 22px; }
+  .wideField,
+  .optionalScores legend { grid-column: auto; }
+  .optionalCriterion { padding: 18px 16px; }
+  .commentHeading { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .actions { display: grid; }
+  .actions button,
+  .photoControls button { width: 100%; }
+  .photoIntro { gap: 16px; }
+  .photoControls { gap: 12px; }
+  .selection { align-items: stretch; flex-direction: column; }
+}
+
+@media (forced-colors: active) {
+  .optionalCriterion,
+  .photoIntro > span { border-color: CanvasText; }
+}

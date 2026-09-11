@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { PASSWORD_RESET_COOKIE } from '@/lib/auth/password-reset';
 import {
   LOGIN_ERROR_MESSAGE,
+  LOGIN_UNAVAILABLE_MESSAGE,
   type LoginAction,
   type LoginState,
   PASSWORD_RESET_INVALID_LINK_MESSAGE,
@@ -31,6 +32,25 @@ function invalidCredentials(): LoginState {
   return { error: LOGIN_ERROR_MESSAGE };
 }
 
+const diagnosticCodes = new Set([
+  'INVALID_EMAIL_OR_PASSWORD', 'INVALID_PASSWORD', 'INVALID_ORIGIN',
+  'INVALID_REDIRECT_URL', 'EMAIL_NOT_VERIFIED', 'TOO_MANY_REQUESTS',
+  'NETWORK_ERROR', 'AUTH_CONFIGURATION_ERROR',
+  'invalid_credentials', 'email_not_confirmed', 'over_request_rate_limit',
+  'over_email_send_rate_limit', 'unexpected_failure', 'internal_error',
+  'validation_failed', 'unknown_error',
+]);
+
+function reportAuthFailure(operation: 'login' | 'password-reset-request', error: unknown) {
+  const details = error && typeof error === 'object' ? error as { code?: unknown; status?: unknown; name?: unknown } : {};
+  const code = typeof details.code === 'string' && diagnosticCodes.has(details.code)
+    ? details.code : details.name === 'AuthConfigurationError' ? 'AUTH_CONFIGURATION_ERROR' : 'UNKNOWN_AUTH_ERROR';
+  const status = typeof details.status === 'number' && Number.isInteger(details.status) && details.status >= 400 && details.status <= 599
+    ? details.status : null;
+  // Never include the provider message, request payload, email, password or token.
+  console.warn('[auth]', { operation, code, status });
+}
+
 function resetState(
   status: PasswordResetState['status'],
   message: string,
@@ -51,8 +71,8 @@ async function getApplicationOrigin(): Promise<string> {
   const host = forwardedHost || firstHeaderValue(headerStore.get('host'));
   const forwardedProtocol = firstHeaderValue(headerStore.get('x-forwarded-proto'));
   const candidate = configuredUrl
-    || (vercelHost ? `https://${vercelHost}` : null)
-    || (host ? `${forwardedProtocol || (host.startsWith('localhost') ? 'http' : 'https')}://${host}` : null);
+    || (host ? `${forwardedProtocol || (host.startsWith('localhost') ? 'http' : 'https')}://${host}` : null)
+    || (vercelHost ? `https://${vercelHost}` : null);
 
   if (!candidate) throw new Error('Origem da aplicação indisponível.');
 
@@ -74,17 +94,20 @@ export const loginAction: LoginAction = async (_previousState, formData) => {
 
   if (!parsed.success) return invalidCredentials();
 
-  let rejected = false;
   try {
     const auth = await getAuth();
     const result = await auth.signIn.email(parsed.data);
-    rejected = Boolean(result.error);
-  } catch {
-    return invalidCredentials();
+    if (result.error) {
+      reportAuthFailure('login', result.error);
+      if (['INVALID_EMAIL_OR_PASSWORD', 'INVALID_PASSWORD', 'invalid_credentials'].includes(result.error.code ?? '')) return invalidCredentials();
+      return { error: LOGIN_UNAVAILABLE_MESSAGE };
+    }
+  } catch (error) {
+    reportAuthFailure('login', error);
+    return { error: LOGIN_UNAVAILABLE_MESSAGE };
   }
 
-  if (rejected) return invalidCredentials();
-
+  if ((await cookies()).get('crateristas-enrollment')?.value) redirect('/cadastro/concluir');
   redirect('/painel');
 };
 
@@ -125,9 +148,11 @@ export const requestPasswordResetAction: PasswordResetAction = async (
       redirectTo: `${origin}/redefinir-senha/callback`,
     });
     if (result.error) {
+      reportAuthFailure('password-reset-request', result.error);
       return resetState('error', PASSWORD_RESET_REQUEST_ERROR_MESSAGE);
     }
-  } catch {
+  } catch (error) {
+    reportAuthFailure('password-reset-request', error);
     return resetState('error', PASSWORD_RESET_REQUEST_ERROR_MESSAGE);
   }
 

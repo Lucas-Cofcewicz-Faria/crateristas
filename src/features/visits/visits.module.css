@@ -1,321 +1,88 @@
-.dashboard {
-  width: min(calc(100% - 96px), var(--page-max));
-  margin: 0 auto;
-  padding: 72px 0 96px;
-}
-
-.dashboardHeader {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 48px;
-  margin-bottom: 44px;
-}
-
-.eyebrow {
-  margin-bottom: 12px;
-  color: var(--ember-bright);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.dashboardHeader h1 {
-  color: var(--ink);
-  font-size: clamp(2.8rem, 4vw, 4.4rem);
-  font-weight: 560;
-  letter-spacing: -0.035em;
-  line-height: 1;
-}
-
-.dashboardLead {
-  max-width: 680px;
-  margin-top: 16px;
-  color: var(--ink-muted);
-  line-height: 1.7;
-}
-
-.roleBadge {
-  margin-top: 18px;
-}
-
-.newVisit,
-.cardAction {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--ember);
-  border-radius: var(--radius-sm);
-  background: var(--ember);
-  color: var(--canvas);
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
-.newVisit {
-  padding: 0 22px;
-}
-
-.newVisit:hover,
-.cardAction:hover {
-  border-color: var(--ember-bright);
-  background: var(--ember-bright);
-}
-
-.dashboardGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: start;
-  gap: 28px;
-}
-
+.dashboard { width: min(calc(100% - 96px), var(--page-max)); margin: 0 auto; padding: 72px 0 96px; --radius-sm: 0; --radius-md: 0; }
+.dashboardHeader { display: flex; align-items: flex-end; justify-content: space-between; gap: 48px; padding-bottom: 36px; }
+.dashboardHeader h1 { color: var(--ink); font-size: 4rem; font-weight: 560; letter-spacing: -0.035em; line-height: 1.05; }
+.dashboardHeader h1 span { color: var(--ember-bright); }
+.dashboardLead { max-width: 65ch; margin-top: 18px; color: var(--ink-muted); line-height: 1.7; }
+.roleBadge { margin-top: 16px; }
+.newVisit, .cardAction, .managementLink, .inlineLink { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 12px; font-size: 0.82rem; font-weight: 750; transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease; }
+.newVisit { flex-shrink: 0; min-height: 56px; padding: 0 24px; background: var(--ember-bright); color: var(--canvas); }
+.newVisit:hover { background: var(--ink); }
+.newVisit:active { background: var(--ember); }
+.newVisit svg:last-child, .cardAction svg, .inlineLink svg, .managementLink svg { transition: transform 180ms ease; }
+.newVisit:hover svg:last-child, .cardAction:hover svg, .inlineLink:hover svg, .managementLink:hover svg { transform: translate(2px, -2px); }
+.dashboardGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 28px; }
 .panelSection {
+  min-width: 0;
   padding: 28px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md);
   background: var(--surface);
 }
-
-.panelSection:last-child {
-  grid-column: 1 / -1;
+.recentSection, .managementSection { grid-column: 1 / -1; }
+.sectionHeader { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; margin-bottom: 8px; padding-bottom: 20px; border-bottom: 1px solid var(--line); }
+.sectionHeader h2 { color: var(--ink); font-size: 1.75rem; font-weight: 560; scroll-margin-top: 130px; }
+.count { color: var(--ink-muted); font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+.pendingList, .recentList, .managementList { display: grid; }
+.pendingCard { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 20px; padding: 24px 0; border-bottom: 1px solid var(--line); transition: background-color 180ms ease; }
+.pendingCard:last-child, .recentCard:last-child, .managementRow:last-child { border-bottom: 0; }
+.cardHeader { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 10px; }
+.quorum { color: var(--ink-muted); font-size: 0.75rem; }
+.pendingCard h3, .recentCard h3, .managementIdentity h3 { color: var(--ink); font-size: 1.25rem; font-weight: 550; overflow-wrap: anywhere; }
+.pendingCard h3 { grid-column: 1; }
+.visitDate { grid-column: 1; color: var(--ink-muted); font-size: 0.8rem; }
+.cardAction { grid-column: 2; grid-row: 2 / 4; align-self: center; padding: 0 14px; border: 1px solid var(--line); color: var(--ink); }
+.cardAction:hover, .managementLink:hover { border-color: var(--ember-bright); background: var(--surface-raised); color: var(--ember-bright); }
+.pendingCard:focus-within, .recentCard:focus-within, .managementRow:focus-within { background: var(--surface-raised); }
+.emptyList { padding: 28px 0; min-height: 104px; color: var(--ink-muted); font-size: 0.9rem; }
+.recentCard, .managementRow { display: flex; align-items: center; justify-content: space-between; gap: 28px; padding: 24px 0; border-bottom: 1px solid var(--line); }
+.recentCard p, .managementIdentity p { margin-top: 6px; color: var(--ink-muted); font-size: 0.8rem; }
+.inlineLink { flex-shrink: 0; color: var(--ember-bright); padding: 0 12px; }
+.inlineLink:hover { color: var(--ink); background: var(--surface); }
+.managementIdentity { min-width: 0; display: grid; grid-template-columns: 120px minmax(0, 1fr); align-items: start; gap: 24px; }
+.managementIdentity > span { justify-self: start; }
+.managementIdentity .deletionImpact { margin-top: 10px; font-size: 0.75rem; }
+.managementLink { flex-shrink: 0; padding: 0 18px; border: 1px solid var(--line); color: var(--ink); }
+.routeState { width: min(calc(100% - 96px), var(--page-max)); min-height: 620px; display: grid; place-content: center; justify-items: center; margin: 0 auto; padding: 80px; text-align: center; }
+.routeState h1 { color: var(--ink); font-size: 2.2rem; font-weight: 580; }
+.routeState p { max-width: 520px; margin-top: 10px; color: var(--ink-muted); }
+.eyebrow { color: var(--ink-muted); font-size: 0.8rem; }
+.retryButton { min-height: 44px; margin-top: 24px; padding: 0 20px; border: 1px solid var(--ember); background: var(--ember); color: var(--canvas); font: inherit; font-weight: 750; cursor: pointer; }
+.retryButton:hover { background: var(--ember-bright); }
+@media (max-width: 1350px) {
+  .pendingCard { grid-template-columns: 1fr; }
+  .cardAction { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 10px; }
 }
-
-.managementSection {
-  grid-column: 1 / -1;
+@media (max-width: 1023px) {
+  .dashboard { width: calc(100% - 48px); padding: 44px 0 64px; }
+  .dashboardHeader { align-items: flex-start; gap: 24px; }
+  .dashboardHeader > div { min-width: 0; }
+  .dashboardHeader h1 { font-size: clamp(2.75rem, 6vw, 3.5rem); }
+  .dashboardGrid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .dashboardLead, .sectionHeader h2, .managementIdentity p { overflow-wrap: anywhere; }
+  .cardHeader { flex-wrap: wrap; gap: 10px; }
+  .recentCard > div { min-width: 0; }
+  .managementIdentity { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .routeState { width: calc(100% - 48px); min-height: 50vh; padding: 48px 24px; }
 }
-
-.sectionHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 22px;
+@media (max-width: 767px) {
+  .dashboard { width: calc(100% - 32px); padding: 32px 0 48px; }
+  .dashboardHeader { flex-direction: column; gap: 24px; padding-bottom: 28px; }
+  .dashboardHeader h1 { font-size: clamp(2.5rem, 10vw, 3.25rem); }
+  .dashboardLead { margin-top: 14px; }
+  .newVisit { width: 100%; min-height: 48px; justify-content: flex-start; }
+  .newVisit svg:last-child { margin-left: auto; }
+  .dashboardGrid { gap: 20px; }
+  .panelSection { padding: 24px 20px; }
+  .sectionHeader { align-items: flex-start; gap: 12px; padding-bottom: 16px; }
+  .sectionHeader h2 { font-size: 1.55rem; }
+  .count { flex-shrink: 0; padding-top: 4px; }
+  .pendingCard { padding: 20px 0; }
+  .recentCard, .managementRow { align-items: stretch; flex-direction: column; gap: 16px; padding: 20px 0; }
+  .cardAction, .inlineLink, .managementLink { width: 100%; justify-self: stretch; justify-content: space-between; }
+  .inlineLink { padding: 0; }
+  .routeState { width: calc(100% - 32px); padding: 40px 16px; overflow-wrap: anywhere; }
+  .routeState h1 { font-size: 1.8rem; }
 }
-
-.sectionHeader h2 {
-  color: var(--ink);
-  font-size: 1.55rem;
-  font-weight: 580;
-}
-
-.count {
-  min-width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  color: var(--ember-bright);
-  font-size: 0.78rem;
-  font-weight: 800;
-}
-
-.pendingList,
-.recentList {
-  display: grid;
-  gap: 14px;
-}
-
-.pendingCard,
-.recentCard,
-.emptyList {
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-raised);
-}
-
-.pendingCard {
-  padding: 20px;
-}
-
-.cardHeader,
-.recentCard {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-.quorum {
-  color: var(--ink-muted);
-  font-size: 0.72rem;
-  font-weight: 750;
-}
-
-.pendingCard h3,
-.recentCard h3 {
-  color: var(--ink);
-  font-size: 1.12rem;
-  font-weight: 600;
-}
-
-.pendingCard h3 {
-  margin-top: 18px;
-}
-
-.visitDate,
-.recentCard p {
-  color: var(--ink-muted);
-  font-size: 0.76rem;
-}
-
-.visitDate {
-  margin-top: 6px;
-}
-
-.cardAction {
-  width: 100%;
-  margin-top: 18px;
-}
-
-.emptyList {
-  min-height: 116px;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  color: var(--ink-muted);
-  font-size: 0.82rem;
-  text-align: center;
-}
-
-.recentCard {
-  min-height: 88px;
-  padding: 18px 20px;
-}
-
-.recentCard p {
-  margin-top: 5px;
-}
-
-.inlineLink {
-  flex: 0 0 auto;
-  color: var(--ember-bright);
-  font-size: 0.78rem;
-  font-weight: 800;
-}
-
-.inlineLink:hover {
-  color: var(--ink);
-}
-
-.managementList {
-  display: grid;
-}
-
-.managementRow {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 28px;
-  padding: 20px 0;
-  border-top: 1px solid var(--line);
-}
-
-.managementRow:first-child {
-  padding-top: 0;
-  border-top: 0;
-}
-
-.managementRow:last-child {
-  padding-bottom: 0;
-}
-
-.managementIdentity {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: 16px;
-}
-
-.managementIdentity h3 {
-  color: var(--ink);
-  font-size: 1.08rem;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-.managementIdentity p {
-  margin-top: 5px;
-  color: var(--ink-muted);
-  font-size: 0.76rem;
-}
-
-.managementIdentity .deletionImpact {
-  color: var(--danger);
-  font-weight: 700;
-}
-
-.managementLink {
-  min-height: 44px;
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  padding: 0 18px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
-  color: var(--ink);
-  font-size: 0.78rem;
-  font-weight: 800;
-}
-
-.managementLink:hover {
-  border-color: var(--ember);
-  color: var(--ember-bright);
-}
-
-.routeState {
-  width: min(calc(100% - 96px), var(--page-max));
-  min-height: 620px;
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  margin: 0 auto;
-  padding: 80px;
-  text-align: center;
-}
-
-.routeState h1 {
-  color: var(--ink);
-  font-size: 2.2rem;
-  font-weight: 580;
-}
-
-.routeState p {
-  max-width: 520px;
-  margin-top: 10px;
-  color: var(--ink-muted);
-}
-
-.retryButton {
-  min-height: 44px;
-  margin-top: 24px;
-  padding: 0 20px;
-  border: 1px solid var(--ember);
-  border-radius: var(--radius-sm);
-  background: var(--ember);
-  color: var(--canvas);
-  font: inherit;
-  font-size: 0.84rem;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.retryButton:hover {
-  border-color: var(--ember-bright);
-  background: var(--ember-bright);
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .newVisit,
-  .cardAction,
-  .inlineLink,
-  .managementLink,
-  .retryButton {
-    transition: none;
-  }
+  .dashboard *, .dashboard *::before, .dashboard *::after { transition: none; scroll-behavior: auto; }
+  .newVisit:hover svg:last-child, .cardAction:hover svg, .inlineLink:hover svg, .managementLink:hover svg { transform: none; }
 }

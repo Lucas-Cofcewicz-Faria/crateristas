@@ -21,6 +21,7 @@ interface AuthorizeNeonUserCreationInput {
   environment?: WebhookEnvironment;
   fetcher?: typeof fetch;
   now?: () => number;
+  isInvitedEmail?: (email: string) => Promise<boolean>;
 }
 
 interface NeonWebhookConfig {
@@ -70,12 +71,11 @@ function readWebhookConfig(environment: WebhookEnvironment): NeonWebhookConfig {
 
   if (
     allowedEmails.length < 1 ||
-    allowedEmails.length > 8 ||
     uniqueEmails.size !== allowedEmails.length ||
     allowedEmails.some((email) => !EMAIL_PATTERN.test(email))
   ) {
     throw new NeonWebhookConfigurationError(
-      'NEON_AUTH_ALLOWED_EMAILS deve conter de um a oito emails únicos e válidos.',
+      'NEON_AUTH_ALLOWED_EMAILS deve conter emails únicos e válidos.',
     );
   }
 
@@ -190,6 +190,7 @@ export async function authorizeNeonUserCreation({
   environment = process.env,
   fetcher = fetch,
   now = Date.now,
+  isInvitedEmail = async () => false,
 }: AuthorizeNeonUserCreationInput): Promise<{ allowed: boolean }> {
   const config = readWebhookConfig(environment);
   const signature = requiredHeader(headers, 'X-Neon-Signature');
@@ -242,5 +243,6 @@ export async function authorizeNeonUserCreation({
     throw new NeonWebhookVerificationError('Evento assinado do webhook inválido.');
   }
 
-  return { allowed: config.allowedEmails.has(normalizeEmail(payload.user.email)) };
+  const email = normalizeEmail(payload.user.email);
+  return { allowed: config.allowedEmails.has(email) || await isInvitedEmail(email) };
 }

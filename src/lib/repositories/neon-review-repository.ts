@@ -347,15 +347,16 @@ function slugify(value: string): string {
 
 const CREATE_VISIT_SQL = `
 WITH restaurant AS (
-  INSERT INTO restaurants (slug, name, cuisine, neighborhood, city, address, price_band)
-  VALUES ($3, $2, $4, $5, $6, $7, $8)
+  INSERT INTO restaurants (slug, name, cuisine, neighborhood, city, address, price_band, menu_enabled)
+  VALUES ($3, $2, $4, $5, $6, $7, $8, $11)
   ON CONFLICT (slug) DO UPDATE SET
     name = EXCLUDED.name,
     cuisine = EXCLUDED.cuisine,
     neighborhood = EXCLUDED.neighborhood,
     city = EXCLUDED.city,
     address = EXCLUDED.address,
-    price_band = EXCLUDED.price_band
+    price_band = EXCLUDED.price_band,
+    menu_enabled = restaurants.menu_enabled OR EXCLUDED.menu_enabled
   RETURNING id
 ),
 visit_slug AS (
@@ -456,9 +457,8 @@ function submissionFromRow(row: Row): SubmissionResult {
 }
 
 // Neon HTTP transactions are non-interactive. Each composed operation therefore
-// keeps its conditional transition and event inside one CTE statement. The
-// scorecard branch mirrors resolvePublication's only automatic transition:
-// private -> published when the post-upsert participant count reaches quorum.
+// keeps each operation atomic. Saving a scorecard never changes publication;
+// only the separate, administrator-authorized operation may publish a visit.
 const ATOMIC_SCORECARD_SQL = `
 WITH locked_visit AS MATERIALIZED (
   SELECT v.id, v.publication_state, v.publication_reason
@@ -510,32 +510,14 @@ score_aggregate AS (
       AS overall
   FROM post_upsert_scores
 ),
-transition AS (
-  UPDATE visits v
-  SET publication_state = $13,
-      publication_reason = $14,
-      published_at = CASE WHEN $13 = 'published' THEN NOW() ELSE v.published_at END,
-      published_by = CASE WHEN $13 = 'published' THEN NULL ELSE v.published_by END,
-      updated_at = NOW(),
-      version = v.version + 1
-  FROM visit_context vc, score_aggregate aggregate
-  WHERE v.id = vc.id
-    AND vc.publication_state = $11
-    AND vc.publication_state <> $13
-    AND aggregate.participant_count >= $12
-  RETURNING v.publication_state, v.publication_reason
-),
-event AS (
-  INSERT INTO publication_events (visit_id, actor_id, action, participant_count)
-  SELECT vc.id, NULL, 'quorum_publish', aggregate.participant_count
-  FROM visit_context vc, score_aggregate aggregate, transition t
-  RETURNING id
+saved_visit AS (
+  UPDATE visits SET updated_at = NOW(), version = version + 1
+  WHERE id IN (SELECT id FROM visit_context) RETURNING id
 )
 SELECT
   vc.id AS visit_id,
-  COALESCE(t.publication_state, vc.publication_state) AS publication_state,
-  CASE WHEN t.publication_state IS NOT NULL THEN t.publication_reason ELSE vc.publication_reason END
-    AS publication_reason,
+  vc.publication_state,
+  vc.publication_reason,
   aggregate.participant_count,
   aggregate.average_food,
   aggregate.average_service,
@@ -544,11 +526,10 @@ SELECT
   aggregate.average_access,
   aggregate.average_wait_time,
   aggregate.overall,
-  (t.publication_state IS NOT NULL) AS publication_changed
+  FALSE AS publication_changed
 FROM visit_context vc
 CROSS JOIN score_aggregate aggregate
-LEFT JOIN transition t ON TRUE
-LEFT JOIN event e ON TRUE
+JOIN saved_visit sv ON sv.id = vc.id
 LIMIT 1`;
 
 const ATOMIC_PUBLICATION_SQL = `
@@ -652,10 +633,6 @@ class NeonReviewRepository implements ReviewRepository {
         scorecard.waitTime,
         scorecard.comment,
         scorecard.dish ?? null,
-        input.expectedPublicationState,
-        input.quorum,
-        input.transitionAtQuorum.state,
-        input.transitionAtQuorum.reason,
       ])],
     );
     const row = rows[0];
@@ -668,7 +645,7 @@ class NeonReviewRepository implements ReviewRepository {
       `SELECT id, auth_user_id, email, slug, display_name, avatar_url, society_title,
               member_number, bio, favorite_cuisine, role
        FROM members
-       WHERE auth_user_id = $1`,
+       WHERE auth_user_id = $1 AND removed_at IS NULL`,
       [authUserId],
     );
     return rows[0] ? memberFromRow(rows[0]) : null;
@@ -679,7 +656,7 @@ class NeonReviewRepository implements ReviewRepository {
       `SELECT id, auth_user_id, email, slug, display_name, avatar_url, society_title,
               member_number, bio, favorite_cuisine, role
        FROM members
-       WHERE id = $1`,
+       WHERE id = $1 AND removed_at IS NULL`,
       [memberId],
     );
     return rows[0] ? memberFromRow(rows[0]) : null;
@@ -698,6 +675,19 @@ class NeonReviewRepository implements ReviewRepository {
   }
 
   async createVisit(actorId: string, input: CreateVisitInput): Promise<VisitRecord> {
+    if (input.restaurantId) {
+      const rows = await this.sql.query(`WITH restaurant AS (
+        UPDATE restaurants SET menu_enabled = menu_enabled OR $4
+        WHERE id = $2 AND EXISTS (SELECT 1 FROM members WHERE id = $1 AND removed_at IS NULL)
+        RETURNING id, slug
+      ), created AS (
+        INSERT INTO visits (slug, restaurant_id, created_by, visited_at)
+        SELECT r.slug || '-' || $3::date::text || '-' || gen_random_uuid()::text, r.id, $1, $3::date
+        FROM restaurant r RETURNING *
+      ) SELECT * FROM created`, [actorId, input.restaurantId, input.visitedAt, input.menuEnabled ?? false]);
+      if (!rows[0]) throw new Error('Restaurante não encontrado.');
+      return visitFromRow(rows[0]);
+    }
     const restaurantSlug = slugify(input.restaurantName);
     const visitSlug = `${restaurantSlug}-${input.visitedAt}`;
     const [rows] = await serializableTransaction(
@@ -713,6 +703,7 @@ class NeonReviewRepository implements ReviewRepository {
         input.priceBand ?? null,
         input.visitedAt,
         visitSlug,
+        input.menuEnabled ?? false,
       ])],
     );
     const row = rows[0];
@@ -996,6 +987,7 @@ class NeonReviewRepository implements ReviewRepository {
          DELETE FROM restaurants restaurant
          USING deleted_visit
          WHERE restaurant.id = deleted_visit.restaurant_id
+           AND NOT EXISTS (SELECT 1 FROM menu_items item WHERE item.restaurant_id = restaurant.id)
            AND NOT EXISTS (
              SELECT 1
              FROM visits other
@@ -1053,6 +1045,9 @@ class NeonReviewRepository implements ReviewRepository {
          WHERE s.visit_id = v.id
        ) aggregate ON TRUE
        WHERE v.publication_state = 'published'
+         AND v.id = (SELECT latest.id FROM visits latest
+           WHERE latest.restaurant_id = r.id AND latest.publication_state = 'published'
+           ORDER BY latest.visited_at DESC, latest.created_at DESC, latest.id DESC LIMIT 1)
          AND ($1::text IS NULL OR r.name ILIKE '%' || $1 || '%' OR r.cuisine ILIKE '%' || $1 || '%')
          AND ($2::text IS NULL OR r.cuisine ILIKE $2)
          AND ($3::text IS NULL OR r.neighborhood ILIKE $3)
@@ -1087,6 +1082,14 @@ class NeonReviewRepository implements ReviewRepository {
   }
 
   async listVisitsForAdministration(actorId: string): Promise<AdminVisitSummary[]> {
+    return this.listManagedVisits(actorId, true);
+  }
+
+  async listVisitsForManagement(actorId: string): Promise<AdminVisitSummary[]> {
+    return this.listManagedVisits(actorId, false);
+  }
+
+  private async listManagedVisits(actorId: string, adminOnly: boolean): Promise<AdminVisitSummary[]> {
     const rows = await this.sql.query(
       `SELECT
          v.id,
@@ -1101,10 +1104,11 @@ class NeonReviewRepository implements ReviewRepository {
        JOIN restaurants r ON r.id = v.restaurant_id
        LEFT JOIN scorecards score ON score.visit_id = v.id
        WHERE actor.id = $1
-         AND actor.role = 'admin'
+         AND actor.removed_at IS NULL
+         AND (NOT $2 OR actor.role = 'admin')
        GROUP BY v.id, r.name
        ORDER BY v.visited_at DESC, v.id`,
-      [actorId],
+      [actorId, adminOnly],
     );
     return rows.map(adminVisitSummaryFromRow);
   }
@@ -1205,6 +1209,7 @@ class NeonReviewRepository implements ReviewRepository {
        LEFT JOIN visits v
          ON v.id = s.visit_id
         AND v.publication_state = 'published'
+       WHERE m.removed_at IS NULL
        GROUP BY m.id
        ORDER BY m.member_number`,
     );
@@ -1257,7 +1262,6 @@ class NeonReviewRepository implements ReviewRepository {
         AND own.member_id = $1
        WHERE v.publication_state = 'private'
        GROUP BY v.id, r.name
-       HAVING COUNT(s.id) < v.quorum
        ORDER BY v.visited_at DESC, v.id`,
       [memberId],
     );

@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PublicPhoto } from '@/domain/reviews/repository';
@@ -343,13 +343,11 @@ describe('fotos sequenciais da visita', () => {
     dependencies.compressVisitImage.mockRejectedValue(new Error('canvas falhou'));
     const user = userEvent.setup();
     render(
-      <>
-        <ScorecardForm initialValues={null} visitId={visitId} />
+      <ScorecardForm initialValues={null} visitId={visitId}>
         <PhotoUploader canManage initialPhotos={[]} visitId={visitId} />
-      </>,
+      </ScorecardForm>,
     );
-    await user.click(screen.getByRole('slider', { name: 'Comida' }));
-    await user.keyboard('{ArrowRight}');
+    fireEvent.change(screen.getByRole('slider', { name: 'Comida' }), { target: { value: '1' } });
     await user.type(screen.getByLabelText('Comentário'), 'Estado independente');
     await user.upload(
       screen.getByLabelText('Selecionar fotos'),

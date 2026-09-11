@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ArrowUpRight } from 'lucide-react';
 import type { PublicationState } from '@/domain/reviews/types';
 import { PublicationStatus } from './PublicationStatus';
 import { formatDashboardVisitDate, formatEvaluationCount } from './visit-formatters';
@@ -36,7 +37,7 @@ export function PendingVisitList({ visits, emptyMessage }: PendingVisitListProps
           <div className={styles.cardHeader}>
             <PublicationStatus state={visit.publicationState} />
             <span className={styles.quorum}>
-              {visit.participantCount} de {formatEvaluationCount(visit.quorum)}
+              {formatEvaluationCount(visit.participantCount)}
             </span>
           </div>
           <h3>{visit.restaurantName}</h3>
@@ -52,6 +53,7 @@ export function PendingVisitList({ visits, emptyMessage }: PendingVisitListProps
             href={`/visitas/${visit.id}/avaliar`}
           >
             {visit.hasSubmitted ? 'Revisar avaliação' : 'Avaliar visita'}
+            <ArrowUpRight size={17} aria-hidden="true" />
           </Link>
         </article>
       ))}

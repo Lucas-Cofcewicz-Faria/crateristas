@@ -2,6 +2,10 @@ import { PublicShell } from '@/components/shell/PublicShell';
 import { DashboardView } from '@/features/visits/DashboardView';
 import { requireMember } from '@/lib/auth/access';
 import { getReviewRepository } from '@/lib/reviews/server';
+import { InviteManager } from '@/features/auth/InviteManager';
+import { readSharedInvite } from '@/features/auth/invite-repository';
+import { MemberManager } from '@/features/members/MemberManager';
+import { listManagedMembers } from '@/features/members/member-administration';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +18,7 @@ export default async function DashboardPage() {
     repository.listRecentPublishedVisits(6),
     member.role === 'admin'
       ? repository.listVisitsForAdministration(member.id)
-      : Promise.resolve([]),
+      : repository.listVisitsForManagement(member.id),
   ]);
 
   return (
@@ -26,6 +30,10 @@ export default async function DashboardPage() {
         managed={managed}
         memberName={member.displayName}
         recent={recent}
+        adminTools={member.role === 'admin' ? <>
+          <MemberManager currentMemberId={member.id} members={await listManagedMembers(member.id)} />
+          <InviteManager initialInvite={await readSharedInvite()} />
+        </> : undefined}
       />
     </PublicShell>
   );

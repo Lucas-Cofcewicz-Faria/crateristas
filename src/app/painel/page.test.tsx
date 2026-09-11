@@ -8,10 +8,15 @@ const dependencies = vi.hoisted(() => ({
   listVisitsInFormationForMember: vi.fn(),
   listRecentPublishedVisits: vi.fn(),
   listVisitsForAdministration: vi.fn(),
+  listVisitsForManagement: vi.fn(),
   listPublicVisits: vi.fn(),
 }));
 
 vi.mock('@/lib/auth/access', () => ({ requireMember: dependencies.requireMember }));
+vi.mock('@/features/auth/invite-repository', () => ({ readSharedInvite: async () => ({ active: false, token: null }) }));
+vi.mock('@/features/auth/signup-actions', () => ({ manageInviteAction: vi.fn() }));
+vi.mock('@/features/members/member-administration', () => ({ listManagedMembers: async () => [] }));
+vi.mock('@/features/members/member-actions', () => ({ removeMemberAction: vi.fn() }));
 vi.mock('@/features/auth/actions', () => ({
   logoutAction: vi.fn(async () => undefined),
 }));
@@ -21,6 +26,7 @@ vi.mock('@/lib/reviews/server', () => ({
     listVisitsInFormationForMember: dependencies.listVisitsInFormationForMember,
     listRecentPublishedVisits: dependencies.listRecentPublishedVisits,
     listVisitsForAdministration: dependencies.listVisitsForAdministration,
+    listVisitsForManagement: dependencies.listVisitsForManagement,
     listPublicVisits: dependencies.listPublicVisits,
   }),
 }));
@@ -89,10 +95,19 @@ describe('página privada do painel', () => {
       publishedAt: published.publishedAt,
     }]);
     dependencies.listVisitsForAdministration.mockResolvedValue([]);
+    dependencies.listVisitsForManagement.mockResolvedValue([{
+      id: 'visit-member-managed',
+      slug: 'mesa-gerenciada',
+      restaurantName: 'Mesa Gerenciada',
+      visitedAt: '2026-08-08',
+      participantCount: 3,
+      quorum: 6,
+      publicationState: 'private',
+    }]);
     dependencies.listPublicVisits.mockResolvedValue([published]);
   });
 
-  it('autoriza primeiro e só então inicia as três leituras independentes em paralelo', async () => {
+  it('autoriza primeiro e só então inicia as quatro leituras independentes em paralelo', async () => {
     let authorize: (value: MemberRecord) => void = () => undefined;
     let releasePending: (value: PendingVisit[]) => void = () => undefined;
     let releaseForming: (value: PendingVisit[]) => void = () => undefined;
@@ -123,6 +138,7 @@ describe('página privada do painel', () => {
     expect(dependencies.listRecentPublishedVisits).toHaveBeenCalledOnce();
     expect(dependencies.listPublicVisits).not.toHaveBeenCalled();
     expect(dependencies.listVisitsForAdministration).not.toHaveBeenCalled();
+    expect(dependencies.listVisitsForManagement).toHaveBeenCalledWith(member.id);
     releasePending([pending]);
     releaseForming([]);
     releaseRecent([{
@@ -135,10 +151,12 @@ describe('página privada do painel', () => {
     }]);
 
     render(await pagePromise);
-    expect(screen.getByRole('heading', { name: 'Seu painel' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Meu painel' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sair' })).toBeInTheDocument();
     expect(screen.getByText('Mesa Pendente')).toBeInTheDocument();
     expect(screen.getByText('Mesa Publicada')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Gerenciar reviews' }))
+      .toHaveTextContent('Mesa Gerenciada');
   });
 
   it('carrega todas as reviews para o painel do administrador, inclusive ocultas', async () => {
@@ -156,8 +174,10 @@ describe('página privada do painel', () => {
     render(await DashboardPage());
 
     expect(dependencies.listVisitsForAdministration).toHaveBeenCalledWith(member.id);
+    expect(dependencies.listVisitsForManagement).not.toHaveBeenCalled();
     expect(screen.getByRole('region', { name: 'Gerenciar reviews' }))
       .toHaveTextContent('Mesa Oculta');
+    expect(screen.getByRole('region', { name: 'Gerenciar integrantes' })).toBeInTheDocument();
   });
 
   it('não consulta nem renderiza dados quando a autorização falha', async () => {

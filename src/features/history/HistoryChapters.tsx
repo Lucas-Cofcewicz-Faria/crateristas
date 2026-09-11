@@ -1,4 +1,5 @@
 import { Bird, Bug, ChevronDown, Crown, Utensils } from 'lucide-react';
+import Image from 'next/image';
 import { CraterLogo } from '@/components/brand/CraterLogo';
 import { CRATER_HISTORY } from '@/content/crater-history';
 import { HISTORY_PHOTOS } from '@/content/history-photos';
@@ -24,17 +25,30 @@ function TopographicContours() {
 function PilgrimageRoute() {
   return (
     <div className={styles.route}>
-      <svg aria-hidden="true" fill="none" preserveAspectRatio="none" viewBox="0 0 1000 100">
-        <path className={styles.routeTrack} d="M20 65C190 65 235 15 390 15S650 85 790 65S925 35 980 35" />
-        <path className={styles.routeInk} pathLength="1" d="M20 65C190 65 235 15 390 15S650 85 790 65S925 35 980 35" />
-        <g className={styles.routeStops}>
-          <circle cx="20" cy="65" r="6" />
-          <circle cx="500" cy="30" r="6" />
-          <circle cx="980" cy="35" r="6" />
-        </g>
+      <svg aria-hidden="true" fill="none" preserveAspectRatio="none" viewBox="0 0 1000 56">
+        <path className={styles.routeTrack} d="M0 28C160 28 290 2 500 28S820 54 1000 28" />
+        <path className={styles.routeInk} pathLength="1" d="M0 28C160 28 290 2 500 28S820 54 1000 28" />
       </svg>
       <ol aria-label="O percurso das visitas">
-        <li>Restaurante</li><li>À mesa</li><li>Cratera</li>
+        <li>
+          <div aria-hidden="true" className={styles.routeBrand}>
+            <Image alt="" src="/images/history/brand-ifood.svg" width={108} height={58} />
+          </div>
+          <span aria-hidden="true" className={styles.routeStop} />
+          <span>Do iFood</span>
+        </li>
+        <li>
+          <div aria-hidden="true" className={styles.routeBrand}>
+            <Image alt="" src="/images/history/brand-ipt.svg" width={136} height={54} />
+          </div>
+          <span aria-hidden="true" className={styles.routeStop} />
+          <span>Ao IPT</span>
+        </li>
+        <li>
+          <div aria-hidden="true" className={styles.routeBrand}><CraterLogo /></div>
+          <span aria-hidden="true" className={styles.routeStop} />
+          <span>À Cratera</span>
+        </li>
       </ol>
     </div>
   );
@@ -90,11 +104,15 @@ export function HistoryChapters() {
       </section>
 
       <section aria-labelledby="patrimonio-title" className={`${styles.chapter} ${styles.heritage}`} data-history-chapter id={heritage.id}>
+        <svg aria-hidden="true" className={styles.branchBorder} fill="none" viewBox="0 0 80 800" preserveAspectRatio="none">
+          <g stroke="currentColor" strokeWidth="1" vectorEffect="non-scaling-stroke">
+            <path pathLength="1" d="M24 0V744L64 784H80M24 96L52 68V40M24 224L5 205V176M24 344L58 310V282M24 466L5 447V418M24 590L52 562V534M24 690L8 674" />
+          </g>
+        </svg>
         <div className={styles.heritageLayout}>
           <div className={styles.heritageCopy}>
             <h2 id="patrimonio-title">{heritage.title}</h2>
             <p className={styles.body}>{heritage.body}</p>
-            <div aria-hidden="true" className={styles.water}><span /><span /><span /></div>
           </div>
           <div>
             <HistoryPhoto className={styles.heritagePhoto} photo={HISTORY_PHOTOS.patrimonio} />

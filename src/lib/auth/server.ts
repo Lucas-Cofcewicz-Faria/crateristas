@@ -18,6 +18,7 @@ type AuthFacade = Pick<
   requestPasswordReset: RequestPasswordReset;
   resetPassword: ResetPassword;
   signIn: Pick<NeonAuth['signIn'], 'email'>;
+  signUp: Pick<NeonAuth['signUp'], 'email'>;
 };
 interface AuthEnvironment {
   [key: string]: string | undefined;
@@ -68,6 +69,9 @@ const lazyGetSession: NeonAuth['getSession'] = (...args) => getNeonAuth().getSes
 const lazySignInEmail: NeonAuth['signIn']['email'] = (...args) =>
   getNeonAuth().signIn.email(...args);
 
+const lazySignUpEmail: NeonAuth['signUp']['email'] = (...args) =>
+  getNeonAuth().signUp.email(...args);
+
 const lazyRequestPasswordReset: RequestPasswordReset = (...args) =>
   getNeonAuth().requestPasswordReset(...args);
 
@@ -102,6 +106,7 @@ export const auth = Object.freeze({
   signIn: Object.freeze({
     email: lazySignInEmail,
   }),
+  signUp: Object.freeze({ email: lazySignUpEmail }),
   signOut: lazySignOut,
   handler: lazyHandler,
   middleware: lazyMiddleware,

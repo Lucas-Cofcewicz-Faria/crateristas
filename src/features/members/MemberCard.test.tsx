@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import { MemberCard, type MemberCardProps } from './MemberCard';
@@ -26,8 +26,6 @@ describe('MemberCard', () => {
     expect(screen.getByRole('heading', { name: 'Ana Souza' })).toBeInTheDocument();
     expect(screen.getByText('Guardiã das Mesas Longas')).toBeInTheDocument();
     expect(screen.getByText('Craterista nº 03')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'Marca discreta da Sociedade Crateristas' }))
-      .toBeInTheDocument();
     expect(screen.getByText('12 contribuições públicas')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Retrato de Ana Souza' })).toBeInTheDocument();
 
@@ -61,5 +59,12 @@ describe('MemberCard', () => {
 
     expect(screen.queryByRole('img', { name: 'Retrato de Bruno Lima' })).not.toBeInTheDocument();
     expect(screen.getByText('BL')).toBeInTheDocument();
+  });
+
+  it('preserva o espaço do retrato e usa iniciais quando a imagem falha', () => {
+    render(<MemberCard {...member} />);
+    fireEvent.error(screen.getByRole('img', { name: 'Retrato de Ana Souza' }));
+    expect(screen.queryByRole('img', { name: 'Retrato de Ana Souza' })).not.toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Iniciais de Ana Souza: AS' })).toBeInTheDocument();
   });
 });

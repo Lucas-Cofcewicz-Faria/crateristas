@@ -3,6 +3,7 @@ import {
   NeonWebhookConfigurationError,
   NeonWebhookVerificationError,
 } from '@/lib/auth/webhook';
+import { isInvitedEmail } from '@/features/auth/invite-repository';
 
 export const runtime = 'nodejs';
 
@@ -19,6 +20,7 @@ export async function POST(request: Request) {
     const result = await authorizeNeonUserCreation({
       rawBody,
       headers: request.headers,
+      isInvitedEmail,
     });
 
     if (result.allowed) return Response.json({ allowed: true });

@@ -4,6 +4,7 @@ import { ReviewWorkspace } from '@/features/visits/ReviewWorkspace';
 import styles from '@/features/visits/review-workflow.module.css';
 import { requireMember } from '@/lib/auth/access';
 import { getReviewRepository } from '@/lib/reviews/server';
+import { getRestaurantForVisit } from '@/features/restaurants/catalog';
 
 type EvaluateVisitPageProps = {
   params: Promise<{ id: string }>;
@@ -17,6 +18,7 @@ export default async function EvaluateVisitPage({ params }: EvaluateVisitPagePro
   const { id } = await params;
   const workspace = await repository.getVisitReviewWorkspace(id, member.id);
   if (!workspace) notFound();
+  const restaurant = await getRestaurantForVisit(id);
 
   return (
     <PublicShell viewer="member">
@@ -35,6 +37,9 @@ export default async function EvaluateVisitPage({ params }: EvaluateVisitPagePro
           quorum={workspace.quorum}
           restaurantName={workspace.restaurantName}
           visitId={workspace.id}
+          restaurantSlug={restaurant?.slug}
+          menuEnabled={restaurant?.menuEnabled}
+          visitedAt={workspace.visitedAt}
         />
       </section>
     </PublicShell>
