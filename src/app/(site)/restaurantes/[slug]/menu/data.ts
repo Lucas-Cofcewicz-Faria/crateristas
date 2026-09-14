@@ -7,7 +7,7 @@ import { findMenuItem } from '@/features/menu/menu-repository';
 
 export const getMenuContext = cache(async (slug: string) => {
   const member = await findOptionalMember();
-  const restaurant = await findCatalogRestaurant(slug, Boolean(member));
+  const restaurant = await findCatalogRestaurant(slug, member?.id);
   if (!restaurant?.menuEnabled) notFound();
   const coverUrl = await getRestaurantCover(restaurant.id);
   return { restaurant, member, coverUrl };

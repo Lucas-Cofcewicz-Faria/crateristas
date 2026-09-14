@@ -7,6 +7,7 @@ import type {
 } from '@/domain/reviews/repository';
 import type { DisplayScoreValues } from './restaurant-formatters';
 import type { RestaurantVisitOption } from '@/features/restaurants/catalog-types';
+import type { PublicationState } from '@/domain/reviews/types';
 import { VisitDateSelector } from './VisitDateSelector';
 import navigationStyles from './visit-navigation.module.css';
 import { CommentFragments } from './CommentFragments';
@@ -27,6 +28,7 @@ export interface RestaurantReviewProps {
   visits?: RestaurantVisitOption[];
   selectedVisitId?: string;
   menuEnabled?: boolean;
+  publicationState?: PublicationState;
 }
 
 export function RestaurantReview({
@@ -41,6 +43,7 @@ export function RestaurantReview({
   visits = [],
   selectedVisitId,
   menuEnabled = false,
+  publicationState = 'published',
 }: RestaurantReviewProps) {
   return (
     <RestaurantAtmosphere enabled={photos.length > 0}>
@@ -49,6 +52,17 @@ export function RestaurantReview({
           <Link className={styles.backLink} href="/registros">
             ← Voltar ao livro de registros
           </Link>
+
+          {publicationState !== 'published' ? (
+            <aside className={styles.visibilityNotice}>
+              <strong>{publicationState === 'private' ? 'Só para integrantes' : 'Oculto do público'}</strong>
+              <span>
+                {publicationState === 'private'
+                  ? 'A avaliação está salva no livro da sociedade. Publique para liberar o acesso aos visitantes.'
+                  : 'Este registro continua disponível para os integrantes da sociedade.'}
+              </span>
+            </aside>
+          ) : null}
 
           <header className={styles.reviewHeader}>
             <h1 data-motion="inscription">{restaurant.name}</h1>

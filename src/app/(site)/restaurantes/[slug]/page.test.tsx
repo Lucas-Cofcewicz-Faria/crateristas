@@ -145,11 +145,19 @@ describe('página pública de uma visita', () => {
 
   it('habilita o shell de membro somente para uma sessão provisionada', async () => {
     dependencies.findOptionalMember.mockResolvedValue(member);
+    dependencies.getRestaurantVisitPage.mockResolvedValue({
+      visit: { ...visit, publicationState: 'private' },
+      restaurant: { id: 'restaurant-1', ...visit.restaurant, menuEnabled: true },
+      visits: [{ id: visit.id, slug: visit.slug, visitedAt: visit.visitedAt }],
+    });
 
     render(await RestaurantPage({ params: Promise.resolve({ slug: visit.restaurant.slug }) }));
 
+    expect(dependencies.getRestaurantVisitPage)
+      .toHaveBeenCalledWith(visit.restaurant.slug, undefined, member.id);
     expect(screen.getByRole('link', { name: 'Painel' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Entrar' })).not.toBeInTheDocument();
+    expect(screen.getByText('Só para integrantes')).toBeInTheDocument();
   });
 
   it('renderiza o contrato legado sem preencher categorias ou scorecards ausentes', async () => {

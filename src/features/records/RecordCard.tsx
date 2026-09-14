@@ -1,16 +1,18 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
-import type { PublicVisitSummary } from '@/domain/reviews/repository';
+import type { MemberVisibleVisitSummary, PublicVisitSummary } from '@/domain/reviews/repository';
+import type { PublicationState } from '@/domain/reviews/types';
 import { ScoreRing } from '@/components/ui/ScoreRing';
 import { CraterLogo } from '@/components/brand/CraterLogo';
 import { RecordAtmosphere } from './RecordAtmosphere';
 import styles from './records.module.css';
 
 export interface RecordCardProps {
-  record: PublicVisitSummary;
+  record: PublicVisitSummary | MemberVisibleVisitSummary;
   headingLevel?: 2 | 3;
   imageSizes?: string;
+  showPublicationState?: boolean;
 }
 
 const visitDateFormatter = new Intl.DateTimeFormat('pt-BR', {
@@ -20,7 +22,12 @@ const visitDateFormatter = new Intl.DateTimeFormat('pt-BR', {
   timeZone: 'UTC',
 });
 
-export function RecordCard({ record, headingLevel = 2, imageSizes = '(max-width: 767px) calc(100vw - 32px), (max-width: 1440px) 45vw, 650px' }: RecordCardProps) {
+const VISIBILITY_LABELS: Record<Exclude<PublicationState, 'published'>, string> = {
+  private: 'Só para integrantes',
+  hidden: 'Oculto do público',
+};
+
+export function RecordCard({ record, headingLevel = 2, imageSizes = '(max-width: 767px) calc(100vw - 32px), (max-width: 1440px) 45vw, 650px', showPublicationState = false }: RecordCardProps) {
   const Heading = headingLevel === 3 ? 'h3' : 'h2';
   const detailPath = `/restaurantes/${record.restaurant.slug}`;
   const imageAlt = `Foto de ${record.restaurant.name} no registro dos Crateristas`;
@@ -29,6 +36,9 @@ export function RecordCard({ record, headingLevel = 2, imageSizes = '(max-width:
     <RecordAtmosphere key={record.coverPhotoUrl} label={`Registro de ${record.restaurant.name}`}>
       <Link className={styles.cardDestination} href={detailPath} aria-label={`Abrir registro de ${record.restaurant.name}`}>
       <div className={styles.cardImage}>
+        {showPublicationState && 'publicationState' in record && record.publicationState !== 'published' ? (
+          <span className={styles.visibilityBadge}>{VISIBILITY_LABELS[record.publicationState]}</span>
+        ) : null}
         {record.coverPhotoUrl ? (
           <Image
             alt={imageAlt}

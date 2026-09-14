@@ -5,6 +5,8 @@ import type {
   AtomicPublicationChangeInput,
   AtomicScorecardSubmissionInput,
   MemberRecord,
+  MemberVisibleVisitDetail,
+  MemberVisibleVisitSummary,
   PendingVisit,
   PhotoInput,
   PhotoRecord,
@@ -244,6 +246,15 @@ class InMemoryReviewRepository implements ReviewRepository {
     return detail ? [detail] : [];
   }
 
+  async listMemberVisibleVisits(
+    memberId: string,
+    filters: PublicVisitFilters,
+  ): Promise<MemberVisibleVisitSummary[]> {
+    void memberId;
+    void filters;
+    return [];
+  }
+
   async listRecentPublishedVisits(limit: number) {
     void limit;
     return [];
@@ -288,6 +299,15 @@ class InMemoryReviewRepository implements ReviewRepository {
       })),
       historical: null,
     };
+  }
+
+  async getMemberVisibleVisitBySlug(
+    slug: string,
+    memberId: string,
+  ): Promise<MemberVisibleVisitDetail | null> {
+    void slug;
+    void memberId;
+    return null;
   }
 
   async listPublicMembers(): Promise<PublicMemberSummary[]> {

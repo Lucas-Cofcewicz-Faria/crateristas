@@ -11,12 +11,14 @@ function restaurant(row: Record<string, unknown>): CatalogRestaurant {
   };
 }
 
-// Only call includePrivate after checking membership in the page/action.
-export async function findCatalogRestaurant(slug: string, includePrivate = false): Promise<CatalogRestaurant | null> {
+export async function findCatalogRestaurant(slug: string, memberId?: string): Promise<CatalogRestaurant | null> {
   const rows = await getDb().query(`SELECT r.* FROM restaurants r
     WHERE (r.slug = $1 OR r.id = (SELECT v.restaurant_id FROM visits v WHERE v.slug = $1))
-      AND ($2 OR EXISTS (SELECT 1 FROM visits v WHERE v.restaurant_id = r.id AND v.publication_state = 'published'))
-    ORDER BY (r.slug = $1) DESC LIMIT 1`, [slug, includePrivate]);
+      AND (
+        EXISTS (SELECT 1 FROM visits v WHERE v.restaurant_id = r.id AND v.publication_state = 'published')
+        OR EXISTS (SELECT 1 FROM members viewer WHERE viewer.id = $2 AND viewer.removed_at IS NULL)
+      )
+    ORDER BY (r.slug = $1) DESC LIMIT 1`, [slug, memberId ?? null]);
   return rows[0] ? restaurant(rows[0]) : null;
 }
 
@@ -29,10 +31,17 @@ export async function getRestaurantForVisit(visitId: string): Promise<CatalogRes
   return rows[0] ? restaurant(rows[0]) : null;
 }
 
-export async function listRestaurantVisits(restaurantId: string): Promise<RestaurantVisitOption[]> {
+export async function listRestaurantVisits(restaurantId: string, memberId?: string): Promise<RestaurantVisitOption[]> {
   const rows = await getDb().query(`SELECT id, slug, visited_at::text FROM visits
-    WHERE restaurant_id = $1 AND publication_state = 'published'
-    ORDER BY visited_at DESC, created_at DESC, id DESC`, [restaurantId]);
+    WHERE restaurant_id = $1
+      AND (
+        publication_state = 'published'
+        OR (
+          EXISTS (SELECT 1 FROM members viewer WHERE viewer.id = $2 AND viewer.removed_at IS NULL)
+          AND EXISTS (SELECT 1 FROM scorecards visible_score WHERE visible_score.visit_id = visits.id)
+        )
+      )
+    ORDER BY visited_at DESC, created_at DESC, id DESC`, [restaurantId, memberId ?? null]);
   return rows.map((row) => ({ id: String(row.id), slug: String(row.slug), visitedAt: String(row.visited_at) }));
 }
 

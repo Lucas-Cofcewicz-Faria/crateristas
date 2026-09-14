@@ -10,7 +10,7 @@ import { changeMenuPublication, createMenuItem, findMenuItem, saveMenuScore } fr
 export async function saveMenuReviewAction(data: FormData): Promise<{ error: string | null; href?: string; itemId?: string }> {
   try {
     const actor = await requireMember();
-    const restaurant = await findCatalogRestaurant(String(data.get('restaurantSlug') ?? ''), true);
+    const restaurant = await findCatalogRestaurant(String(data.get('restaurantSlug') ?? ''), actor.id);
     if (!restaurant?.menuEnabled) return { error: 'O menu deste restaurante não está disponível.' };
     const optionalNumber = (key: string) => data.get(key) === null || data.get(key) === '' ? null : Number(data.get(key));
     const score = menuScoreSchema.parse({
@@ -48,7 +48,7 @@ export async function publishMenuItemAction(data: FormData): Promise<{ error: st
     const restaurantSlug = z.string().min(1).parse(data.get('restaurantSlug'));
     const itemSlug = z.string().min(1).parse(data.get('itemSlug'));
     const command = z.enum(['publish', 'hide']).parse(data.get('command'));
-    const restaurant = await findCatalogRestaurant(restaurantSlug, true);
+    const restaurant = await findCatalogRestaurant(restaurantSlug, actor.id);
     const item = restaurant?.menuEnabled ? await findMenuItem(restaurant.id, itemSlug, true) : null;
     if (!restaurant || !item || !await changeMenuPublication(actor.id, restaurant.id, item.id, command === 'publish')) {
       return { error: 'Não foi possível alterar a publicação. Atualize a página e tente novamente.' };

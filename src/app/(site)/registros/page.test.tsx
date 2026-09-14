@@ -4,6 +4,7 @@ import type { MemberRecord, PublicVisitSummary } from '@/domain/reviews/reposito
 
 const dependencies = vi.hoisted(() => ({
   findOptionalMember: vi.fn(),
+  listMemberVisibleVisits: vi.fn(),
   listPublicVisits: vi.fn(),
 }));
 
@@ -13,6 +14,7 @@ vi.mock('@/lib/auth/access', () => ({
 
 vi.mock('@/lib/reviews/server', () => ({
   getReviewRepository: () => ({
+    listMemberVisibleVisits: dependencies.listMemberVisibleVisits,
     listPublicVisits: dependencies.listPublicVisits,
   }),
 }));
@@ -67,8 +69,10 @@ const member: MemberRecord = {
 describe('página pública de registros', () => {
   beforeEach(() => {
     dependencies.findOptionalMember.mockReset();
+    dependencies.listMemberVisibleVisits.mockReset();
     dependencies.listPublicVisits.mockReset();
     dependencies.findOptionalMember.mockResolvedValue(null);
+    dependencies.listMemberVisibleVisits.mockResolvedValue([]);
     dependencies.listPublicVisits.mockResolvedValue([record]);
   });
 
@@ -93,11 +97,20 @@ describe('página pública de registros', () => {
 
   it('habilita o cabeçalho de membro somente para uma sessão provisionada', async () => {
     dependencies.findOptionalMember.mockResolvedValue(member);
+    dependencies.listMemberVisibleVisits.mockResolvedValue([{
+      ...record,
+      publicationState: 'private',
+      publishedAt: null,
+    }]);
 
     render(await RecordsPage({ searchParams: Promise.resolve({}) }));
 
+    expect(dependencies.listMemberVisibleVisits).toHaveBeenCalledWith(member.id, {});
+    expect(dependencies.listPublicVisits).not.toHaveBeenCalled();
     expect(screen.getByRole('link', { name: 'Painel' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Entrar' })).not.toBeInTheDocument();
+    expect(screen.getByText('Arquivo da sociedade')).toBeInTheDocument();
+    expect(screen.getByText('Só para integrantes')).toBeInTheDocument();
   });
 
   it('mantém o estado vazio dentro do livro público', async () => {

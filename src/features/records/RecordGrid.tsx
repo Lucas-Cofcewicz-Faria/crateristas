@@ -4,9 +4,10 @@ import styles from './records.module.css';
 
 export interface RecordGridProps {
   records: PublicVisitSummary[];
+  showPublicationState?: boolean;
 }
 
-export function RecordGrid({ records }: RecordGridProps) {
+export function RecordGrid({ records, showPublicationState = false }: RecordGridProps) {
   if (records.length === 0) {
     return (
       <div className={styles.emptyState} role="status">
@@ -18,7 +19,7 @@ export function RecordGrid({ records }: RecordGridProps) {
   }
 
   return (
-    <div aria-label="Registros publicados" className={styles.grid} role="list">
+    <div aria-label={showPublicationState ? 'Registros da sociedade' : 'Registros publicados'} className={styles.grid} role="list">
       {records.map((record, index) => (
         <div
           data-motion="excavation"
@@ -26,7 +27,7 @@ export function RecordGrid({ records }: RecordGridProps) {
           key={record.id}
           role="listitem"
         >
-          <RecordCard record={record} />
+          <RecordCard record={record} showPublicationState={showPublicationState} />
         </div>
       ))}
     </div>

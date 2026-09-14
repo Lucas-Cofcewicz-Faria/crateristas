@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import type { PublicVisitDetail } from '@/domain/reviews/repository';
+import type { PublicationState } from '@/domain/reviews/types';
 import { RestaurantReview } from '@/features/restaurant/RestaurantReview';
 import {
   formatScore,
@@ -8,6 +9,7 @@ import {
   getVisitScoreSnapshot,
 } from '@/features/restaurant/restaurant-formatters';
 import { getPublicVisitDetail, getRestaurantVisitPage } from './data';
+import { findOptionalMember } from '@/lib/auth/access';
 
 type RestaurantPageProps = {
   params: Promise<{ slug: string }>;
@@ -31,14 +33,21 @@ function metadataForVisit(visit: PublicVisitDetail): Metadata {
 
 export async function generateMetadata({ params, searchParams }: RestaurantPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const visit = await getPublicVisitDetail(slug, (await searchParams)?.visita);
+  const member = await findOptionalMember();
+  const visit = member
+    ? (await getRestaurantVisitPage(slug, (await searchParams)?.visita, member.id))?.visit ?? null
+    : await getPublicVisitDetail(slug, (await searchParams)?.visita);
   if (!visit) notFound();
   return metadataForVisit(visit);
 }
 
 export default async function RestaurantPage({ params, searchParams }: RestaurantPageProps) {
   const { slug } = await params;
-  const page = await getRestaurantVisitPage(slug, (await searchParams)?.visita);
+  const member = await findOptionalMember();
+  const visitId = (await searchParams)?.visita;
+  const page = member
+    ? await getRestaurantVisitPage(slug, visitId, member.id)
+    : await getRestaurantVisitPage(slug, visitId);
   if (!page) notFound();
   const { visit, restaurant, visits } = page;
 
@@ -58,6 +67,7 @@ export default async function RestaurantPage({ params, searchParams }: Restauran
         visits={visits}
         selectedVisitId={visit.id}
         menuEnabled={restaurant.menuEnabled}
+        publicationState={('publicationState' in visit ? visit.publicationState : 'published') as PublicationState}
       />
     </>
   );

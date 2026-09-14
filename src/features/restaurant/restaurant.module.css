@@ -112,6 +112,30 @@
   animation: photoArrival 420ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.visibilityNotice {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 32px;
+  padding: 14px 16px;
+  border: 1px solid var(--review-accent, var(--ember));
+  background: color-mix(in srgb, var(--review-surface, var(--surface)) 92%, transparent);
+  color: var(--review-ink, var(--ink));
+}
+
+.visibilityNotice strong {
+  flex: none;
+  color: var(--review-accent-bright, var(--ember-bright));
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+.visibilityNotice span {
+  color: var(--review-ink-muted, var(--ink-muted));
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
 .photo[data-direction='previous'] { --photo-travel: -22px; }
 
 .photoFitToggle {

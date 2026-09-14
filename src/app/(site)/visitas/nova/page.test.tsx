@@ -79,7 +79,7 @@ describe('página privada de criação de visita', () => {
       searchParams: Promise.resolve({ restaurante: restaurant.slug }),
     }));
 
-    expect(dependencies.findCatalogRestaurant).toHaveBeenCalledWith(restaurant.slug, true);
+    expect(dependencies.findCatalogRestaurant).toHaveBeenCalledWith(restaurant.slug, member.id);
     expect(dependencies.listCatalogRestaurants).not.toHaveBeenCalled();
     expect(screen.getByRole('heading', { name: 'Mesa Conhecida' })).toBeInTheDocument();
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
@@ -97,7 +97,7 @@ describe('página privada de criação de visita', () => {
     await expect(NewVisitPage({
       searchParams: Promise.resolve({ restaurante: 'nao-existe' }),
     })).rejects.toThrow('NEXT_NOT_FOUND_TEST');
-    expect(dependencies.findCatalogRestaurant).toHaveBeenCalledWith('nao-existe', true);
+    expect(dependencies.findCatalogRestaurant).toHaveBeenCalledWith('nao-existe', member.id);
     expect(dependencies.notFound).toHaveBeenCalledOnce();
   });
 

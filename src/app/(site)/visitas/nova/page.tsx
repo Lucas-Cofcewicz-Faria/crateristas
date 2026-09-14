@@ -7,9 +7,9 @@ import { findCatalogRestaurant } from '@/features/restaurants/catalog';
 export const dynamic = 'force-dynamic';
 
 export default async function NewVisitPage({ searchParams }: { searchParams?: Promise<{ restaurante?: string }> } = {}) {
-  await requireMember();
+  const member = await requireMember();
   const selectedSlug = (await searchParams)?.restaurante;
-  const restaurant = selectedSlug ? await findCatalogRestaurant(selectedSlug, true) : null;
+  const restaurant = selectedSlug ? await findCatalogRestaurant(selectedSlug, member.id) : null;
   if (selectedSlug && !restaurant) notFound();
 
   return (

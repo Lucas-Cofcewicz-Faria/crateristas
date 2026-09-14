@@ -16,7 +16,7 @@ describe('menu route access', () => {
   });
   it('scopes a public item to its restaurant and published-only queries', async () => {
     await getMenuItemContext('restaurante', 'prato');
-    expect(deps.restaurant).toHaveBeenCalledWith('restaurante', false);
+    expect(deps.restaurant).toHaveBeenCalledWith('restaurante', undefined);
     expect(deps.item).toHaveBeenCalledWith('restaurant-1', 'prato', false);
   });
   it('lets active members see drafts but still scopes the restaurant', async () => {
