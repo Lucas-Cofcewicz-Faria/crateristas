@@ -9,6 +9,8 @@ import type {
   AdminVisitSummary,
   HistoricalReview,
   MemberRecord,
+  MemberVisibleVisitDetail,
+  MemberVisibleVisitSummary,
   PendingVisit,
   PhotoInput,
   PhotoRecord,
@@ -244,6 +246,20 @@ function publicVisitSummaryFromRow(row: Row): PublicVisitSummary {
     },
     overall: nullableNumber(row.overall, 'overall'),
     coverPhotoUrl: nullableString(row.cover_photo_url, 'cover_photo_url'),
+  };
+}
+
+function memberVisibleVisitSummaryFromRow(row: Row): MemberVisibleVisitSummary {
+  return {
+    ...publicVisitSummaryFromRow(row),
+    publicationState: publicationState(row.publication_state),
+  };
+}
+
+function memberVisibleVisitDetailFromRow(row: Row): MemberVisibleVisitDetail {
+  return {
+    ...publicVisitDetailFromRow(row),
+    publicationState: publicationState(row.publication_state),
   };
 }
 
@@ -1063,6 +1079,74 @@ class NeonReviewRepository implements ReviewRepository {
     return rows.map(publicVisitSummaryFromRow);
   }
 
+  async listMemberVisibleVisits(
+    memberId: string,
+    filters: PublicVisitFilters,
+  ): Promise<MemberVisibleVisitSummary[]> {
+    const rows = await this.sql.query(
+      `SELECT
+         v.id,
+         v.slug,
+         v.visited_at,
+         v.published_at,
+         v.publication_state,
+         r.slug AS restaurant_slug,
+         r.name AS restaurant_name,
+         r.cuisine,
+         r.neighborhood,
+         r.city,
+         r.address,
+         r.price_band,
+         aggregate.participant_count,
+         aggregate.average_food,
+         aggregate.average_service,
+         aggregate.average_ambience,
+         aggregate.average_value,
+         aggregate.average_access,
+         aggregate.average_wait_time,
+         aggregate.overall,
+         (SELECT p.url FROM visit_photos p WHERE p.visit_id = v.id ORDER BY p.position LIMIT 1)
+           AS cover_photo_url
+       FROM visits v
+       JOIN restaurants r ON r.id = v.restaurant_id
+       LEFT JOIN LATERAL (
+         SELECT
+           COUNT(s.id)::int AS participant_count,
+           ROUND(AVG(s.food)::numeric, 1)::float8 AS average_food,
+           ROUND(AVG(s.service)::numeric, 1)::float8 AS average_service,
+           ROUND(AVG(s.ambience)::numeric, 1)::float8 AS average_ambience,
+           ROUND(AVG(s.value)::numeric, 1)::float8 AS average_value,
+           ROUND(AVG(s.access)::numeric, 1)::float8 AS average_access,
+           ROUND(AVG(s.wait_time)::numeric, 1)::float8 AS average_wait_time,
+           ROUND(AVG((s.food + s.service + s.ambience + s.value + s.access + s.wait_time) / 6.0)::numeric, 1)::float8
+             AS overall
+         FROM scorecards s
+         WHERE s.visit_id = v.id
+       ) aggregate ON TRUE
+       WHERE EXISTS (
+           SELECT 1 FROM members viewer
+           WHERE viewer.id = $4 AND viewer.removed_at IS NULL
+         )
+         AND EXISTS (
+           SELECT 1 FROM scorecards visible_score WHERE visible_score.visit_id = v.id
+         )
+         AND v.id = (
+           SELECT latest.id FROM visits latest
+           WHERE latest.restaurant_id = r.id
+             AND EXISTS (
+               SELECT 1 FROM scorecards latest_score WHERE latest_score.visit_id = latest.id
+             )
+           ORDER BY latest.visited_at DESC, latest.created_at DESC, latest.id DESC LIMIT 1
+         )
+         AND ($1::text IS NULL OR r.name ILIKE '%' || $1 || '%' OR r.cuisine ILIKE '%' || $1 || '%')
+         AND ($2::text IS NULL OR r.cuisine ILIKE $2)
+         AND ($3::text IS NULL OR r.neighborhood ILIKE $3)
+       ORDER BY v.visited_at DESC, v.created_at DESC, v.id`,
+      [filters.busca ?? null, filters.culinaria ?? null, filters.bairro ?? null, memberId],
+    );
+    return rows.map(memberVisibleVisitSummaryFromRow);
+  }
+
   async listRecentPublishedVisits(limit: number): Promise<RecentPublishedVisit[]> {
     const rows = await this.sql.query(
       `SELECT
@@ -1120,12 +1204,26 @@ class NeonReviewRepository implements ReviewRepository {
   }
 
   async getPublicVisitBySlug(slug: string): Promise<PublicVisitDetail | null> {
+    const visit = await this.getVisibleVisitBySlug(slug, null);
+    return visit ? publicVisitDetailFromRow(visit) : null;
+  }
+
+  async getMemberVisibleVisitBySlug(
+    slug: string,
+    memberId: string,
+  ): Promise<MemberVisibleVisitDetail | null> {
+    const visit = await this.getVisibleVisitBySlug(slug, memberId);
+    return visit ? memberVisibleVisitDetailFromRow(visit) : null;
+  }
+
+  private async getVisibleVisitBySlug(slug: string, memberId: string | null): Promise<Row | null> {
     const rows = await this.sql.query(
       `SELECT
          v.id,
          v.slug,
          v.visited_at,
          v.published_at,
+         v.publication_state,
          v.legacy_review_id,
          v.legacy_payload,
          r.slug AS restaurant_slug,
@@ -1191,11 +1289,16 @@ class NeonReviewRepository implements ReviewRepository {
          WHERE s.visit_id = v.id
        ) comments ON TRUE
        WHERE v.slug = $1
-         AND v.publication_state = 'published'`,
-      [slug],
+         AND (
+           v.publication_state = 'published'
+           OR EXISTS (
+             SELECT 1 FROM members viewer
+             WHERE viewer.id = $2 AND viewer.removed_at IS NULL
+           )
+         )`,
+      [slug, memberId],
     );
-    if (!rows[0]) return null;
-    return publicVisitDetailFromRow(rows[0]);
+    return rows[0] ?? null;
   }
 
   async listPublicMembers(): Promise<PublicMemberSummary[]> {

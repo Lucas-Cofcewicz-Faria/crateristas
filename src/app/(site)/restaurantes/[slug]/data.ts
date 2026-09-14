@@ -3,13 +3,16 @@ import type { PublicVisitDetail } from '@/domain/reviews/repository';
 import { getReviewRepository } from '@/lib/reviews/server';
 import { findCatalogRestaurant, listRestaurantVisits } from '@/features/restaurants/catalog';
 
-export const getRestaurantVisitPage = cache(async (slug: string, visitId?: string) => {
-  const restaurant = await findCatalogRestaurant(slug);
+export const getRestaurantVisitPage = cache(async (slug: string, visitId?: string, memberId?: string) => {
+  const restaurant = await findCatalogRestaurant(slug, memberId);
   if (!restaurant) return null;
-  const visits = await listRestaurantVisits(restaurant.id);
+  const visits = await listRestaurantVisits(restaurant.id, memberId);
   const selected = visitId ? visits.find((visit) => visit.id === visitId) : visits[0];
   if (!selected) return null;
-  const visit = await getReviewRepository().getPublicVisitBySlug(selected.slug);
+  const repository = getReviewRepository();
+  const visit = memberId
+    ? await repository.getMemberVisibleVisitBySlug(selected.slug, memberId)
+    : await repository.getPublicVisitBySlug(selected.slug);
   return visit ? { visit, restaurant, visits } : null;
 });
 

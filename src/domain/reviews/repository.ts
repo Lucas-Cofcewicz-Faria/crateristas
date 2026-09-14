@@ -110,6 +110,14 @@ export interface PublicVisitDetail extends PublicVisitSummary {
   historical: HistoricalReview | null;
 }
 
+export interface MemberVisibleVisitSummary extends PublicVisitSummary {
+  publicationState: PublicationState;
+}
+
+export interface MemberVisibleVisitDetail extends PublicVisitDetail {
+  publicationState: PublicationState;
+}
+
 export interface PendingVisit {
   id: string;
   slug: string;
@@ -241,10 +249,12 @@ export interface ReviewRepository {
     expectedPhotoPathnames: string[],
   ): Promise<boolean>;
   listPublicVisits(filters: PublicVisitFilters): Promise<PublicVisitSummary[]>;
+  listMemberVisibleVisits(memberId: string, filters: PublicVisitFilters): Promise<MemberVisibleVisitSummary[]>;
   listRecentPublishedVisits(limit: number): Promise<RecentPublishedVisit[]>;
   listVisitsForAdministration(actorId: string): Promise<AdminVisitSummary[]>;
   listVisitsForManagement(actorId: string): Promise<AdminVisitSummary[]>;
   getPublicVisitBySlug(slug: string): Promise<PublicVisitDetail | null>;
+  getMemberVisibleVisitBySlug(slug: string, memberId: string): Promise<MemberVisibleVisitDetail | null>;
   listPublicMembers(): Promise<PublicMemberSummary[]>;
   listPendingVisitsForMember(memberId: string): Promise<PendingVisit[]>;
   listVisitsInFormationForMember(memberId: string): Promise<PendingVisit[]>;
