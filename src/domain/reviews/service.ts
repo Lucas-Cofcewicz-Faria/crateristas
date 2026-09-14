@@ -116,22 +116,10 @@ export function createReviewService(repository: ReviewRepository): ReviewService
       if (!visit) throw new Error('Visita não encontrada.');
 
       const scorecard = scorecardSchema.parse(input);
-      const transitionAtQuorum = resolvePublication({
-        state: visit.publicationState,
-        reason: visit.publicationReason,
-        participantCount: visit.quorum,
-        quorum: visit.quorum,
-        command: 'scorecard_saved',
-        isAdmin: actor.role === 'admin',
-      });
-
       return repository.submitScorecardAtomically({
         visitId,
         memberId: actor.id,
         scorecard,
-        expectedPublicationState: visit.publicationState,
-        quorum: visit.quorum,
-        transitionAtQuorum,
       });
     },
 
@@ -152,7 +140,6 @@ export function createReviewService(repository: ReviewRepository): ReviewService
         state: visit.publicationState,
         reason: visit.publicationReason,
         participantCount,
-        quorum: visit.quorum,
         command,
         isAdmin: true,
       });

@@ -1,0 +1,32 @@
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+const deps = vi.hoisted(() => ({ save: vi.fn(), refresh: vi.fn() }));
+vi.mock('./profile-actions', () => ({ saveProfileAction: deps.save }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: deps.refresh }) }));
+import { ProfileEditor } from './ProfileEditor';
+const member = { displayName: 'Ana', slug: 'ana', avatarUrl: null, bio: '', societyTitle: 'Guardiã' };
+afterEach(cleanup);
+beforeEach(() => { vi.resetAllMocks(); deps.save.mockResolvedValue({ error: null, avatarUrl: null }); });
+it('exibe cargo somente para leitura e permite salvar descrição vazia', async () => {
+  render(<ProfileEditor member={member} />);
+  expect(screen.getByText('Guardiã')).toBeVisible();
+  expect(screen.queryByRole('textbox', { name: /cargo/i })).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('Descrição opcional'), { target: { value: 'Minha história.' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Salvar perfil' }));
+  await screen.findByRole('status');
+  expect(deps.save.mock.calls[0][0].get('bio')).toBe('Minha história.');
+  expect(deps.save.mock.calls[0][0].get('societyTitle')).toBeNull();
+  expect(screen.getByRole('link', { name: /ver perfil público/i })).toHaveAttribute('href', '/membros/ana');
+});
+it('preserva o texto após falha e permite tentar novamente', async () => {
+  deps.save.mockResolvedValueOnce({ error: 'Tente novamente.' });
+  render(<ProfileEditor member={member} />);
+  fireEvent.change(screen.getByLabelText('Descrição opcional'), { target: { value: 'Texto preservado' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Salvar perfil' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Tente novamente.');
+  expect(screen.getByLabelText('Descrição opcional')).toHaveValue('Texto preservado');
+  const retry = await screen.findByRole('button', { name: 'Salvar perfil' });
+  await waitFor(() => expect(retry).toBeEnabled());
+  fireEvent.click(retry);
+  await waitFor(() => expect(deps.refresh).toHaveBeenCalledOnce());
+});

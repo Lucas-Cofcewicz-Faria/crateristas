@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { CRATERISTAS_GROUP_SIZE, type PublicationState } from '@/domain/reviews/types';
+import { type PublicationState } from '@/domain/reviews/types';
 import {
   changePublication,
   type AdminPublicationCommand,
@@ -21,10 +21,10 @@ interface ActionPresentation {
 const ACTIONS: Record<PublicationState, ActionPresentation> = {
   private: {
     command: 'publish_early',
-    label: 'Publicar antecipadamente',
-    dialogTitle: 'Confirmar publicação antecipada',
+    label: 'Publicar',
+    dialogTitle: 'Confirmar publicação',
     confirmLabel: 'Confirmar publicação',
-    description: 'O registro ficará visível no arquivo público antes do quórum.',
+    description: 'O registro ficará visível no arquivo público. Os integrantes poderão continuar contribuindo depois.',
     variant: 'primary',
   },
   published: {
@@ -130,10 +130,10 @@ export function AdminPublicationControls({
           {action.command === 'publish_early' ? (
             <div className={styles.partialNotice}>
               <strong>
-                {participantCount} de {CRATERISTAS_GROUP_SIZE} membros{' '}
+                {participantCount} {participantCount === 1 ? 'integrante' : 'integrantes'}{' '}
                 {participantCount === 1 ? 'contribuiu' : 'contribuíram'}
               </strong>
-              <p>A média ainda é parcial.</p>
+              <p>A média acompanha as contribuições recebidas.</p>
             </div>
           ) : null}
           {error ? <p className={styles.formError} role="alert">{error}</p> : null}

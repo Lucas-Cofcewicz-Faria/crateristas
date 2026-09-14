@@ -1,0 +1,204 @@
+2026-09-06 22:40:20.614 -03 [26856] LOG:  starting PostgreSQL 17.4 on x86_64-windows, compiled by msvc-19.43.34808, 64-bit
+2026-09-06 22:40:20.615 -03 [26856] LOG:  listening on IPv4 address "127.0.0.1", port 55439
+2026-09-06 22:40:20.655 -03 [7836] LOG:  database system was shut down at 2026-09-06 22:39:42 -03
+2026-09-06 22:40:20.671 -03 [26856] LOG:  database system is ready to accept connections
+2026-09-06 22:42:14.330 -03 [23088] FATAL:  role "patho" does not exist
+2026-09-06 22:42:48.562 -03 [10568] ERROR:  column "hidden_by" is of type uuid but expression is of type text at character 736
+2026-09-06 22:42:48.562 -03 [10568] HINT:  You will need to rewrite or cast the expression.
+2026-09-06 22:42:48.562 -03 [10568] STATEMENT:  WITH locked_visit AS MATERIALIZED (
+	  SELECT * FROM visits
+	  WHERE id = 'dea62527-75e8-4af9-afa3-cf43cade5d25'
+	    AND deletion_started_at IS NULL
+	  FOR UPDATE
+	),
+	score_count AS (
+	  SELECT COUNT(*)::int AS participant_count
+	  FROM scorecards
+	  WHERE visit_id = 'dea62527-75e8-4af9-afa3-cf43cade5d25'
+	),
+	transition AS (
+	  UPDATE visits v
+	  SET publication_state = 'published',
+	      publication_reason = 'admin_override',
+	      published_at = CASE WHEN 'published' = 'published' THEN NOW() ELSE v.published_at END,
+	      published_by = CASE WHEN 'published' = 'published' THEN 'f9320fb2-d3d5-4f9b-8e03-c8618eec4dbd' ELSE v.published_by END,
+	      hidden_at = CASE WHEN 'published' = 'hidden' THEN NOW() ELSE NULL END,
+	      hidden_by = CASE WHEN 'published' = 'hidden' THEN 'f9320fb2-d3d5-4f9b-8e03-c8618eec4dbd' ELSE NULL END,
+	      updated_at = NOW(),
+	      version = v.version + 1
+	  FROM locked_visit lv, score_count sc
+	  WHERE v.id = lv.id
+	    AND lv.publication_state = 'private'
+	    AND lv.publication_state <> 'published'
+	    AND ('publish_early' = 'hide' OR sc.participant_count >= 1)
+	  RETURNING v.*
+	),
+	event AS (
+	  INSERT INTO publication_events (visit_id, actor_id, action, participant_count)
+	  SELECT t.id, 'f9320fb2-d3d5-4f9b-8e03-c8618eec4dbd', 'publish_early', sc.participant_count
+	  FROM transition t, score_count sc
+	  RETURNING id
+	)
+	SELECT
+	  COALESCE(t.id, lv.id) AS id,
+	  COALESCE(t.slug, lv.slug) AS slug,
+	  COALESCE(t.restaurant_id, lv.restaurant_id) AS restaurant_id,
+	  CASE WHEN t.id IS NOT NULL THEN t.created_by ELSE lv.created_by END AS created_by,
+	  COALESCE(t.visited_at, lv.visited_at) AS visited_at,
+	  COALESCE(t.quorum, lv.quorum) AS quorum,
+	  COALESCE(t.publication_state, lv.publication_state) AS publication_state,
+	  CASE WHEN t.id IS NOT NULL THEN t.publication_reason ELSE lv.publication_reason END AS publication_reason,
+	  CASE WHEN t.id IS NOT NULL THEN t.published_at ELSE lv.published_at END AS published_at,
+	  CASE WHEN t.id IS NOT NULL THEN t.published_by ELSE lv.published_by END AS published_by,
+	  CASE WHEN t.id IS NOT NULL THEN t.hidden_at ELSE lv.hidden_at END AS hidden_at,
+	  CASE WHEN t.id IS NOT NULL THEN t.hidden_by ELSE lv.hidden_by END AS hidden_by,
+	  CASE WHEN t.id IS NOT NULL THEN t.legacy_review_id ELSE lv.legacy_review_id END AS legacy_review_id,
+	  CASE WHEN t.id IS NOT NULL THEN t.legacy_payload ELSE lv.legacy_payload END AS legacy_payload
+	FROM locked_visit lv
+	LEFT JOIN transition t ON TRUE
+	LEFT JOIN event e ON TRUE
+	LIMIT 1;
+2026-09-06 22:43:21.747 -03 [26344] ERROR:  inconsistent types deduced for parameter $1 at character 101
+2026-09-06 22:43:21.747 -03 [26344] DETAIL:  uuid versus text
+2026-09-06 22:43:21.747 -03 [26344] STATEMENT:  PREPARE qa_0 AS INSERT INTO members (id, auth_user_id, email, slug, display_name, role) VALUES ($1, $1, $2, $1, 'Administrador sintético', 'admin');
+2026-09-06 22:43:22.536 -03 [7484] ERROR:  new row for relation "publication_events" violates check constraint "publication_events_participant_count_check"
+2026-09-06 22:43:22.536 -03 [7484] DETAIL:  Failing row contains (b2db16a5-350a-4460-a465-68d404653acf, 66cd061b-983d-4b73-9687-97bc807a0602, f9320fb2-d3d5-4f9b-8e03-c8618eec4dbd, publish_early, 9, 2026-09-06 22:43:22.531335-03).
+2026-09-06 22:43:22.536 -03 [7484] STATEMENT:  EXECUTE qa_0('66cd061b-983d-4b73-9687-97bc807a0602','private','published','admin_override','f9320fb2-d3d5-4f9b-8e03-c8618eec4dbd','publish_early');
+2026-09-06 22:45:20.660 -03 [23148] LOG:  checkpoint starting: time
+2026-09-06 22:45:44.169 -03 [23148] LOG:  checkpoint complete: wrote 217 buffers (1.3%); 0 WAL file(s) added, 0 removed, 0 recycled; write=23.398 s, sync=0.080 s, total=23.510 s; sync files=117, longest=0.034 s, average=0.001 s; distance=1009 kB, estimate=1009 kB; lsn=0/166E7A8, redo lsn=0/166E718
+2026-09-06 22:53:01.237 -03 [26856] LOG:  received fast shutdown request
+2026-09-06 22:53:01.239 -03 [26856] LOG:  aborting any active transactions
+2026-09-06 22:53:01.246 -03 [26856] LOG:  background worker "logical replication launcher" (PID 20868) exited with exit code 1
+2026-09-06 22:53:01.246 -03 [23148] LOG:  shutting down
+2026-09-06 22:53:01.248 -03 [23148] LOG:  checkpoint starting: shutdown immediate
+2026-09-06 22:53:01.260 -03 [23148] LOG:  checkpoint complete: wrote 0 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.001 s, sync=0.001 s, total=0.015 s; sync files=0, longest=0.000 s, average=0.000 s; distance=0 kB, estimate=908 kB; lsn=0/166E858, redo lsn=0/166E858
+2026-09-06 22:53:01.270 -03 [26856] LOG:  database system is shut down
+2026-09-06 23:15:04.646 -03 [17412] LOG:  starting PostgreSQL 17.4 on x86_64-windows, compiled by msvc-19.43.34808, 64-bit
+2026-09-06 23:15:04.651 -03 [17412] LOG:  listening on IPv6 address "::1", port 5432
+2026-09-06 23:15:04.652 -03 [17412] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2026-09-06 23:15:04.699 -03 [25488] LOG:  database system was shut down at 2026-09-06 22:53:01 -03
+2026-09-06 23:15:04.730 -03 [17412] LOG:  database system is ready to accept connections
+2026-09-06 23:16:40.781 -03 [17412] LOG:  received fast shutdown request
+2026-09-06 23:16:40.783 -03 [17412] LOG:  aborting any active transactions
+2026-09-06 23:16:40.787 -03 [17412] LOG:  background worker "logical replication launcher" (PID 17872) exited with exit code 1
+2026-09-06 23:16:40.788 -03 [21040] LOG:  shutting down
+2026-09-06 23:16:40.789 -03 [21040] LOG:  checkpoint starting: shutdown immediate
+2026-09-06 23:16:40.804 -03 [21040] LOG:  checkpoint complete: wrote 3 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.002 s, total=0.017 s; sync files=2, longest=0.001 s, average=0.001 s; distance=0 kB, estimate=0 kB; lsn=0/166E908, redo lsn=0/166E908
+2026-09-06 23:16:40.811 -03 [17412] LOG:  database system is shut down
+2026-09-06 23:16:41.039 -03 [18192] LOG:  starting PostgreSQL 17.4 on x86_64-windows, compiled by msvc-19.43.34808, 64-bit
+2026-09-06 23:16:41.040 -03 [18192] LOG:  listening on IPv4 address "127.0.0.1", port 55439
+2026-09-06 23:16:41.081 -03 [24860] LOG:  database system was shut down at 2026-09-06 23:16:40 -03
+2026-09-06 23:16:41.106 -03 [18192] LOG:  database system is ready to accept connections
+2026-09-06 23:17:21.671 -03 [18192] LOG:  received fast shutdown request
+2026-09-06 23:17:21.706 -03 [18192] LOG:  aborting any active transactions
+2026-09-06 23:17:21.718 -03 [18192] LOG:  background worker "logical replication launcher" (PID 21708) exited with exit code 1
+2026-09-06 23:17:21.728 -03 [23272] LOG:  shutting down
+2026-09-06 23:17:21.731 -03 [23272] LOG:  checkpoint starting: shutdown immediate
+2026-09-06 23:17:21.792 -03 [23272] LOG:  checkpoint complete: wrote 47 buffers (0.3%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.013 s, sync=0.029 s, total=0.065 s; sync files=40, longest=0.003 s, average=0.001 s; distance=88 kB, estimate=88 kB; lsn=0/1684CD8, redo lsn=0/1684CD8
+2026-09-06 23:17:21.813 -03 [18192] LOG:  database system is shut down
+2026-09-08 18:59:43.241 -03 [14808] LOG:  starting PostgreSQL 17.4 on x86_64-windows, compiled by msvc-19.43.34808, 64-bit
+2026-09-08 18:59:43.242 -03 [14808] LOG:  listening on IPv4 address "127.0.0.1", port 55439
+2026-09-08 18:59:43.281 -03 [28572] LOG:  database system was shut down at 2026-09-06 23:17:21 -03
+2026-09-08 18:59:43.323 -03 [14808] LOG:  database system is ready to accept connections
+2026-09-08 19:04:43.282 -03 [24448] LOG:  checkpoint starting: time
+2026-09-08 19:04:52.329 -03 [24448] LOG:  checkpoint complete: wrote 85 buffers (0.5%); 0 WAL file(s) added, 0 removed, 0 recycled; write=8.942 s, sync=0.083 s, total=9.047 s; sync files=60, longest=0.035 s, average=0.002 s; distance=296 kB, estimate=296 kB; lsn=0/16CEF68, redo lsn=0/16CEED8
+2026-09-08 19:09:43.341 -03 [24448] LOG:  checkpoint starting: time
+2026-09-08 19:09:48.152 -03 [24448] LOG:  checkpoint complete: wrote 44 buffers (0.3%); 0 WAL file(s) added, 0 removed, 0 recycled; write=4.718 s, sync=0.057 s, total=4.812 s; sync files=38, longest=0.009 s, average=0.002 s; distance=147 kB, estimate=281 kB; lsn=0/16F3C40, redo lsn=0/16F3BE8
+2026-09-08 19:09:53.106 -03 [14808] LOG:  received fast shutdown request
+2026-09-08 19:09:53.109 -03 [14808] LOG:  aborting any active transactions
+2026-09-08 19:09:53.115 -03 [14808] LOG:  background worker "logical replication launcher" (PID 25300) exited with exit code 1
+2026-09-08 19:09:53.115 -03 [24448] LOG:  shutting down
+2026-09-08 19:09:53.117 -03 [24448] LOG:  checkpoint starting: shutdown immediate
+2026-09-08 19:09:53.129 -03 [24448] LOG:  checkpoint complete: wrote 0 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.001 s, sync=0.001 s, total=0.013 s; sync files=0, longest=0.000 s, average=0.000 s; distance=0 kB, estimate=253 kB; lsn=0/16F3CB8, redo lsn=0/16F3CB8
+2026-09-08 19:09:53.139 -03 [14808] LOG:  database system is shut down
+2026-09-09 14:04:33.674 -03 [2788] LOG:  starting PostgreSQL 17.4 on x86_64-windows, compiled by msvc-19.43.34808, 64-bit
+2026-09-09 14:04:33.679 -03 [2788] LOG:  listening on IPv6 address "::1", port 5432
+2026-09-09 14:04:33.679 -03 [2788] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2026-09-09 14:04:33.718 -03 [23104] LOG:  database system was shut down at 2026-09-08 19:09:53 -03
+2026-09-09 14:04:33.762 -03 [2788] LOG:  database system is ready to accept connections
+2026-09-09 14:05:06.185 -03 [2788] LOG:  received fast shutdown request
+2026-09-09 14:05:06.188 -03 [2788] LOG:  aborting any active transactions
+2026-09-09 14:05:06.194 -03 [2788] LOG:  background worker "logical replication launcher" (PID 19408) exited with exit code 1
+2026-09-09 14:05:06.194 -03 [15228] LOG:  shutting down
+2026-09-09 14:05:06.196 -03 [15228] LOG:  checkpoint starting: shutdown immediate
+2026-09-09 14:05:06.215 -03 [15228] LOG:  checkpoint complete: wrote 3 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.004 s, sync=0.008 s, total=0.022 s; sync files=2, longest=0.006 s, average=0.004 s; distance=0 kB, estimate=0 kB; lsn=0/16F3D68, redo lsn=0/16F3D68
+2026-09-09 14:05:06.228 -03 [2788] LOG:  database system is shut down
+2026-09-09 14:05:06.556 -03 [8544] LOG:  starting PostgreSQL 17.4 on x86_64-windows, compiled by msvc-19.43.34808, 64-bit
+2026-09-09 14:05:06.561 -03 [8544] LOG:  listening on IPv6 address "::1", port 55439
+2026-09-09 14:05:06.561 -03 [8544] LOG:  listening on IPv4 address "127.0.0.1", port 55439
+2026-09-09 14:05:06.711 -03 [14088] LOG:  database system was shut down at 2026-09-09 14:05:06 -03
+2026-09-09 14:05:06.737 -03 [8544] LOG:  database system is ready to accept connections
+2026-09-09 14:05:14.223 -03 [18660] ERROR:  relation "schema_migrations" does not exist at character 18
+2026-09-09 14:05:14.223 -03 [18660] STATEMENT:  SELECT name FROM schema_migrations ORDER BY name
+2026-09-09 14:08:58.240 -03 [7948] ERROR:  inconsistent types deduced for parameter $1 at character 101
+2026-09-09 14:08:58.240 -03 [7948] DETAIL:  text versus uuid
+2026-09-09 14:08:58.240 -03 [7948] STATEMENT:  PREPARE qa_0 AS INSERT INTO members (id, auth_user_id, email, slug, display_name, role)
+	    VALUES ($1, $1::text, $2, $1::text, $3, $4);
+2026-09-09 14:08:58.361 -03 [13700] ERROR:  inconsistent types deduced for parameter $1 at character 101
+2026-09-09 14:08:58.361 -03 [13700] DETAIL:  text versus uuid
+2026-09-09 14:08:58.361 -03 [13700] STATEMENT:  PREPARE qa_0 AS INSERT INTO members (id, auth_user_id, email, slug, display_name, role)
+	    VALUES ($1, $1::text, $2, $1::text, $3, $4);
+2026-09-09 14:08:58.468 -03 [21272] ERROR:  inconsistent types deduced for parameter $1 at character 101
+2026-09-09 14:08:58.468 -03 [21272] DETAIL:  text versus uuid
+2026-09-09 14:08:58.468 -03 [21272] STATEMENT:  PREPARE qa_0 AS INSERT INTO members (id, auth_user_id, email, slug, display_name, role)
+	    VALUES ($1, $1::text, $2, $1::text, $3, $4);
+2026-09-09 14:08:58.573 -03 [24312] ERROR:  inconsistent types deduced for parameter $1 at character 101
+2026-09-09 14:08:58.573 -03 [24312] DETAIL:  text versus uuid
+2026-09-09 14:08:58.573 -03 [24312] STATEMENT:  PREPARE qa_0 AS INSERT INTO members (id, auth_user_id, email, slug, display_name, role)
+	    VALUES ($1, $1::text, $2, $1::text, $3, $4);
+2026-09-09 14:08:58.668 -03 [6172] ERROR:  inconsistent types deduced for parameter $1 at character 101
+2026-09-09 14:08:58.668 -03 [6172] DETAIL:  text versus uuid
+2026-09-09 14:08:58.668 -03 [6172] STATEMENT:  PREPARE qa_0 AS INSERT INTO members (id, auth_user_id, email, slug, display_name, role)
+	    VALUES ($1, $1::text, $2, $1::text, $3, $4);
+2026-09-09 14:09:23.018 -03 [26852] ERROR:  new row for relation "menu_scorecards" violates check constraint "menu_scorecards_comment_check"
+2026-09-09 14:09:23.018 -03 [26852] DETAIL:  Failing row contains (63325c05-471e-44b3-9d44-51d54b98c977, d88f970c-4e30-4483-8a9c-49d43ee61f34, 8, 7, 6, null, null, , 2026-09-09 14:09:23.01288-03).
+2026-09-09 14:09:23.018 -03 [26852] STATEMENT:  EXECUTE qa_0('d88f970c-4e30-4483-8a9c-49d43ee61f34','9f8931ad-71c5-4443-8ef7-f387eb752830','prato-que-deve-reverter-d2ab7394','Prato que deve reverter','Principal','',NULL,'8','7','6',NULL,NULL,'');
+2026-09-09 14:09:50.671 -03 [12224] ERROR:  new row for relation "menu_scorecards" violates check constraint "menu_scorecards_comment_check"
+2026-09-09 14:09:50.671 -03 [12224] DETAIL:  Failing row contains (30b2d625-6aa1-4a83-8d87-2029d38cfa35, cba92181-c8a8-4281-a018-853b2bf6a30f, 8, 7, 6, null, null, , 2026-09-09 14:09:50.666386-03).
+2026-09-09 14:09:50.671 -03 [12224] STATEMENT:  EXECUTE qa_0('cba92181-c8a8-4281-a018-853b2bf6a30f','45f13ecd-9578-4a6e-a136-83cb8d0a31d2','prato-que-deve-reverter-5e0e0963','Prato que deve reverter','Principal','',NULL,'8','7','6',NULL,NULL,'');
+2026-09-09 14:10:06.610 -03 [22864] LOG:  checkpoint starting: time
+2026-09-09 14:10:16.390 -03 [22864] LOG:  checkpoint complete: wrote 91 buffers (0.6%); 0 WAL file(s) added, 0 removed, 0 recycled; write=9.628 s, sync=0.088 s, total=9.780 s; sync files=64, longest=0.035 s, average=0.002 s; distance=413 kB, estimate=413 kB; lsn=0/175B380, redo lsn=0/175B328
+2026-09-09 14:11:14.285 -03 [9480] ERROR:  column "visited_at" is of type date but expression is of type text at character 639
+2026-09-09 14:11:14.285 -03 [9480] HINT:  You will need to rewrite or cast the expression.
+2026-09-09 14:11:14.285 -03 [9480] STATEMENT:  BEGIN; CREATE TEMP TABLE qa_context (member_id uuid, restaurant_id uuid); WITH member AS (INSERT INTO members (auth_user_id,email,slug,display_name) VALUES ('qa-multivisit','qa-multivisit@example.invalid','qa-multivisit','QA multivisit') RETURNING id), restaurant AS (INSERT INTO restaurants (slug,name,cuisine,neighborhood,menu_enabled) VALUES ('qa-multivisit','QA multivisit','Teste','Teste',true) RETURNING id) INSERT INTO qa_context SELECT member.id, restaurant.id FROM member, restaurant; INSERT INTO visits (slug,restaurant_id,created_by,visited_at,publication_state,created_at,published_at) SELECT 'qa-old',restaurant_id,member_id,'2026-09-07','published','2026-09-07 12:00Z','2026-09-07 13:00Z' FROM qa_context UNION ALL SELECT 'qa-same-date-old',restaurant_id,member_id,'2026-09-08','published','2026-09-08 12:00Z','2026-09-08 13:00Z' FROM qa_context UNION ALL SELECT 'qa-same-date-new',restaurant_id,member_id,'2026-09-08','published','2026-09-08 14:00Z','2026-09-08 15:00Z' FROM qa_context; SELECT v.slug, v.visited_at FROM visits v JOIN restaurants r ON r.id=v.restaurant_id WHERE r.slug='qa-multivisit' AND v.publication_state='published' AND v.id=(SELECT latest.id FROM visits latest WHERE latest.restaurant_id=r.id AND latest.publication_state='published' ORDER BY latest.visited_at DESC,latest.created_at DESC,latest.id DESC LIMIT 1); SELECT slug,visited_at FROM visits WHERE restaurant_id=(SELECT restaurant_id FROM qa_context) AND publication_state='published' ORDER BY visited_at DESC,created_at DESC,id DESC; ROLLBACK;
+2026-09-09 14:14:45.417 -03 [22932] ERROR:  new row for relation "menu_scorecards" violates check constraint "menu_scorecards_comment_check"
+2026-09-09 14:14:45.417 -03 [22932] DETAIL:  Failing row contains (6274cd07-78cc-42cc-a38b-7a926286df92, 98303d32-b0a6-4a28-b69c-e7a4c9a0fd30, 8, 7, 6, null, null, , 2026-09-09 14:14:45.41233-03).
+2026-09-09 14:14:45.417 -03 [22932] STATEMENT:  EXECUTE qa_0('98303d32-b0a6-4a28-b69c-e7a4c9a0fd30','684d15b8-4716-420b-b47d-fc4dc1ad925a','prato-que-deve-reverter-1ecf531c','Prato que deve reverter','Principal','',NULL,'8','7','6',NULL,NULL,'');
+2026-09-09 14:15:06.410 -03 [22864] LOG:  checkpoint starting: time
+2026-09-09 14:15:12.463 -03 [22864] LOG:  checkpoint complete: wrote 55 buffers (0.3%); 0 WAL file(s) added, 0 removed, 0 recycled; write=5.906 s, sync=0.073 s, total=6.054 s; sync files=47, longest=0.035 s, average=0.002 s; distance=189 kB, estimate=391 kB; lsn=0/178AA10, redo lsn=0/178A9B8
+2026-09-09 14:16:07.407 -03 [19128] ERROR:  new row for relation "menu_scorecards" violates check constraint "menu_scorecards_comment_check"
+2026-09-09 14:16:07.407 -03 [19128] DETAIL:  Failing row contains (c7093c39-7b59-4c5d-bfb3-7e8aef87a95c, 6a5a3bfb-f2d6-4487-8147-12b78f2d088a, 8, 7, 6, null, null, , 2026-09-09 14:16:07.402965-03).
+2026-09-09 14:16:07.407 -03 [19128] STATEMENT:  EXECUTE qa_0('6a5a3bfb-f2d6-4487-8147-12b78f2d088a','178d1c21-b2c6-4f02-bb7e-235bf2fe1c76','prato-que-deve-reverter-62781620','Prato que deve reverter','Principal','',NULL,'8','7','6',NULL,NULL,'');
+2026-09-09 14:20:06.472 -03 [22864] LOG:  checkpoint starting: time
+2026-09-09 14:20:10.411 -03 [22864] LOG:  checkpoint complete: wrote 36 buffers (0.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=3.828 s, sync=0.062 s, total=3.940 s; sync files=32, longest=0.035 s, average=0.002 s; distance=135 kB, estimate=365 kB; lsn=0/17AC770, redo lsn=0/17AC718
+2026-09-09 14:20:35.701 -03 [8544] LOG:  background worker "logical replication launcher" (PID 24564) was terminated by exception 0xC000013A
+2026-09-09 14:20:35.701 -03 [8544] HINT:  See C include file "ntstatus.h" for a description of the hexadecimal value.
+2026-09-09 14:20:35.701 -03 [8544] LOG:  terminating any other active server processes
+2026-09-09 14:20:35.707 -03 [8544] LOG:  received fast shutdown request
+^C2026-09-09 15:17:53.471 -03 [7876] LOG:  starting PostgreSQL 17.4 on x86_64-windows, compiled by msvc-19.43.34808, 64-bit
+2026-09-09 15:17:53.475 -03 [7876] LOG:  listening on IPv6 address "::1", port 55439
+2026-09-09 15:17:53.475 -03 [7876] LOG:  listening on IPv4 address "127.0.0.1", port 55439
+2026-09-09 15:17:53.538 -03 [27296] LOG:  database system was interrupted; last known up at 2026-09-09 14:20:10 -03
+2026-09-09 15:18:00.603 -03 [27296] LOG:  could not open file "./server.log": sharing violation
+2026-09-09 15:18:00.603 -03 [27296] DETAIL:  Continuing to retry for 30 seconds.
+2026-09-09 15:18:00.603 -03 [27296] HINT:  You might have antivirus, backup, or similar software interfering with the database system.
+2026-09-09 15:18:27.683 -03 [27296] LOG:  syncing data directory (fsync), elapsed time: 34.14 s, current path: .
+2026-09-09 15:18:27.720 -03 [27296] LOG:  database system was not properly shut down; automatic recovery in progress
+2026-09-09 15:18:27.735 -03 [27296] LOG:  redo starts at 0/17AC718
+2026-09-09 15:18:27.735 -03 [27296] LOG:  invalid record length at 0/17AC820: expected at least 24, got 0
+2026-09-09 15:18:27.736 -03 [27296] LOG:  redo done at 0/17AC7E8 system usage: CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s
+2026-09-09 15:18:27.752 -03 [4128] LOG:  checkpoint starting: end-of-recovery immediate wait
+2026-09-09 15:18:27.776 -03 [4128] LOG:  checkpoint complete: wrote 3 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.004 s, sync=0.004 s, total=0.026 s; sync files=2, longest=0.002 s, average=0.002 s; distance=0 kB, estimate=0 kB; lsn=0/17AC820, redo lsn=0/17AC820
+2026-09-09 15:18:27.825 -03 [7876] LOG:  database system is ready to accept connections
+2026-09-09 15:19:34.368 -03 [25928] ERROR:  new row for relation "menu_scorecards" violates check constraint "menu_scorecards_comment_check"
+2026-09-09 15:19:34.368 -03 [25928] DETAIL:  Failing row contains (e37b2970-f208-49da-9a3d-ffb2bb19a722, dbe6666e-8b94-482e-93e5-9d5a9924de10, 8, 7, 6, null, null, , 2026-09-09 15:19:34.359205-03).
+2026-09-09 15:19:34.368 -03 [25928] STATEMENT:  EXECUTE qa_0('dbe6666e-8b94-482e-93e5-9d5a9924de10','9fb02356-b53a-4ec7-8f1e-ffe5e5339c3d','prato-que-deve-reverter-5dcfcc72','Prato que deve reverter','Principal','',NULL,'8','7','6',NULL,NULL,'');
+2026-09-09 15:23:27.785 -03 [4128] LOG:  checkpoint starting: time
+2026-09-09 15:23:30.688 -03 [4128] LOG:  checkpoint complete: wrote 27 buffers (0.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.841 s, sync=0.015 s, total=2.904 s; sync files=26, longest=0.002 s, average=0.001 s; distance=89 kB, estimate=89 kB; lsn=0/17C2E80, redo lsn=0/17C2E28
+2026-09-09 15:24:46.800 -03 [7876] LOG:  received fast shutdown request
+2026-09-09 15:24:46.801 -03 [7876] LOG:  aborting any active transactions
+2026-09-09 15:24:46.805 -03 [7876] LOG:  background worker "logical replication launcher" (PID 8984) exited with exit code 1
+2026-09-09 15:24:46.806 -03 [4128] LOG:  shutting down
+2026-09-09 15:24:46.807 -03 [4128] LOG:  checkpoint starting: shutdown immediate
+2026-09-09 15:24:46.822 -03 [4128] LOG:  checkpoint complete: wrote 0 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.001 s, sync=0.001 s, total=0.017 s; sync files=0, longest=0.000 s, average=0.000 s; distance=0 kB, estimate=80 kB; lsn=0/17C2F30, redo lsn=0/17C2F30
+2026-09-09 15:24:46.828 -03 [7876] LOG:  database system is shut down

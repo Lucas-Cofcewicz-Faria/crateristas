@@ -8,7 +8,7 @@ web
 
 ## Users
 
-- Oito amigos que visitam restaurantes juntos e registram suas avaliações como integrantes dos Crateristas.
+- Amigos que visitam restaurantes juntos e se cadastram por um convite compartilhado para participar dos Crateristas.
 - Visitantes públicos que consultam os restaurantes, as notas coletivas, os comentários e a história do grupo.
 
 ## Product Purpose
@@ -23,7 +23,7 @@ O produto não é um catálogo genérico de restaurantes. Ele é o arquivo de um
 
 - Depois de uma refeição conjunta, os integrantes autenticados avaliam a mesma visita.
 - Cada integrante informa notas, comentário curto e o prato pedido.
-- A publicação se torna pública após a quantidade configurada de contribuições, ou antes disso por decisão do administrador supremo.
+- A publicação se torna pública somente por decisão do administrador, sem quórum. Participar das avaliações é opcional; novas contribuições continuam atualizando as médias depois da publicação.
 - Visitantes consultam os registros publicados, os restaurantes e a identidade dos integrantes sem precisar entrar.
 
 ## Capabilities and Constraints

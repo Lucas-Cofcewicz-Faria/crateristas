@@ -1,4 +1,8 @@
+'use client';
+
 import Image from 'next/image';
+import { useState } from 'react';
+import { Button } from '@/components/ui/Button';
 import type { ScoreValues } from '@/domain/reviews/types';
 import { IndividualScoreDisclosure } from './IndividualScoreDisclosure';
 import styles from './restaurant.module.css';
@@ -27,6 +31,8 @@ function initialsFor(displayName: string): string {
 }
 
 export function CommentFragments({ comments }: { comments: CommentFragment[] }): React.ReactNode {
+  const [page, setPage] = useState(0);
+  const currentPage = Math.min(page, Math.max(0, Math.ceil(comments.length / 8) - 1));
   if (comments.length === 0) {
     return (
       <p className={styles.emptyComments}>
@@ -35,10 +41,11 @@ export function CommentFragments({ comments }: { comments: CommentFragment[] }):
     );
   }
 
-  const visibleComments = comments.slice(0, 8);
+  const start = currentPage * 8;
+  const visibleComments = comments.slice(start, start + 8);
 
   return (
-    <ol aria-label="Comentários dos crateristas" className={styles.commentList}>
+    <><ol aria-label="Comentários dos crateristas" className={styles.commentList} start={start + 1}>
       {visibleComments.map((comment, index) => {
         const displayName = normalizeDisplayName(comment.displayName);
         const slot = index + 1;
@@ -66,7 +73,10 @@ export function CommentFragments({ comments }: { comments: CommentFragment[] }):
                     {initialsFor(comment.displayName)}
                   </span>
                 )}
-                <figcaption>{displayName}</figcaption>
+                <figcaption>
+                  <span className={styles.seatLabel}>Lugar {String(start + slot).padStart(2, '0')}</span>
+                  <strong>{displayName}</strong>
+                </figcaption>
               </div>
               <blockquote>
                 <p>{comment.comment}</p>
@@ -87,5 +97,11 @@ export function CommentFragments({ comments }: { comments: CommentFragment[] }):
         );
       })}
     </ol>
+      {comments.length > 8 ? <nav aria-label="Participantes da mesa" className={styles.commentPagination}>
+        <Button variant="secondary" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>Integrantes anteriores</Button>
+        <p role="status">Integrantes {start + 1}–{Math.min(start + 8, comments.length)} de {comments.length}</p>
+        <Button variant="secondary" disabled={start + 8 >= comments.length} onClick={() => setPage(currentPage + 1)}>Próximos integrantes</Button>
+      </nav> : null}
+    </>
   );
 }

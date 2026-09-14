@@ -70,14 +70,14 @@ describe('controles administrativos de publicação', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Publicar antecipadamente' }));
-    const dialog = screen.getByRole('dialog', { name: 'Confirmar publicação antecipada' });
+    await user.click(screen.getByRole('button', { name: 'Publicar' }));
+    const dialog = screen.getByRole('dialog', { name: 'Confirmar publicação' });
     expect(HTMLDialogElement.prototype.showModal).toHaveBeenCalledOnce();
     expect(dialog).toHaveProperty('open', true);
     expect(dialog).toHaveAttribute('aria-describedby', 'publication-dialog-description');
     expect(screen.getByRole('button', { name: 'Cancelar' })).toHaveFocus();
-    expect(dialog).toHaveTextContent('2 de 8 membros contribuíram');
-    expect(dialog).toHaveTextContent('A média ainda é parcial.');
+    expect(dialog).toHaveTextContent('2 integrantes contribuíram');
+    expect(dialog).toHaveTextContent('A média acompanha as contribuições recebidas.');
     await user.click(screen.getByRole('button', { name: 'Cancelar' }));
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -93,12 +93,12 @@ describe('controles administrativos de publicação', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Publicar antecipadamente' }));
-    expect(screen.getByRole('dialog')).toHaveTextContent('1 de 8 membros contribuiu');
+    await user.click(screen.getByRole('button', { name: 'Publicar' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent('1 integrante contribuiu');
   });
 
   it.each([
-    ['private', 'Publicar antecipadamente', 'Confirmar publicação', 'publish_early', 'published'],
+    ['private', 'Publicar', 'Confirmar publicação', 'publish_early', 'published'],
     ['published', 'Ocultar', 'Confirmar ocultação', 'hide', 'hidden'],
     ['hidden', 'Republicar', 'Confirmar republicação', 'republish', 'published'],
   ] as Array<[PublicationState, string, string, string, PublicationState]>) (

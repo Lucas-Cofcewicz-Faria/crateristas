@@ -5,10 +5,11 @@ import { getTrustedMemberAvatarUrl } from './member-avatar';
 import styles from './members.module.css';
 
 export interface MemberGridProps {
-  members: PublicMemberSummary[];
+  members: readonly PublicMemberSummary[];
+  headingLevel?: 2 | 3;
 }
 
-export function MemberGrid({ members }: MemberGridProps) {
+export function MemberGrid({ members, headingLevel = 2 }: MemberGridProps) {
   if (members.length === 0) {
     return (
       <div className={styles.emptyState} role="status">
@@ -19,7 +20,7 @@ export function MemberGrid({ members }: MemberGridProps) {
     );
   }
 
-  const visibleMembers = members.slice(0, 8);
+  const visibleMembers = members;
 
   return (
     <div aria-label="Diretório dos Crateristas" className={styles.grid} role="list">
@@ -31,6 +32,8 @@ export function MemberGrid({ members }: MemberGridProps) {
           role="listitem"
         >
           <MemberCard
+            headingLevel={headingLevel}
+            slug={member.slug}
             avatarUrl={getTrustedMemberAvatarUrl(member.avatarUrl)}
             bio={member.bio}
             displayName={member.displayName}

@@ -6,6 +6,11 @@ import { ScoreBreakdown } from './ScoreBreakdown';
 afterEach(cleanup);
 
 describe('ScoreBreakdown', () => {
+  it('deixa somente o valor no círculo sem perder o nome acessível da avaliação', () => {
+    render(<ScoreBreakdown overall={8} participantCount={2} scores={null} />);
+    expect(screen.getByRole('img', { name: 'Avaliação coletiva: 8,0 de 10' })).toHaveTextContent('8,0');
+    expect(screen.queryByText('Nota coletiva')).not.toBeInTheDocument();
+  });
   it('mostra as seis médias coletivas em pt-BR, com uma casa decimal e participação real', () => {
     render(
       <ScoreBreakdown
@@ -36,7 +41,7 @@ describe('ScoreBreakdown', () => {
       const term = within(breakdown).getByText(label);
       expect(term.nextElementSibling).toHaveTextContent(value);
     });
-    expect(within(breakdown).getByRole('img', { name: 'Nota coletiva: 8,3 de 10' }))
+    expect(within(breakdown).getByRole('img', { name: 'Avaliação coletiva: 8,3 de 10' }))
       .toBeInTheDocument();
     expect(within(breakdown).getByText('3 crateristas contribuíram')).toBeInTheDocument();
   });
@@ -64,7 +69,7 @@ describe('ScoreBreakdown', () => {
     const waitTime = screen.getByText('Tempo de espera');
     expect(access.nextElementSibling).toHaveTextContent('Não avaliado');
     expect(waitTime.nextElementSibling).toHaveTextContent('Não avaliado');
-    expect(screen.getByRole('img', { name: 'Nota coletiva: 7,5 de 10' }))
+    expect(screen.getByRole('img', { name: 'Avaliação coletiva: 7,5 de 10' }))
       .toBeInTheDocument();
     expect(screen.getByText('0 crateristas contribuíram')).toBeInTheDocument();
     expect(screen.getByText('Registro histórico')).toBeInTheDocument();

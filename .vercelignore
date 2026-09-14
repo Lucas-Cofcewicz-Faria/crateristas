@@ -1,0 +1,10 @@
+# Runtime configuration comes from Vercel, never from local credentials.
+.env*
+.impeccable/
+.codex/
+graphify-out/
+.worktrees/
+.next/
+node_modules/
+coverage/
+*.tsbuildinfo

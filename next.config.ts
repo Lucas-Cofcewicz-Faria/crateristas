@@ -9,6 +9,13 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "*.public.blob.vercel-storage.com",
         port: "",
+        pathname: "/menu-items/**",
+        search: "",
+      },
+      {
+        protocol: "https",
+        hostname: "*.public.blob.vercel-storage.com",
+        port: "",
         pathname: "/visits/**",
         search: "",
       },

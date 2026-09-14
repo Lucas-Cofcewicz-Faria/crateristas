@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import type { PublicPhoto } from '@/domain/reviews/repository';
 import type { ScorecardInput } from '@/domain/reviews/schemas';
 import type { PublicationState } from '@/domain/reviews/types';
@@ -15,6 +16,9 @@ import styles from './review-workflow.module.css';
 export interface ReviewWorkspaceProps {
   visitId: string;
   restaurantName: string;
+  restaurantSlug?: string;
+  menuEnabled?: boolean;
+  visitedAt?: string;
   cuisine: string;
   neighborhood: string;
   city: string;
@@ -30,10 +34,12 @@ export interface ReviewWorkspaceProps {
 export function ReviewWorkspace({
   visitId,
   restaurantName,
+  restaurantSlug,
+  menuEnabled = false,
+  visitedAt,
   cuisine,
   neighborhood,
   city,
-  quorum,
   initialParticipantCount,
   initialPublicationState,
   ownScorecard,
@@ -45,6 +51,10 @@ export function ReviewWorkspace({
     participantCount: initialParticipantCount,
     publicationState: initialPublicationState,
   });
+  const visitDate = visitedAt ? new Date(`${visitedAt.slice(0, 10)}T12:00:00Z`) : null;
+  const formattedDate = visitDate && !Number.isNaN(visitDate.getTime())
+    ? new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(visitDate)
+    : null;
 
   function handleScorecardSaved(result: SubmittedScorecardResponse) {
     setReviewState({
@@ -64,27 +74,34 @@ export function ReviewWorkspace({
     <>
       <header className={styles.workflowHeader}>
         <div>
-          <p className={styles.eyebrow}>Contribuição reservada</p>
           <h1>Avaliar {restaurantName}</h1>
           <p className={styles.lead}>
             {cuisine} · {neighborhood}, {city}
           </p>
+          {formattedDate ? <time className={styles.visitDate} dateTime={visitedAt?.slice(0, 10)}>{formattedDate}</time> : null}
+          {restaurantSlug ? (
+            <nav aria-label="Ações do restaurante" className={styles.restaurantNav}>
+              {menuEnabled ? <Link href={`/restaurantes/${restaurantSlug}/menu`}>Menu</Link> : null}
+              <Link href={`/visitas/nova?restaurante=${encodeURIComponent(restaurantSlug)}`}>Nova visita</Link>
+            </nav>
+          ) : null}
         </div>
         <div aria-label="Resumo da visita" className={styles.visitSummary} role="region">
           <PublicationStatus state={reviewState.publicationState} />
-          <p>{reviewState.participantCount} de {quorum} membros contribuíram</p>
+          <p>{reviewState.participantCount} {reviewState.participantCount === 1 ? 'contribuição' : 'contribuições'} recebidas</p>
         </div>
       </header>
       <ScorecardForm
         initialValues={ownScorecard}
         onSaved={handleScorecardSaved}
         visitId={visitId}
-      />
-      <PhotoUploader
-        canManage={canManagePhotos}
-        initialPhotos={initialPhotos}
-        visitId={visitId}
-      />
+      >
+        <PhotoUploader
+          canManage={canManagePhotos}
+          initialPhotos={initialPhotos}
+          visitId={visitId}
+        />
+      </ScorecardForm>
       <AdminPublicationControls
         isAdmin={isAdmin}
         onChanged={handlePublicationChanged}

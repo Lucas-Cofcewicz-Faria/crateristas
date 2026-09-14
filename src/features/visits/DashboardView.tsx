@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
+import { ArrowUpRight, Plus } from 'lucide-react';
 import type { AdminVisitSummary, PendingVisit } from '@/domain/reviews/repository';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { PendingVisitList } from './PendingVisitList';
@@ -25,6 +27,7 @@ export interface DashboardViewProps {
   awaiting: PendingVisit[];
   forming: PendingVisit[];
   recent: RecentDashboardVisit[];
+  adminTools?: ReactNode;
 }
 
 interface SectionHeadingProps {
@@ -51,15 +54,15 @@ export function DashboardView({
   awaiting,
   forming,
   recent,
+  adminTools,
 }: DashboardViewProps) {
   return (
     <section className={styles.dashboard}>
       <header className={styles.dashboardHeader}>
         <div>
-          <p className={styles.eyebrow}>Área reservada</p>
-          <h1>Seu painel</h1>
+          <h1>Meu <span>painel</span></h1>
           <p className={styles.dashboardLead}>
-            Olá, {memberName}. Acompanhe as visitas e complete suas contribuições.
+            Olá, {memberName}. Acompanhe as visitas e participe quando quiser.
           </p>
           {isAdmin ? (
             <div className={styles.roleBadge}>
@@ -67,7 +70,7 @@ export function DashboardView({
             </div>
           ) : null}
         </div>
-        <Link className={styles.newVisit} href="/visitas/nova">Nova visita</Link>
+        <Link className={styles.newVisit} href="/visitas/nova"><Plus size={19} aria-hidden="true" />Nova visita<ArrowUpRight size={19} aria-hidden="true" /></Link>
       </header>
 
       <div className={styles.dashboardGrid}>
@@ -75,10 +78,10 @@ export function DashboardView({
           <SectionHeading
             count={awaiting.length}
             id="awaiting-title"
-            title="Aguardando sua avaliação"
+            title="Visitas para participar"
           />
           <PendingVisitList
-            emptyMessage="Nenhuma visita aguarda sua avaliação."
+            emptyMessage="Nenhuma nova visita para participar."
             visits={awaiting}
           />
         </section>
@@ -91,7 +94,7 @@ export function DashboardView({
           />
         </section>
 
-        <section aria-labelledby="recent-title" className={styles.panelSection}>
+        <section aria-labelledby="recent-title" className={`${styles.panelSection} ${styles.recentSection}`}>
           <SectionHeading
             count={recent.length}
             id="recent-title"
@@ -119,7 +122,7 @@ export function DashboardView({
                     className={styles.inlineLink}
                     href={`/restaurantes/${visit.slug}`}
                   >
-                    Abrir registro
+                    Abrir registro <ArrowUpRight size={17} aria-hidden="true" />
                   </Link>
                 </article>
               ))}
@@ -127,55 +130,56 @@ export function DashboardView({
           )}
         </section>
 
-        {isAdmin ? (
-          <section
-            aria-labelledby="management-title"
-            className={`${styles.panelSection} ${styles.managementSection}`}
-          >
-            <SectionHeading
-              count={managed.length}
-              id="management-title"
-              title="Gerenciar reviews"
-            />
-            {managed.length === 0 ? (
-              <p className={styles.emptyList} role="status">
-                Nenhuma review está disponível para gerenciamento.
-              </p>
-            ) : (
-              <div className={styles.managementList} role="list">
-                {managed.map((visit) => (
-                  <article className={styles.managementRow} key={visit.id} role="listitem">
-                    <div className={styles.managementIdentity}>
-                      <PublicationStatus state={visit.publicationState} />
-                      <div>
-                        <h3>{visit.restaurantName}</h3>
-                        <p>
-                          {formatEvaluationCount(visit.participantCount)} · visita em{' '}
-                          <time dateTime={visit.visitedAt}>
-                            {formatDashboardVisitDate(visit.visitedAt)}
-                          </time>
-                        </p>
+        <section
+          aria-labelledby="management-title"
+          className={`${styles.panelSection} ${styles.managementSection}`}
+        >
+          <SectionHeading
+            count={managed.length}
+            id="management-title"
+            title="Gerenciar reviews"
+          />
+          {managed.length === 0 ? (
+            <p className={styles.emptyList} role="status">
+              Nenhuma review está disponível para gerenciamento.
+            </p>
+          ) : (
+            <div className={styles.managementList} role="list">
+              {managed.map((visit) => (
+                <article className={styles.managementRow} key={visit.id} role="listitem">
+                  <div className={styles.managementIdentity}>
+                    <PublicationStatus state={visit.publicationState} />
+                    <div>
+                      <h3>{visit.restaurantName}</h3>
+                      <p>
+                        {formatEvaluationCount(visit.participantCount)} · visita em{' '}
+                        <time dateTime={visit.visitedAt}>
+                          {formatDashboardVisitDate(visit.visitedAt)}
+                        </time>
+                      </p>
+                      {isAdmin ? (
                         <p className={styles.deletionImpact}>
                           {visit.participantCount === 1
                             ? '1 avaliação será apagada em uma exclusão'
                             : `${visit.participantCount} avaliações serão apagadas em uma exclusão`}
                         </p>
-                      </div>
+                      ) : null}
                     </div>
-                    <Link
-                      aria-label={`Gerenciar ${visit.restaurantName}`}
-                      className={styles.managementLink}
-                      href={`/visitas/${visit.id}/avaliar`}
-                    >
-                      Gerenciar
-                    </Link>
-                  </article>
-                ))}
-              </div>
-            )}
-          </section>
-        ) : null}
+                  </div>
+                  <Link
+                    aria-label={`Gerenciar ${visit.restaurantName}`}
+                    className={styles.managementLink}
+                    href={`/visitas/${visit.id}/avaliar`}
+                  >
+                    Gerenciar <ArrowUpRight size={17} aria-hidden="true" />
+                  </Link>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
+      {isAdmin ? adminTools : null}
     </section>
   );
 }

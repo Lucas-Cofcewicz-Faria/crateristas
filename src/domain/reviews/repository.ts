@@ -198,12 +198,6 @@ export interface AtomicScorecardSubmissionInput {
   visitId: string;
   memberId: string;
   scorecard: ScorecardInput;
-  expectedPublicationState: PublicationState;
-  quorum: number;
-  transitionAtQuorum: {
-    state: PublicationState;
-    reason: PublicationReason;
-  };
 }
 
 export interface AtomicPublicationChangeInput {
@@ -249,6 +243,7 @@ export interface ReviewRepository {
   listPublicVisits(filters: PublicVisitFilters): Promise<PublicVisitSummary[]>;
   listRecentPublishedVisits(limit: number): Promise<RecentPublishedVisit[]>;
   listVisitsForAdministration(actorId: string): Promise<AdminVisitSummary[]>;
+  listVisitsForManagement(actorId: string): Promise<AdminVisitSummary[]>;
   getPublicVisitBySlug(slug: string): Promise<PublicVisitDetail | null>;
   listPublicMembers(): Promise<PublicMemberSummary[]>;
   listPendingVisitsForMember(memberId: string): Promise<PendingVisit[]>;

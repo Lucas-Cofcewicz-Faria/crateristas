@@ -1,3 +1,18 @@
 {
-  "buildPath": "code"
+  "buildPath": "code",
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "src/components/ui/ui.module.css"
+        ],
+        "createdAt": "2026-09-05T12:20:54.053Z",
+        "reason": "User confirmed: score numbers should use the score gradient"
+      }
+    ]
+  }
 }

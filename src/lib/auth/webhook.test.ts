@@ -105,6 +105,18 @@ function dependencies(...args: [allowedEmails?: string]) {
 }
 
 describe('webhook bloqueante de criação de usuários', () => {
+  it('aceita um cadastro convidado somente depois de validar a assinatura Neon', async () => {
+    const webhook = signedWebhook(webhookPayload('novo@example.com'));
+    await expect(authorizeNeonUserCreation({
+      ...webhook, ...dependencies(),
+      isInvitedEmail: async (email) => email === 'novo@example.com',
+    })).resolves.toEqual({ allowed: true });
+    const { privateKey: wrongKey } = generateKeyPairSync('ed25519');
+    const forged = signedWebhook(webhookPayload('novo@example.com'), { signingKey: wrongKey });
+    await expect(authorizeNeonUserCreation({
+      ...forged, ...dependencies(), isInvitedEmail: async () => true,
+    })).rejects.toThrow(NeonWebhookVerificationError);
+  });
   it('autoriza o único email configurado durante a implantação gradual', async () => {
     const webhook = signedWebhook(webhookPayload('  MEMBRO01@EXAMPLE.COM  '));
 
@@ -134,7 +146,6 @@ describe('webhook bloqueante de criação de usuários', () => {
 
   it.each([
     ['variável ausente', undefined],
-    ['mais de oito emails', [...ALLOWED_EMAILS, 'membro09@example.com'].join(',')],
     ['nono item vazio', `${ALLOWED_EMAILS.join(',')},`],
     [
       'email duplicado após normalização',

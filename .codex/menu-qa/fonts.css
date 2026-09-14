@@ -1,0 +1,3 @@
+@font-face { font-family: Manrope; font-style: normal; font-weight: 200 800; src: url('/@fs/C:/Users/patho/Documents/GitHub/crateristas/.next/static/media/a343f882a40d2cc9-s.p.1sj6eobyi31rd.woff2') format('woff2'); }
+@font-face { font-family: Newsreader; font-style: normal; font-weight: 200 800; src: url('/@fs/C:/Users/patho/Documents/GitHub/crateristas/.next/static/media/5f402bd2d8eef81a-s.p.40bho2kviej2o.woff2') format('woff2'); }
+:root { --font-interface: Manrope; --font-editorial: Newsreader; }

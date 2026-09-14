@@ -4,6 +4,7 @@ import { CRATER_HISTORY } from '@/content/crater-history';
 import type { PublicMemberSummary } from '@/domain/reviews/repository';
 import { MemberGrid } from '@/features/members/MemberGrid';
 import { HistoryHashTarget } from './HistoryHashTarget';
+import { HistoryChapters } from './HistoryChapters';
 import styles from './history.module.css';
 
 export interface HistoryNarrativeProps {
@@ -14,38 +15,24 @@ export interface HistoryNarrativeProps {
 export function HistoryNarrative({ members, showPanelLink }: HistoryNarrativeProps) {
   return (
     <MotionScope>
-      <article className={styles.story} data-motion-loop>
+      <article className={styles.story}>
         <header className={styles.storyHero}>
           <h1 data-motion="inscription">{CRATER_HISTORY.title}</h1>
           <p data-motion="excavation">{CRATER_HISTORY.excerpt}</p>
+          <nav aria-label="Capítulos da história" className={styles.chapterNavigation}>
+            {CRATER_HISTORY.chapters.map((chapter) => (
+              <Link data-chapter={chapter.id} href={`#${chapter.id}`} key={chapter.id}>{chapter.title}</Link>
+            ))}
+            <Link data-chapter="integrantes" href="#integrantes">Os Crateristas</Link>
+          </nav>
         </header>
 
-        <div className={styles.chapters}>
-          {CRATER_HISTORY.chapters.map((chapter, index) => (
-            <section
-              data-history-chapter
-              data-motion="excavation"
-              data-motion-index={index}
-              className={styles.chapter}
-              id={chapter.id}
-              key={chapter.id}
-            >
-              <div className={styles.chapterIndex}>
-                <span>{String(index + 1).padStart(2, '0')}</span>
-                <p>{chapter.eyebrow}</p>
-              </div>
-              <div>
-                <h2>{chapter.title}</h2>
-                <p>{chapter.body}</p>
-              </div>
-            </section>
-          ))}
-        </div>
+        <HistoryChapters />
 
         <HistoryHashTarget />
         <section aria-labelledby="members-title" className={styles.members} id="integrantes">
           <header className={styles.membersHeader}>
-            <h2 id="members-title">Os oito Crateristas</h2>
+            <h2 id="members-title">{members.length} {members.length === 1 ? 'Craterista' : 'Crateristas'}</h2>
             {showPanelLink ? <Link href="/painel">Suas avaliações pendentes</Link> : null}
           </header>
           <MemberGrid members={[...members]} />

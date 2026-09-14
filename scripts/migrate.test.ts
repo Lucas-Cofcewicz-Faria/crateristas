@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, test } from 'vitest';
@@ -41,6 +41,16 @@ describe('listMigrationFiles', () => {
 });
 
 describe('runMigrations', () => {
+  test('shared membership migration sends one SQL command per prepared statement', async () => {
+    const source = await readFile(join(process.cwd(), 'db/migrations/005_shared_membership.sql'), 'utf8');
+    const statements = source.split(/^-- statement-breakpoint\s*$/m).map((part) => part.trim()).filter(Boolean);
+    // This migration contains no SQL functions or quoted semicolons.
+    for (const statement of statements) {
+      expect(statement.replace(/--[^\n]*/g, '').split(';').filter((part) => part.trim()), statement).toHaveLength(1);
+    }
+    expect(statements).toHaveLength(14);
+  });
+
   test('applies each breakpoint-delimited statement once and records the migration', async () => {
     const directory = await createMigrationDirectory();
     await writeFile(join(directory, '001_schema.sql'), 'CREATE TABLE ingredients (id INTEGER);\n-- statement-breakpoint\nCREATE INDEX ingredients_id_idx ON ingredients (id);');

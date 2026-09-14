@@ -6,7 +6,7 @@ export const CRATER_HISTORY = {
       id: 'descoberta',
       eyebrow: 'Capítulo I',
       title: 'A descoberta',
-      body: 'Antes dos registros, já existia um restaurante muito bom. Ao lado dele, por nenhum motivo aparente, existia uma cratera enorme. Lucas foi o primeiro a reconhecer a descoberta e a compreender que aquele vazio não poderia continuar sem testemunhas.',
+      body: 'Lucas liderou a primeira peregrinação sob um dia de calor impiedoso. Depois de uma longa caminhada, vários dos primeiros membros já questionavam suas próprias visões, até que a cratera surgiu diante do grupo. Ao fim da travessia, veio a bênção: um prato sagrado de macarrão, acompanhado do pombo mais gostoso e crocante que a sociedade já provou.',
     },
     {
       id: 'peregrinacao',

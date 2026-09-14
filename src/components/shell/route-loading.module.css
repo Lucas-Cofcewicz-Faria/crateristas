@@ -1,0 +1,6 @@
+.loading { width: min(calc(100% - 40px), var(--page-max)); min-height: 45vh; margin: auto; padding-block: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; color: var(--ink-muted); }
+.loading p { font-size: .9rem; line-height: 1.5; text-align: center; }
+.track { width: 96px; height: 2px; background: var(--line); overflow: hidden; }
+.track::after { content: ''; display: block; width: 40%; height: 100%; background: var(--ember-bright); animation: route-progress 1.2s ease-in-out infinite alternate; }
+@keyframes route-progress { from { translate: 0; } to { translate: 150%; } }
+@media (prefers-reduced-motion: reduce) { .track::after { animation: none; } }

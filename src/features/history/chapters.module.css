@@ -1,0 +1,296 @@
+/* Quatro capítulos, uma narrativa: escavação, percurso, carta e caderno de campo.
+   Cada efeito é finito; a ausência de JavaScript nunca oculta o conteúdo. */
+.chapter {
+  --chapter-paper: #171411;
+  --chapter-ink: #f3eadf;
+  --chapter-muted: #c8b5a3;
+  --chapter-accent: #d68d60;
+  --chapter-line: color-mix(in srgb, var(--chapter-accent), var(--chapter-paper) 65%);
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  padding: 112px 0;
+  background: var(--chapter-paper);
+  color: var(--chapter-ink);
+  scroll-margin-top: 24px;
+}
+
+.chapter ::selection { background: var(--chapter-accent); color: var(--chapter-paper); }
+.chapter :focus-visible { outline-color: var(--chapter-accent); }
+
+.inner,
+.discoveryLayout,
+.heritageLayout {
+  width: min(calc(100% - 160px), 1120px);
+  margin: 0 auto;
+}
+
+.chapter h2 {
+  color: var(--chapter-ink);
+  font-size: clamp(3.5rem, 5.5vw, 5.8rem);
+  font-weight: 540;
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+}
+
+.body {
+  max-width: 65ch;
+  margin-top: 32px;
+  color: var(--chapter-muted);
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: 1.2rem;
+  line-height: 1.8;
+}
+
+/* O mesmo frame aceita uma foto real sem mudar o espaço reservado. */
+.photo { min-width: 0; margin: 0; }
+.photoFrame {
+  position: relative;
+  aspect-ratio: var(--photo-ratio, 4 / 3);
+  overflow: hidden;
+  border: 1px solid var(--chapter-line);
+  background: color-mix(in srgb, var(--chapter-accent), var(--chapter-paper) 94%);
+}
+
+.photoFrame img { object-fit: cover; }
+.photoPlaceholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 32px;
+  color: var(--chapter-muted);
+  text-align: center;
+}
+
+.photoPlaceholder > svg { color: var(--chapter-accent); }
+.photoPlaceholder > span { font-size: 0.9rem; font-weight: 700; }
+.photoPlaceholder > p { max-width: 30ch; font-size: 0.8rem; line-height: 1.6; }
+.photo figcaption {
+  margin-top: 14px;
+  color: var(--chapter-muted);
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: 0.9rem;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+/* I — a fotografia emerge entre marcas de levantamento topográfico. */
+.discovery { border-top: 1px solid var(--chapter-line); }
+.discoveryLayout { display: grid; grid-template-columns: 0.95fr 1.05fr; gap: 76px; align-items: center; }
+.discoveryCopy { position: relative; padding-bottom: 100px; }
+.discoveryPhoto { --photo-ratio: 4 / 5; }
+.discoveryPhoto .photoFrame { border-color: var(--chapter-accent); }
+.topography {
+  position: absolute;
+  bottom: -155px;
+  left: -190px;
+  z-index: -1;
+  width: 500px;
+  max-width: none;
+  color: var(--chapter-accent);
+  opacity: 0.32;
+  pointer-events: none;
+}
+
+.discovery[data-chapter-seen='true'] .topography path {
+  stroke-dasharray: 1;
+  animation: trace-contour 1400ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+.discovery[data-chapter-seen='true'] .discoveryPhoto .photoFrame {
+  animation: excavate-frame 900ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+@keyframes trace-contour { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes excavate-frame { from { clip-path: inset(42% 0 42% 0); } to { clip-path: inset(0); } }
+
+/* II — um percurso horizontal, tinta de barro sobre papel claro. */
+.pilgrimage {
+  --chapter-paper: #e9dfca;
+  --chapter-ink: #3b281e;
+  --chapter-muted: #62503d;
+  --chapter-accent: #963f22;
+}
+.pilgrimageHeading { display: grid; grid-template-columns: 0.95fr 1.05fr; gap: 76px; align-items: start; }
+.pilgrimageHeading .body { margin-top: 0; }
+.route { position: relative; margin: 48px 0 36px; }
+.route > svg { position: absolute; top: 72px; left: 68px; width: calc(100% - 136px); height: 56px; overflow: visible; }
+.routeTrack { stroke: var(--chapter-line); stroke-width: 1; stroke-dasharray: 3 6; }
+.routeInk { stroke: var(--chapter-accent); stroke-width: 2; }
+.route ol { position: relative; display: flex; justify-content: space-between; list-style: none; color: var(--chapter-accent); font-size: 0.9rem; font-weight: 750; }
+.route li { display: grid; grid-template-rows: 72px 56px auto; justify-items: center; align-items: center; width: 136px; }
+.routeBrand { display: flex; align-items: center; justify-content: center; width: 136px; height: 72px; }
+.routeBrand img { width: auto; max-width: 136px; height: auto; max-height: 58px; object-fit: contain; }
+.routeBrand > svg { width: 64px; height: 64px; }
+/* HTML markers keep equal screen-space dimensions even when the route SVG stretches. */
+.routeStop { width: 16px; height: 16px; border: 3px solid var(--chapter-paper); border-radius: 50%; background: var(--chapter-accent); box-shadow: 0 0 0 1px var(--chapter-accent); }
+.pilgrimagePhoto { --photo-ratio: 4 / 3; }
+.pilgrimage[data-chapter-seen='true'] .routeInk { stroke-dasharray: 1; animation: trace-contour 1600ms ease-in-out backwards; }
+.pilgrimage[data-chapter-seen='true'] .routeStop { animation: route-arrival 1600ms ease-out backwards; }
+@keyframes route-arrival { from { opacity: 0; } to { opacity: 1; } }
+
+/* III — o documento central e seu selo, sem transformar a página em cartões. */
+.society {
+  --chapter-paper: #341a24;
+  --chapter-ink: #f4e8d1;
+  --chapter-muted: #d9bdbb;
+  --chapter-accent: #d6b778;
+}
+.charter { text-align: center; }
+.charter > .body { max-width: 64ch; margin: 28px auto 48px; }
+.crest { display: grid; justify-items: center; gap: 8px; margin-bottom: 24px; color: var(--chapter-accent); }
+.crest > svg:last-child { width: 88px; height: 88px; }
+.societyPortrait { position: relative; width: min(100%, 920px); margin: 0 auto; }
+.societyPhoto { --photo-ratio: 16 / 7; }
+.societyPhoto figcaption { text-align: left; padding-right: 160px; }
+.seal {
+  position: absolute;
+  right: -40px;
+  bottom: -28px;
+  width: 154px;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+  border: 2px solid var(--chapter-accent);
+  border-radius: 50%;
+  background: var(--chapter-paper);
+  color: var(--chapter-accent);
+  rotate: -9deg;
+}
+.seal span { font-size: 0.65rem; }
+.seal strong { font-family: var(--font-editorial), Georgia, serif; font-size: 1.55rem; font-weight: 500; line-height: 1.05; }
+.society[data-chapter-seen='true'] .crest path { stroke-dasharray: 240; animation: crest-inscription 1200ms ease-out backwards; }
+.society[data-chapter-seen='true'] .seal { animation: seal-impression 600ms 300ms cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+@keyframes crest-inscription { from { stroke-dashoffset: 240; } to { stroke-dashoffset: 0; } }
+@keyframes seal-impression { from { opacity: 0; transform: scale(1.3); } to { opacity: 1; transform: scale(1); } }
+
+/* IV — caderno de campo; as notas se abrem nativamente, inclusive sem JS. */
+.heritage {
+  --chapter-paper: #1c3027;
+  --chapter-ink: #edf0d9;
+  --chapter-muted: #c1cfb2;
+  --chapter-accent: #b3c87f;
+}
+.heritageLayout { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 76px; }
+.heritageCopy { position: relative; }
+.heritagePhoto { --photo-ratio: 5 / 4; }
+.branchBorder {
+  position: absolute;
+  inset: 40px auto 40px 12px;
+  width: 56px;
+  height: calc(100% - 80px);
+  color: var(--chapter-accent);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.heritage[data-chapter-seen='true'] .branchBorder path { stroke-dasharray: 1; animation: border-grow 1400ms cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+@keyframes border-grow { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.fieldNotes { margin-top: 36px; border-top: 1px solid var(--chapter-line); }
+.fieldNote { border-bottom: 1px solid var(--chapter-line); }
+.fieldNote summary { display: flex; align-items: center; gap: 16px; min-height: 64px; padding: 16px 4px; color: var(--chapter-ink); font-size: 0.88rem; font-weight: 650; cursor: pointer; list-style: none; transition: color 180ms ease; }
+.fieldNote summary::-webkit-details-marker { display: none; }
+.fieldNote summary > svg:first-child { color: var(--chapter-accent); flex: none; }
+.fieldNote summary:hover,
+.fieldNote summary:focus-visible { color: var(--chapter-accent); }
+.noteArrow { margin-left: auto; flex: none; transition: rotate 220ms ease; }
+.fieldNote[open] .noteArrow { rotate: 180deg; }
+.noteBody { margin: 0 0 24px 42px; color: var(--chapter-muted); font-family: var(--font-editorial), Georgia, serif; font-size: 1.05rem; line-height: 1.7; }
+.fieldNote[open] .noteBody { animation: note-open 240ms ease-out; }
+@keyframes note-open { from { opacity: 0; translate: 0 -5px; } to { opacity: 1; translate: 0 0; } }
+
+@media (max-width: 1280px) {
+  .inner,
+  .discoveryLayout,
+  .heritageLayout { width: min(calc(100% - 96px), 1120px); }
+  .discoveryLayout,
+  .pilgrimageHeading,
+  .heritageLayout { gap: 48px; }
+  .chapter { padding: 88px 0; }
+  .seal { right: -16px; }
+  .branchBorder { left: 4px; width: 32px; }
+}
+
+@media (max-width: 1023px) {
+  .inner,
+  .discoveryLayout,
+  .heritageLayout { width: calc(100% - 64px); }
+  .chapter { padding: 72px 0; scroll-margin-top: 88px; }
+  .chapter h2 { font-size: clamp(2.7rem, 6.5vw, 4rem); }
+  .discoveryLayout,
+  .pilgrimageHeading,
+  .heritageLayout { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+  .discoveryCopy { padding-bottom: 0; }
+  .topography { left: -120px; bottom: -100px; width: 360px; opacity: 0.2; }
+  .discoveryPhoto { --photo-ratio: 4 / 3; }
+  .pilgrimagePhoto,
+  .societyPhoto { --photo-ratio: 16 / 9; }
+  .body { font-size: 1.1rem; margin-top: 24px; }
+  .branchBorder { left: 3px; width: 20px; }
+  .seal { top: 14px; right: 14px; bottom: auto; width: 108px; gap: 5px; }
+  .seal strong { font-size: 1.2rem; }
+}
+
+@media (max-width: 639px) {
+  .inner,
+  .discoveryLayout,
+  .heritageLayout { width: calc(100% - 40px); }
+  .chapter { padding: 56px 0; }
+  .chapter h2 { font-size: clamp(2.3rem, 9.5vw, 3.4rem); overflow-wrap: anywhere; }
+  .body { font-size: 1.05rem; line-height: 1.75; }
+  .photoPlaceholder { gap: 10px; padding: 20px; }
+  .photoPlaceholder > p { font-size: 0.85rem; }
+  .photo figcaption { font-size: 0.95rem; }
+  .pilgrimagePhoto,
+  .societyPhoto { --photo-ratio: 4 / 3; }
+
+  /* O percurso vira uma linha de leitura vertical sem perder suas três paradas. */
+  .route { margin: 32px 0; }
+  .route > svg { display: none; }
+  .route::before {
+    position: absolute;
+    top: 42px;
+    bottom: 42px;
+    left: 11px;
+    border-left: 1px dashed var(--chapter-accent);
+    content: '';
+  }
+  .route ol { flex-direction: column; gap: 20px; }
+  .route li {
+    width: 100%;
+    grid-template-columns: 24px 108px minmax(0, 1fr);
+    grid-template-rows: 84px;
+    column-gap: 12px;
+    justify-items: start;
+  }
+  .routeBrand { grid-column: 2; grid-row: 1; width: 108px; }
+  .routeBrand img { max-width: 108px; }
+  .routeStop { grid-column: 1; grid-row: 1; justify-self: center; }
+  .route li > span:last-child { grid-column: 3; grid-row: 1; font-size: 0.9rem; }
+
+  .charter > .body { margin: 24px auto 32px; }
+  .societyPhoto figcaption { padding-right: 0; }
+  .seal { top: 12px; right: 12px; width: 96px; margin: 0; }
+  .seal span { font-size: 0.6rem; }
+  .seal strong { font-size: 1.1rem; }
+  .branchBorder { left: -8px; width: 24px; opacity: 0.28; }
+  .fieldNotes { margin-top: 28px; }
+  .fieldNote summary { font-size: 1rem; gap: 12px; }
+  .noteBody { margin-left: 0; font-size: 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chapter[data-chapter-seen='true'] .topography path,
+  .chapter[data-chapter-seen='true'] .discoveryPhoto .photoFrame,
+  .chapter[data-chapter-seen='true'] .routeInk,
+  .chapter[data-chapter-seen='true'] .routeStop,
+  .chapter[data-chapter-seen='true'] .crest path,
+  .chapter[data-chapter-seen='true'] .seal,
+  .chapter[data-chapter-seen='true'] .branchBorder path,
+  .fieldNote[open] .noteBody { animation: none; }
+  .noteArrow,
+  .fieldNote summary { transition: none; }
+}

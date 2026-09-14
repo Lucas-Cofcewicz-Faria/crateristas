@@ -1,0 +1,26 @@
+.root { --profile-border: #6e5a49; position: relative; display: flex; align-items: stretch; isolation: isolate; border: 1px solid var(--profile-border); color: var(--ink); }
+.root::before { position: absolute; inset: 0; z-index: -1; background: var(--ember-bright); content: ''; clip-path: inset(100% 0 0); transition: clip-path 240ms cubic-bezier(.16, 1, .3, 1); }
+.root:hover::before, .root:focus-within::before { clip-path: inset(0); }
+.root:hover, .root:focus-within { --profile-border: var(--ember-bright); color: var(--canvas); }
+.profile, .toggle { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; border: 0; border-radius: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.profile { gap: 12px; padding: 0 16px; font-size: .86rem; font-weight: 700; }
+.profile svg { flex-shrink: 0; transform: none; translate: none; }
+.toggle { width: 36px; border-left: 1px solid var(--profile-border); }
+.toggle svg { transition: rotate 180ms ease; }
+.toggle[aria-expanded='true'] svg { rotate: 180deg; }
+.profile:focus-visible, .toggle:focus-visible, .signOut:focus-visible { outline: 2px solid var(--ember-bright); outline-offset: 4px; }
+.dropdown { position: absolute; top: 100%; right: -1px; padding-top: 10px; min-width: 224px; z-index: 2; }
+.dropdown[hidden] { display: none; }
+.dropdown form { border: 1px solid var(--line); background: var(--nav-surface, var(--surface)); padding: 6px; animation: options-reveal 180ms cubic-bezier(.16, 1, .3, 1); }
+.signOut { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 46px; border: 0; border-radius: 0; padding: 12px; color: var(--ink); background: transparent; font: inherit; font-size: .85rem; font-weight: 650; text-align: left; cursor: pointer; transition: background-color 180ms ease, color 180ms ease; }
+.signOut:hover { background: var(--ember-bright); color: var(--canvas); }
+.signOut:disabled { opacity: .6; cursor: wait; }
+@keyframes options-reveal { from { clip-path: inset(0 0 100%); } to { clip-path: inset(0); } }
+@media (max-width: 1023px) {
+  .root { display: grid; grid-template-columns: minmax(0, 1fr) 48px; }
+  .profile, .toggle { min-height: 48px; }
+  .toggle { width: 48px; }
+  .dropdown { grid-column: 1 / -1; position: static; min-width: 0; padding: 0; }
+  .dropdown form { border-width: 1px 0 0; }
+}
+@media (prefers-reduced-motion: reduce) { .root::before, .toggle svg, .signOut { transition: none; } .dropdown form { animation: none; } }

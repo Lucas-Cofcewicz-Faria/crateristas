@@ -1,10 +1,17 @@
+'use client';
+
 import { useId, type CSSProperties } from 'react';
 import styles from './ui.module.css';
+import { SCORE_COLORS, normalizeScore, scoreColorFor } from './score-color';
+import { ScoreText } from './ScoreText';
+import { useScoreMotion } from './useScoreMotion';
+export { scoreColorFor } from './score-color';
 
 export interface ScoreRingProps {
   value: number | null;
   label: string;
   size?: 'small' | 'large';
+  hideLabel?: boolean;
 }
 
 const scoreFormatter = new Intl.NumberFormat('pt-BR', {
@@ -12,47 +19,9 @@ const scoreFormatter = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 1,
 });
 
-const SCORE_COLORS = {
-  darkRed: '#7f1d1d',
-  red: '#dc2626',
-  yellow: '#eab308',
-  green: '#16a34a',
-  blue: '#2563eb',
-} as const;
 
-function normalizeScore(value: number | null) {
-  return value !== null && Number.isFinite(value)
-    ? Math.min(10, Math.max(0, value))
-    : null;
-}
-
-function interpolateColor(start: string, end: string, amount: number) {
-  const channels = [1, 3, 5].map((index) => Math.round(
-    Number.parseInt(start.slice(index, index + 2), 16)
-      + (Number.parseInt(end.slice(index, index + 2), 16)
-        - Number.parseInt(start.slice(index, index + 2), 16)) * amount,
-  ));
-
-  return `#${channels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
-}
-
-export function scoreColorFor(value: number | null) {
-  const normalizedValue = normalizeScore(value);
-
-  if (normalizedValue === null) return null;
-  if (normalizedValue <= 3) {
-    return interpolateColor(SCORE_COLORS.darkRed, SCORE_COLORS.red, normalizedValue / 3);
-  }
-  if (normalizedValue < 6) {
-    return interpolateColor(SCORE_COLORS.red, SCORE_COLORS.yellow, (normalizedValue - 3) / 3);
-  }
-  if (normalizedValue <= 8) {
-    return interpolateColor(SCORE_COLORS.yellow, SCORE_COLORS.green, (normalizedValue - 6) / 2);
-  }
-  return interpolateColor(SCORE_COLORS.green, SCORE_COLORS.blue, (normalizedValue - 8) / 2);
-}
-
-export function ScoreRing({ value, label, size = 'small' }: ScoreRingProps) {
+export function ScoreRing({ value, label, size = 'small', hideLabel = false }: ScoreRingProps) {
+  const motionRef = useScoreMotion<HTMLDivElement>();
   const normalizedValue = normalizeScore(value);
   const gradientId = `score-gradient-${useId().replace(/[^A-Za-z0-9_-]/g, '')}`;
   const formattedValue = normalizedValue === null ? '—' : scoreFormatter.format(normalizedValue);
@@ -66,8 +35,10 @@ export function ScoreRing({ value, label, size = 'small' }: ScoreRingProps) {
 
   return (
     <div
+      ref={motionRef}
+      data-score-motion="paused"
       aria-label={accessibleLabel}
-      className={`${styles.scoreRing} ${styles[size]}`}
+      className={`${styles.scoreRing} ${styles[size]} ${hideLabel ? styles.scoreNumberOnly : ''}`}
       role="img"
     >
       <svg className={styles.scoreGraphic} viewBox="0 0 44 44" aria-hidden="true">
@@ -79,7 +50,7 @@ export function ScoreRing({ value, label, size = 'small' }: ScoreRingProps) {
                 offset={`${index * 50}%`}
                 stopColor={color}
                 className={styles.scoreGradientStop}
-                style={{ '--score-stop-color': color } as CSSProperties}
+                style={{ '--score-stop-color': color, '--score-stop-delay': `${index * -1.6}s` } as CSSProperties}
               />
             ))}
           </linearGradient>
@@ -97,8 +68,8 @@ export function ScoreRing({ value, label, size = 'small' }: ScoreRingProps) {
           strokeDasharray={`${progress} 100`}
         />
       </svg>
-      <span className={styles.scoreValue} aria-hidden="true">{formattedValue}</span>
-      <span className={styles.scoreLabel} aria-hidden="true">{label}</span>
+      <span className={styles.scoreValue} aria-hidden="true"><ScoreText value={normalizedValue} /></span>
+      {!hideLabel && <span className={styles.scoreLabel} aria-hidden="true">{label}</span>}
     </div>
   );
 }

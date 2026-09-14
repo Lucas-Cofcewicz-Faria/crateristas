@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
+import styles from './entrance.module.css';
 
 const GourmetScene = dynamic(() => import('@/components/GourmetScene'), {
   ssr: false,
@@ -25,9 +27,24 @@ const GourmetScene = dynamic(() => import('@/components/GourmetScene'), {
 export default function LandingPage() {
   const router = useRouter();
   const scrollHintRef = useRef<HTMLDivElement>(null);
+  const [sceneEnabled, setSceneEnabled] = useState(false);
 
   useEffect(() => {
+    const explicitlyRequested = new URLSearchParams(window.location.search).get('explorar') === '1';
+    if (window.matchMedia('(max-width: 1023px)').matches && !explicitlyRequested) {
+      router.replace('/home');
+      return;
+    }
+    // Mount the expensive canvas only after the visitor has chosen this entry.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSceneEnabled(true);
+  }, [router]);
+
+  useEffect(() => {
+    if (!sceneEnabled) return;
     let scrollHintTimer: NodeJS.Timeout;
+    let isNavigating = false;
+    router.prefetch('/home');
 
     const startScrollHintTimer = () => {
       scrollHintTimer = setTimeout(() => {
@@ -39,6 +56,7 @@ export default function LandingPage() {
     };
 
     const handleScroll = () => {
+      if (isNavigating) return;
       const scrollY = window.scrollY;
       const viewportHeight = window.innerHeight;
       const triggerHeight = viewportHeight * 1.4; // Matches the 1.4x factor in GourmetScene
@@ -53,7 +71,8 @@ export default function LandingPage() {
 
       // Redirect to the public home when descent completes (95% of the crater descent)
       if (progress >= 0.95) {
-        window.scrollTo(0, 0);
+        // Keep the camera at the end of the descent until the route commits.
+        isNavigating = true;
         router.push('/home');
       }
     };
@@ -68,7 +87,13 @@ export default function LandingPage() {
       window.removeEventListener('scroll', handleScroll);
       clearTimeout(scrollHintTimer);
     };
-  }, [router]);
+  }, [router, sceneEnabled]);
+
+  if (!sceneEnabled) {
+    return <main style={{ minHeight: '100svh', display: 'grid', placeItems: 'center' }}>
+      <Link href="/home">Entrando na cratera…</Link>
+    </main>;
+  }
 
   return (
     <div style={{ minHeight: '240vh', backgroundColor: '#130917', position: 'relative' }}>
@@ -88,6 +113,9 @@ export default function LandingPage() {
       </div>
 
       {/* Idle Scroll Hint */}
+      <Link className={styles.exitLink} href="/home">
+        Ir para o site
+      </Link>
       <div
         ref={scrollHintRef}
         style={{

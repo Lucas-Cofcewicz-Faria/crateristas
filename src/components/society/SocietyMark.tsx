@@ -1,4 +1,5 @@
 import styles from './society.module.css';
+import { CraterLogo } from '@/components/brand/CraterLogo';
 
 export interface SocietyMarkProps {
   decorative?: boolean;
@@ -6,7 +7,7 @@ export interface SocietyMarkProps {
 
 export function SocietyMark({ decorative = false }: SocietyMarkProps) {
   if (decorative) {
-    return <span aria-hidden="true" className={styles.mark}>C</span>;
+    return <span aria-hidden="true" className={styles.mark}><CraterLogo /></span>;
   }
 
   return (
@@ -15,7 +16,7 @@ export function SocietyMark({ decorative = false }: SocietyMarkProps) {
       className={styles.mark}
       role="img"
     >
-      C
+      <CraterLogo />
     </span>
   );
 }

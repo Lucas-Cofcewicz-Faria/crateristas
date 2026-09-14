@@ -225,7 +225,7 @@ describe('configuração do Neon Auth', () => {
   it('expõe somente os métodos usados pelo aplicativo', async () => {
     const { auth } = await loadServer();
 
-    expect(Reflect.get(auth, 'signUp')).toBeUndefined();
+    expect(Object.keys(auth.signUp)).toEqual(['email']);
     expect(Object.keys(auth).sort()).toEqual(
       [
         'getSession',
@@ -235,6 +235,7 @@ describe('configuração do Neon Auth', () => {
         'resetPassword',
         'signIn',
         'signOut',
+        'signUp',
       ].sort(),
     );
   });

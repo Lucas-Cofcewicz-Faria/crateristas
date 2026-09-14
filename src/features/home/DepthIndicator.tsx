@@ -29,7 +29,6 @@ export function DepthIndicator({ sections }: { sections: readonly DepthSection[]
 
   return (
     <nav aria-label="Profundidade da página" className={styles.depthIndicator}>
-      <span aria-hidden="true" className={styles.depthRule} />
       {sections.map((section, index) => (
         <a
           aria-current={activeId === section.id ? 'location' : undefined}

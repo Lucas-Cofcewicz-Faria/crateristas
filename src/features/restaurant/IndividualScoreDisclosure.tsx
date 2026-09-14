@@ -1,6 +1,8 @@
 'use client';
 
 import { useId, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
+import { ScoreText } from '@/components/ui/ScoreText';
 import type { ScoreKey, ScoreValues } from '@/domain/reviews/types';
 import styles from './restaurant.module.css';
 
@@ -13,10 +15,6 @@ const SCORE_ROWS: ReadonlyArray<{ key: ScoreKey; label: string }> = [
   { key: 'waitTime', label: 'Tempo de espera' },
 ];
 
-const scoreFormatter = new Intl.NumberFormat('pt-BR', {
-  minimumFractionDigits: 1,
-  maximumFractionDigits: 1,
-});
 
 export interface IndividualScoreDisclosureProps {
   displayName: string;
@@ -44,6 +42,7 @@ export function IndividualScoreDisclosure({
         type="button"
       >
         {action}
+        <ChevronDown aria-hidden="true" size={16} />
       </button>
       <div
         className={styles.individualScoresClip}
@@ -59,13 +58,13 @@ export function IndividualScoreDisclosure({
           >
             <div className={styles.individualOverall}>
               <span>Média pessoal</span>
-              <strong>{scoreFormatter.format(overall)}</strong>
+              <strong><ScoreText value={overall} /></strong>
             </div>
             <dl className={styles.individualScoreList}>
               {SCORE_ROWS.map(({ key, label }) => (
                 <div className={styles.individualScore} key={key}>
                   <dt>{label}</dt>
-                  <dd>{scoreFormatter.format(scores[key])}</dd>
+                  <dd><ScoreText value={scores[key]} /></dd>
                 </div>
               ))}
             </dl>

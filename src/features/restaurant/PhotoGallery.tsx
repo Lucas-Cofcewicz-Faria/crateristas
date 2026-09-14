@@ -1,24 +1,28 @@
 'use client';
 
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Expand } from 'lucide-react';
 import { useId, useState, type KeyboardEvent } from 'react';
 import type { PublicPhoto } from '@/domain/reviews/repository';
+import { PhotoLightbox } from './PhotoLightbox';
 import styles from './restaurant.module.css';
 
 export interface PhotoGalleryProps {
   photos: PublicPhoto[];
   restaurantName: string;
+  subject?: 'visit' | 'dish';
 }
 
-export function PhotoGallery({ photos, restaurantName }: PhotoGalleryProps) {
+export function PhotoGallery({ photos, restaurantName, subject = 'visit' }: PhotoGalleryProps) {
   const [activePhotoId, setActivePhotoId] = useState<string | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [direction, setDirection] = useState('next');
   const photoId = useId();
   if (photos.length === 0) {
     return (
-      <section aria-label="Fotografias da visita" className={styles.photoPlaceholder}>
+      <section aria-label={subject === 'dish' ? 'Fotografias do prato' : 'Fotografias da visita'} className={styles.photoPlaceholder}>
         <span aria-hidden="true">C</span>
-        <p>Esta visita não possui fotografias publicadas.</p>
+        <p>{subject === 'dish' ? 'Este prato ainda não possui fotografias.' : 'Esta visita não possui fotografias publicadas.'}</p>
       </section>
     );
   }
@@ -32,6 +36,7 @@ export function PhotoGallery({ photos, restaurantName }: PhotoGalleryProps) {
 
   const showPhoto = (index: number) => {
     const nextPhoto = orderedPhotos[Math.max(0, Math.min(index, orderedPhotos.length - 1))];
+    setDirection(index < activeIndex ? 'previous' : 'next');
     setActivePhotoId(nextPhoto.id);
   };
 
@@ -51,24 +56,29 @@ export function PhotoGallery({ photos, restaurantName }: PhotoGalleryProps) {
 
   return (
     <section
-      aria-label="Fotografias da visita"
+      aria-label={subject === 'dish' ? 'Fotografias do prato' : 'Fotografias da visita'}
       aria-roledescription={hasNavigation ? 'carrossel' : undefined}
       className={styles.gallery}
       data-motion="excavation"
       onKeyDown={handleKeyDown}
       tabIndex={hasNavigation ? 0 : undefined}
     >
-      <figure className={styles.photo} id={photoId}>
+      <figure className={styles.photo} id={photoId} data-direction={direction}>
         <Image
-          alt={`Foto ${activeIndex + 1} da visita ao restaurante ${restaurantName}`}
+          alt={subject === 'dish' ? `Foto ${activeIndex + 1} de ${restaurantName}` : `Foto ${activeIndex + 1} da visita ao restaurante ${restaurantName}`}
           data-atmosphere-source={activeIndex === 0 ? 'true' : undefined}
           height={800}
+          loading="eager"
           key={activePhoto.id}
-          sizes="(max-width: 1536px) calc(100vw - 96px), 1440px"
+          sizes="(max-width: 767px) calc(100vw - 32px), (max-width: 1023px) calc(100vw - 48px), (max-width: 1536px) calc(100vw - 96px), 1440px"
           src={activePhoto.url}
           width={1200}
         />
         <figcaption>Registro {String(activeIndex + 1).padStart(2, '0')}</figcaption>
+        <button type="button" className={styles.photoFitToggle} aria-haspopup="dialog"
+          onClick={() => setLightboxOpen(true)}>
+          <Expand aria-hidden="true" size={16} />Ver foto inteira
+        </button>
       </figure>
       {hasNavigation && (
         <div className={styles.galleryControls}>
@@ -108,6 +118,8 @@ export function PhotoGallery({ photos, restaurantName }: PhotoGalleryProps) {
           </div>
         </div>
       )}
+      {lightboxOpen && <PhotoLightbox photos={orderedPhotos} initialPhotoId={activePhoto.id}
+        restaurantName={restaurantName} onClose={() => setLightboxOpen(false)} />}
     </section>
   );
 }
