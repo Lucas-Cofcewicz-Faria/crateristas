@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="150" viewBox="0 0 640 150" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">Crateristas</title>
+  <desc id="desc">Logo da sociedade: contornos de uma cratera acompanhados de um garfo.</desc>
+  <rect width="640" height="150" rx="8" fill="#19131d"/>
+  <!-- Mesmos traçados de src/components/brand/CraterLogo.tsx. -->
+  <g transform="translate(28 27) scale(1.5)" stroke="#f7974c" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4">
+    <path d="M45 10C36 3 21 5 13 14C4 23 3 37 10 47C18 59 36 61 48 51"/>
+    <path d="M40 17C33 12 24 14 18 20C12 27 12 37 18 44C24 51 35 52 42 46"/>
+    <path d="M35 24C31 21 25 24 23 28C20 34 24 42 31 43C34 43 37 42 39 40"/>
+    <path d="M46 16V25C46 30 56 30 56 25V16M51 16V47"/>
+  </g>
+  <text x="148" y="82" fill="#f7974c" font-family="Georgia, serif" font-size="54" font-weight="700">Crateristas</text>
+  <text x="151" y="111" fill="#e6d9ce" font-family="Arial, sans-serif" font-size="14" letter-spacing="2">LIVRO DE REGISTROS DA SOCIEDADE</text>
+</svg>

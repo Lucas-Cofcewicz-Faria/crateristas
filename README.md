@@ -1,23 +1,50 @@
 <div align="center">
-  <img src="public/images/crater-aperture.svg" width="76" alt="Símbolo dos Crateristas" />
-  <h1>Crateristas</h1>
-  <p><strong>Um livro coletivo de registros gastronômicos, construído ao redor de uma cratera muito importante.</strong></p>
+  <img src="docs/assets/crateristas-logo.svg" width="640" alt="Crateristas — livro de registros da sociedade" />
+  <h1>Uma mesa. Várias opiniões. Uma cratera.</h1>
+  <p>Restaurantes, memórias e avaliações de um grupo de amigos, reunidos em uma aplicação web.</p>
   <p>
     <a href="https://crateristas.vercel.app"><strong>Visitar o site</strong></a>
     ·
     <a href="#como-funciona">Como funciona</a>
     ·
+    <a href="#arquitetura">Arquitetura</a>
+    ·
+    <a href="#o-sistema-por-dentro">O sistema</a>
+    ·
     <a href="#desenvolvimento-local">Executar localmente</a>
   </p>
 </div>
 
-![Vista panorâmica da cratera](public/images/cratera.png)
+![Fotografia panorâmica usada na página inicial do Crateristas](public/images/cratera.png)
 
 ## Sobre o projeto
 
-O **Crateristas** nasceu de uma tradição entre amigos: visitar restaurantes, discutir cada detalhe da experiência e registrar uma avaliação construída pelo grupo. A cratera em frente ao restaurante favorito da sociedade tornou-se o símbolo e o ponto de partida dessa história.
+O **Crateristas** transforma as saídas para comer entre amigos em um livro de registros gastronômicos. A ideia nasceu de uma piada interna: uma cratera em frente ao restaurante favorito do grupo ganhou importância suficiente para dar origem à sua própria sociedade.
 
-O site combina uma experiência pública editorial com uma área privada para os integrantes. Visitantes exploram restaurantes, diferentes visitas, comentários, médias coletivas, menus, pratos e perfis. Crateristas autenticados registram experiências e o administrador decide quando cada registro está pronto para ser publicado.
+Depois de cada visita, os integrantes registram suas notas, o prato pedido e um comentário. A aplicação calcula as médias e organiza essas contribuições ao redor de uma mesa. Quem visita o site pode conhecer os restaurantes, ler as opiniões e formar seu próprio veredito.
+
+O projeto reúne frontend e backend em Next.js, com banco PostgreSQL, autenticação, armazenamento de imagens e uma entrada 3D. Toda a experiência está em português brasileiro, com layouts para desktop e mobile.
+
+**Explore:** [Página inicial](https://crateristas.vercel.app/home) · [Registros](https://crateristas.vercel.app/registros) · [História](https://crateristas.vercel.app/historia)
+
+## A história por trás da interface
+
+Lucas liderou a primeira peregrinação depois de encontrar o restaurante no Google Maps. A caminhada sob o sol colocou a fé dos primeiros integrantes à prova; a refeição no destino consolidou a tradição. Entre encontros, pratos sagrados e o olhar do Monarca Guizão, a sociedade ganhou um arquivo próprio.
+
+As fotografias abaixo fazem parte dos capítulos de história da aplicação.
+
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <img src="public/images/history/cratera1.jpeg" width="340" alt="Fila na área externa do restaurante, cercada por árvores" /><br />
+      <sub>A descoberta: o começo das peregrinações.</sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="public/images/history/cratera2.jpg" width="340" alt="Três integrantes reunidos em um caminho arborizado à noite" /><br />
+      <sub>A peregrinação: um caminho que virou tradição.</sub>
+    </td>
+  </tr>
+</table>
 
 ## Funcionalidades
 
@@ -58,7 +85,7 @@ O site combina uma experiência pública editorial com uma área privada para os
 
 - cadastro por um convite compartilhado e reutilizável;
 - autenticação por e-mail e senha com recuperação de acesso;
-- perfil com foto, biografia e cargo oficial;
+- perfil com foto e biografia; o cargo oficial é atribuído pelo administrador;
 - numeração baseada apenas nos integrantes ativos;
 - painel para acompanhar, criar e gerenciar avaliações;
 - administração de convites, cargos, integrantes e publicações;
@@ -115,14 +142,86 @@ Fluxo simplificado da aplicação:
 
 ```mermaid
 flowchart TD
-    UI[React e App Router] --> AUTH[Autorização no servidor]
-    UI --> API[Server Actions e Route Handlers]
-    AUTH --> REPO[Repositórios]
-    API --> REPO
+    UI[Componentes React no navegador] --> READ
+    UI --> WRITE
+    subgraph SERVER[Next.js no servidor]
+      READ[Server Components: leituras]
+      WRITE[Server Actions e Route Handlers: mutações]
+      AUTH[Verificação de sessão e permissões]
+      DOMAIN[Serviço e domínio de avaliações]
+      REPO[Repositórios SQL]
+      READ --> AUTH
+      WRITE --> AUTH
+      AUTH --> DOMAIN
+      AUTH --> REPO
+      DOMAIN --> REPO
+    end
     REPO --> DB[(Neon Postgres)]
-    API --> BLOB[(Vercel Blob)]
+    WRITE --> BLOB[(Vercel Blob)]
     AUTH --> NEON[Neon Auth]
 ```
+
+### Responsabilidade de cada camada
+
+- **Apresentação:** `src/app` compõe páginas e rotas; `src/features` reúne os componentes, formulários e ações de cada funcionalidade. Navegação, identidade, notas e animações compartilhadas ficam em `src/components`.
+- **Domínio de avaliações:** `src/domain/reviews` concentra validação, agregação, publicação e exclusão de visitas. Seu serviço trabalha com um contrato de repositório, permitindo testar regras sem depender do Neon.
+- **Persistência:** `src/lib/repositories` implementa o contrato de avaliações com SQL. Menus, convites e perfis têm repositórios dentro de suas próprias funcionalidades. Transações e restrições do PostgreSQL protegem operações e relacionamentos.
+- **Identidade e arquivos:** Neon Auth gerencia as contas e sessões; a tabela `members` determina o acesso ao aplicativo. Vercel Blob guarda as imagens, enquanto o banco mantém suas referências.
+
+Essa organização permite evoluir as telas por funcionalidade e reutilizar regras e componentes. A cena Three.js é carregada no cliente; no mobile, a entrada padrão segue diretamente para a home, com a experiência 3D disponível como opção.
+
+## O sistema por dentro
+
+### Restaurante, visita e avaliação
+
+Um **restaurante** é cadastrado uma vez e pode ter várias **visitas**, cada uma com sua data e publicação. Uma **ficha de avaliação** pertence a um integrante e a uma visita. A combinação é única no banco: avaliar novamente atualiza a própria ficha.
+
+A página do restaurante abre na visita publicada mais recente e permite consultar as anteriores. Isso preserva a evolução do lugar sem misturar experiências de datas diferentes.
+
+```mermaid
+erDiagram
+    restaurants ||--o{ visits : possui
+    visits ||--o{ scorecards : recebe
+    members ||--o{ scorecards : preenche
+    visits ||--o{ visit_photos : ilustra
+    visits ||--o{ publication_events : registra
+    restaurants ||--o{ menu_items : oferece
+    menu_items ||--o{ menu_scorecards : recebe
+    members ||--o{ menu_scorecards : preenche
+    menu_items ||--o{ menu_photos : ilustra
+```
+
+O diagrama resume o núcleo gastronômico. As tabelas `membership_invite` e `membership_enrollments` cuidam do convite ativo e da conclusão do cadastro, respectivamente.
+
+### Como as notas são calculadas
+
+Nas visitas, as seis categorias têm o mesmo peso. Cada categoria mostra a média das notas dos integrantes; a nota geral reúne todas as notas, com arredondamento para uma casa decimal. Por exemplo: notas `8` e `6` em comida resultam em média `7,0` nessa categoria.
+
+Nos pratos, a nota geral é a média das notas individuais, calculadas com sabor, custo-benefício, UX e tempo de espera quando informado. Um campo opcional vazio não conta como zero. O RNG é calculado separadamente e não altera a nota geral; quanto maior, maior a dependência da sorte. Se ninguém o preencher, ele não aparece.
+
+Comentários de até 180 caracteres preservam a voz de cada pessoa. Não há veredito gerado automaticamente.
+
+### Publicação e acesso
+
+| Papel | O que pode fazer |
+| --- | --- |
+| Visitante | Consultar registros publicados, menus públicos, história e perfis |
+| Integrante | Criar visitas e pratos, editar as próprias avaliações e personalizar seu perfil |
+| Administrador | Gerenciar convites, integrantes, cargos e a publicação dos registros |
+
+Uma visita nasce privada. Com pelo menos uma contribuição, o administrador pode publicá-la, ocultá-la e republicá-la. Não existe quórum obrigatório nem publicação automática. Novas contribuições continuam atualizando as médias após a publicação.
+
+O cargo exibido no perfil é um título da sociedade e não concede permissões. Integrantes removidos saem da contagem e dos perfis públicos, perdem acesso à área privada e continuam associados às suas contribuições históricas.
+
+### Cadastro por convite
+
+O administrador gera um link reutilizável para compartilhar com o grupo. A pessoa informa nome, e-mail e senha; o servidor valida o convite, autoriza o cadastro no Neon Auth e vincula a identidade ao perfil de integrante. Substituir ou desativar o convite invalida o link anterior. Novas contas recebem apenas o papel `member`.
+
+### Fotos e identidade visual
+
+Visitas e pratos aceitam até cinco fotos. O navegador comprime as imagens para WebP e os endpoints aplicam validações antes de aceitar o armazenamento. As imagens ficam no Blob; URLs, posições e vínculos com visitas ou pratos ficam no PostgreSQL.
+
+As fotografias também influenciam a interface: cards, páginas de restaurante, menus e perfis extraem cores da imagem para compor seus destaques. Componentes compartilhados apresentam as notas com cores progressivas e animações que respeitam a preferência por movimento reduzido.
 
 ## Desenvolvimento local
 
@@ -170,7 +269,7 @@ npm run db:migrate
 npm run dev
 ```
 
-A aplicação ficará disponível em `http://localhost:3000`.
+A aplicação ficará disponível em `http://localhost:3000`; `/home` abre diretamente a página principal. As páginas de dados precisam do banco configurado. O repositório não provisiona automaticamente um administrador: em uma instalação nova, a identidade inicial do Neon Auth precisa ser vinculada a `members` com o papel `admin` para permitir a criação do primeiro convite.
 
 > [!CAUTION]
 > `npm run build` executa as migrations durante o `prebuild`. Para conferir apenas a compilação sem escrever no banco configurado, use `node node_modules/next/dist/bin/next build`.
@@ -188,6 +287,8 @@ A aplicação ficará disponível em `http://localhost:3000`.
 | `npm run build` | aplica migrations e gera o build de produção |
 | `npm start` | serve um build já gerado |
 
+Os testes cobrem regras de domínio, componentes, ações e rotas. As integrações que usam `TEST_DATABASE_URL` são opcionais e devem apontar para um banco descartável. Testes PostgreSQL locais também possuem ativação explícita. Um resultado sem essas integrações não valida a conexão com os serviços do deployment.
+
 ## Banco de dados
 
 As migrations em `db/migrations` são aplicadas em ordem e registradas na tabela `schema_migrations`:
@@ -202,11 +303,13 @@ As migrations em `db/migrations` são aplicadas em ordem e registradas na tabela
 
 Guias operacionais mais detalhados:
 
-- [Neon Auth e webhook](docs/setup/neon-auth.md)
+- [Neon Auth e webhook — guia original de provisionamento](docs/setup/neon-auth.md)
 - [Cadastro por convite compartilhado](docs/setup/shared-signup.md)
 - [Perfis dos integrantes](docs/setup/member-profiles.md)
 - [Visitas e menus](docs/setup/visits-and-menu.md)
 - [Checklist de verificação](docs/verification/crater-logbook-checklist.md)
+
+Os guias e checklists registram etapas do desenvolvimento. O guia original de Auth contém referências ao antigo grupo de oito integrantes; para o cadastro atual, consulte o guia de convite compartilhado e as regras descritas acima.
 
 ## Segurança e privacidade
 
@@ -215,7 +318,7 @@ Guias operacionais mais detalhados:
 - rotas privadas revalidam a sessão e o papel do integrante no servidor;
 - novos cadastros dependem de um convite ativo;
 - novos integrantes entram com o papel `member`;
-- fotos são validadas, reprocessadas em WebP e limitadas antes do armazenamento;
+- fotos passam por compressão e validações de formato, tamanho e autorização;
 - a importação do Google Maps aceita apenas hosts e redirecionamentos validados;
 - integrantes removidos perdem o acesso, mas suas avaliações históricas permanecem atribuídas.
 
