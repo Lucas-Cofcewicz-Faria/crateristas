@@ -42,6 +42,31 @@ const query = async (text: string, params: unknown[] = []) => execute([{ text, p
 local.client = { query, transaction: async (factory: (tx: { query: (text: string, params?: unknown[]) => Query }) => Query[]) => execute(factory({ query: (text, params = []) => ({ text, params }) })) };
 
 describe.skipIf(process.env.CRATERISTAS_LOCAL_PG_TESTS !== '1')('cadastro e publicação no PostgreSQL local descartável', () => {
+  it('numera integrantes pela ordem ativa sem contar contas removidas', async () => {
+    const repository = createNeonReviewRepository(local.client as ReviewSqlClient);
+    const owner = randomUUID();
+    const removedA = randomUUID();
+    const removedB = randomUUID();
+    const friend = randomUUID();
+    const [before] = await query('SELECT COUNT(*)::int AS count FROM members WHERE removed_at IS NULL');
+    await query(`WITH base AS (SELECT COALESCE(MAX(member_number), 0) AS n FROM members)
+      INSERT INTO members (id, auth_user_id, email, slug, display_name, member_number, removed_at, removed_by)
+      SELECT id, id::text, id::text || '@example.com', id::text, display_name, member_number, removed_at, removed_by
+      FROM base CROSS JOIN LATERAL (VALUES
+        ($1::uuid, 'Fundador ativo', n + 1, NULL::timestamptz, NULL::uuid),
+        ($2::uuid, 'Teste removido A', n + 2, NOW(), $1::uuid),
+        ($3::uuid, 'Teste removido B', n + 3, NOW(), $1::uuid),
+        ($4::uuid, 'Amigo ativo', n + 4, NULL::timestamptz, NULL::uuid)
+      ) AS inserted(id, display_name, member_number, removed_at, removed_by)`, [owner, removedA, removedB, friend]);
+
+    const publicMembers = await repository.listPublicMembers();
+    const expectedOwnerNumber = Number(before.count) + 1;
+    expect(publicMembers.find((member) => member.slug === owner)?.memberNumber).toBe(expectedOwnerNumber);
+    expect(publicMembers.find((member) => member.slug === friend)?.memberNumber).toBe(expectedOwnerNumber + 1);
+    expect((await repository.findMemberById(friend))?.memberNumber).toBe(expectedOwnerNumber + 1);
+    expect((await repository.findMemberByAuthUserId(friend))?.memberNumber).toBe(expectedOwnerNumber + 1);
+  });
+
   it('valida convite reutilizável, vínculo idempotente, revogação e integrante acima de oito', async () => {
     vi.stubEnv('NEON_AUTH_COOKIE_SECRET', 'synthetic-local-testing-secret-not-for-production');
     const admin = randomUUID();

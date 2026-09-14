@@ -153,11 +153,11 @@ export function MenuReviewForm({ restaurantSlug, item, initialScore, canManagePh
   }
 
   return (
-    <section aria-labelledby={headingId} className={styles.reviewPanel}>
-      <header className={styles.intro}>
-        <h2 id={headingId}>{item ? `Avaliar ${item.name}` : 'Cadastrar um prato'}</h2>
+    <section aria-labelledby={item ? headingId : undefined} aria-label={item ? undefined : 'Ficha do prato'} className={styles.reviewPanel}>
+      {item ? <header className={styles.intro}>
+        <h2 id={headingId}>Avaliar {item.name}</h2>
         <p>Registre sua experiência. As três notas principais são inteiras, de 0 a 10.</p>
-      </header>
+      </header> : null}
 
       <form aria-busy={pending} className={styles.form} noValidate onSubmit={handleSubmit}>
         {!item ? (
@@ -167,16 +167,16 @@ export function MenuReviewForm({ restaurantSlug, item, initialScore, canManagePh
               <label htmlFor="menu-item-name">Nome do prato</label>
               <input id="menu-item-name" maxLength={160} name="name" required type="text" />
             </div>
-            <div className={`${styles.field} ${styles.wideField}`}>
-              <label htmlFor="menu-item-description">Descrição (opcional)</label>
-              <textarea id="menu-item-description" maxLength={500} name="description" rows={3} />
-            </div>
             <div className={styles.field}>
               <label htmlFor="menu-item-price">Preço em reais (opcional)</label>
               <div className={styles.priceControl}>
                 <span aria-hidden="true">R$</span>
                 <input id="menu-item-price" inputMode="decimal" name="price" placeholder="0,00" type="text" />
               </div>
+            </div>
+            <div className={`${styles.field} ${styles.wideField}`}>
+              <label htmlFor="menu-item-description">Descrição (opcional)</label>
+              <textarea id="menu-item-description" maxLength={500} name="description" rows={3} />
             </div>
           </fieldset>
         ) : (

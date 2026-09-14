@@ -65,6 +65,16 @@ function formDataFromCall(): FormData {
 }
 
 describe('avaliação de item do menu', () => {
+  it('mantém a ficha acessível e a ordem de teclado nome, preço e descrição', async () => {
+    const user = userEvent.setup();
+    render(<MenuReviewForm restaurantSlug="caldeirao" />);
+    expect(screen.getByRole('region', { name: 'Ficha do prato' })).toBeInTheDocument();
+    await user.click(screen.getByLabelText('Nome do prato'));
+    await user.tab();
+    expect(screen.getByLabelText('Preço em reais (opcional)')).toHaveFocus();
+    await user.tab();
+    expect(screen.getByLabelText('Descrição (opcional)')).toHaveFocus();
+  });
   it('não adivinha a contribuição própria a partir das contribuições públicas do item', () => {
     render(<MenuReviewForm item={item} restaurantSlug="caldeirao" />);
 

@@ -19,4 +19,12 @@
 .selector button:focus-visible, .selector a:focus-visible, .menuLink:focus-visible { outline: 2px solid var(--review-accent-bright, var(--ember-bright)); outline-offset: 4px; }
 .selector button svg:last-child { transition: transform 180ms ease; }
 .selector button[aria-expanded='true'] svg:last-child { transform: rotate(180deg); }
+@media (max-width: 767px) {
+  .visitToolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: stretch; }
+  .visitToolbar .dateRow { display: contents; }
+  .visitToolbar .dateRow > p { grid-column: 1 / -1; }
+  .visitToolbar .selector { grid-column: 1; grid-row: 2; }
+  .visitToolbar .selector > button { width: 100%; padding-inline: 12px; }
+  .visitToolbar .menuLink { grid-column: 2; grid-row: 2; margin: 0; padding-inline: 20px; }
+}
 @media (prefers-reduced-motion: reduce) { .selector button svg, .menuLink { transition: none; } }

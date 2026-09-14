@@ -82,7 +82,17 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  color: inherit;
+  text-decoration: none;
 }
+
+.cardSummary:focus-visible { outline: 2px solid var(--ember-bright); outline-offset: -2px; }
+.cardSummary:hover .expandButton,
+.cardSummary:focus-visible .expandButton { color: var(--canvas); border-color: var(--ember-bright); }
+.cardSummary:hover .expandButton::before,
+.cardSummary:focus-visible .expandButton::before { clip-path: inset(0); }
+.cardSummary .expandButton svg { flex-shrink: 0; transition: transform 220ms cubic-bezier(.16, 1, .3, 1); }
+.cardSummary:hover .expandButton svg { transform: translate(2px, -2px); }
 
 .avatarFrame {
   position: relative;
@@ -123,15 +133,16 @@
   gap: 8px;
   margin-top: 18px;
   color: var(--ember-bright);
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
-.entryNumber svg { width: 22px; height: 22px; }
+.entryNumber svg { width: 24px; height: 24px; flex-shrink: 0; }
+.memberNumber { margin-top: 12px; color: var(--ink-muted); font-size: .75rem; }
 
-.identity h2 {
+.identity :is(h2, h3) {
   color: var(--ink);
   font-size: clamp(1.6rem, 2vw, 2.15rem);
   font-weight: 580;
@@ -155,26 +166,29 @@
 }
 
 .expandButton {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   width: 100%;
   min-height: 48px;
   margin-top: auto;
-  padding: 12px 0;
-  border: 0;
-  border-top: 1px solid var(--line);
+  padding: 14px 16px;
+  border: 1px solid var(--ember);
   background: transparent;
   color: var(--ink);
   font: inherit;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-weight: 800;
   text-align: left;
   cursor: pointer;
   transition: border-color 160ms ease, color 160ms ease;
 }
 
-.expandButton:hover {
-  border-color: var(--ember);
-  color: var(--ember-bright);
-}
+.expandButton::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--ember-bright); clip-path: inset(100% 0 0); transition: clip-path 240ms cubic-bezier(.16, 1, .3, 1); }
 
 .details {
   padding: 24px 0;
@@ -283,7 +297,7 @@
   .directory { padding: 56px 0 80px; }
   .directoryHeader { align-items: start; gap: 28px; }
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px 24px; }
-  .identity h2,
+  .identity :is(h2, h3),
   .expandButton,
   .bio { overflow-wrap: anywhere; }
   .societyTitle,
@@ -303,13 +317,15 @@
   .pendingLink { min-height: 48px; }
   .grid { grid-template-columns: minmax(0, 1fr); gap: 40px; }
   .identity { padding: 20px 0; }
-  .identity h2 { font-size: 1.8rem; }
+  .identity :is(h2, h3) { font-size: 1.8rem; }
   .avatarFallback { font-size: 4rem; }
   .emptyState { min-height: 280px; padding: 32px 20px; }
   .routeState { padding: 48px 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .expandButton::before { transition: none; }
+  .cardSummary .expandButton svg { transition: none; }
   .expandButton,
   .pendingLink {
     transition: none;

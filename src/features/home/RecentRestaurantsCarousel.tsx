@@ -15,6 +15,7 @@ export interface RecentRestaurantsCarouselProps {
 export function RecentRestaurantsCarousel({ records }: RecentRestaurantsCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
 
   if (records.length === 0) {
     return (
@@ -30,11 +31,34 @@ export function RecentRestaurantsCarousel({ records }: RecentRestaurantsCarousel
   const currentIndex = Math.min(activeIndex, records.length - 1);
   const record = records[currentIndex];
 
-  function moveTo(index: number) {
+  function select(index: number) {
     // Keep keyboard focus out of a card that is about to become inert.
     const currentSlide = rootRef.current?.querySelector('[data-carousel-state="active"]');
     if (currentSlide?.contains(document.activeElement)) rootRef.current?.focus({ preventScroll: true });
     setActiveIndex(Math.max(0, Math.min(records.length - 1, index)));
+  }
+
+  function moveTo(index: number) {
+    select(index);
+    const track = trackRef.current;
+    const target = track?.children[Math.max(0, Math.min(records.length - 1, index))] as HTMLElement | undefined;
+    if (!track || !target || !window.matchMedia?.('(max-width: 1023px)').matches) return;
+    track.scrollTo({
+      left: target.offsetLeft - (track.clientWidth - target.offsetWidth) / 2,
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+    });
+  }
+
+  function syncScroll() {
+    const track = trackRef.current;
+    if (!track || track.clientWidth === 0) return;
+    const center = track.scrollLeft + track.clientWidth / 2;
+    const slides = Array.from(track.children) as HTMLElement[];
+    const nearest = slides.reduce((best, slide, index) => (
+      Math.abs(slide.offsetLeft + slide.offsetWidth / 2 - center)
+        < Math.abs(slides[best].offsetLeft + slides[best].offsetWidth / 2 - center) ? index : best
+    ), 0);
+    if (nearest !== currentIndex) select(nearest);
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -53,7 +77,7 @@ export function RecentRestaurantsCarousel({ records }: RecentRestaurantsCarousel
       ref={rootRef}
       tabIndex={0}
     >
-      <div className={styles.carouselStage}>
+      <div className={styles.carouselStage} ref={trackRef} onScroll={syncScroll}>
         {records.map((candidate, index) => {
           const offset = index - currentIndex;
           const active = offset === 0;

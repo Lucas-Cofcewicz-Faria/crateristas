@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const remove = vi.hoisted(() => vi.fn());
 vi.mock('./member-actions', () => ({ removeMemberAction: remove }));
+vi.mock('./profile-actions', () => ({ setMemberTitleAction: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 import { MemberManager } from './MemberManager';
 const members = [
   { id: 'admin', displayName: 'Guizão', avatarUrl: null, role: 'admin' as const, scorecardCount: 3, removedAt: null },
@@ -11,6 +13,24 @@ const members = [
 afterEach(cleanup);
 beforeEach(() => { remove.mockReset(); remove.mockResolvedValue({ error: null }); });
 describe('gestão de integrantes no painel', () => {
+  it('exibe somente integrantes ativos, sem uma lista de removidos', () => {
+    render(<MemberManager members={[...members, {
+      id: 'removed', displayName: 'Integrante antigo', avatarUrl: null,
+      role: 'member', scorecardCount: 1, removedAt: '2026-09-01T00:00:00Z',
+    }]} currentMemberId="admin" />);
+    expect(screen.getByRole('heading', { name: 'Ana' })).toBeInTheDocument();
+    expect(screen.getByText('2 ativos')).toBeInTheDocument();
+    expect(screen.queryByText('Integrante antigo')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Integrantes removidos/)).not.toBeInTheDocument();
+  });
+  it('mostra o estado vazio quando só há integrantes removidos', () => {
+    render(<MemberManager members={members.map((member) => ({
+      ...member, removedAt: '2026-09-01T00:00:00Z',
+    }))} currentMemberId="admin" />);
+    expect(screen.getByText('Nenhum integrante ativo.')).toBeInTheDocument();
+    expect(screen.getByText('0 ativos')).toBeInTheDocument();
+    expect(screen.queryByText(/Integrantes removidos/)).not.toBeInTheDocument();
+  });
   it('mostra impacto antes da confirmação e protege administradores', async () => {
     const user = userEvent.setup();
     render(<MemberManager members={members} currentMemberId="admin" />);
@@ -26,6 +46,8 @@ describe('gestão de integrantes no painel', () => {
     await user.click(confirm);
     expect(await screen.findByRole('status')).toHaveTextContent('Ana foi removido');
     expect(screen.queryByRole('button', { name: 'Remover Ana' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Integrantes removidos/)).not.toBeInTheDocument();
+    expect(screen.getByText('1 ativo')).toBeInTheDocument();
     expect(remove.mock.calls[0][0].get('memberId')).toBe('member');
   });
   it('cancelar não remove; falha mantém a confirmação disponível', async () => {
@@ -35,7 +57,7 @@ describe('gestão de integrantes no painel', () => {
     await user.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(remove).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Remover Ana' }));
-    await user.type(screen.getByRole('textbox'), 'Remover integrante');
+    await user.type(within(screen.getByRole('form', { name: 'Remover Ana' })).getByRole('textbox'), 'Remover integrante');
     remove.mockRejectedValueOnce(new Error('offline'));
     await user.click(screen.getByRole('button', { name: 'Confirmar remoção' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Tente novamente');

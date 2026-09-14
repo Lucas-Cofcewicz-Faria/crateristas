@@ -4,7 +4,7 @@ import type { ManagedMember } from './member-management-state';
 
 /** Private projection; authorization is enforced here as well as by the page. */
 export async function listManagedMembers(actorId: string): Promise<ManagedMember[]> {
-  const rows = await getDb().query(`SELECT m.id, m.display_name, m.avatar_url, m.role,
+  const rows = await getDb().query(`SELECT m.id, m.display_name, m.avatar_url, m.society_title, m.role,
       m.removed_at, COUNT(s.id)::int AS scorecard_count
     FROM members m LEFT JOIN scorecards s ON s.member_id = m.id
     WHERE EXISTS (SELECT 1 FROM members actor
@@ -13,6 +13,7 @@ export async function listManagedMembers(actorId: string): Promise<ManagedMember
   return rows.map((row) => ({
     id: String(row.id), displayName: String(row.display_name),
     avatarUrl: row.avatar_url ? String(row.avatar_url) : null,
+    societyTitle: row.society_title ? String(row.society_title) : null,
     role: row.role === 'admin' ? 'admin' : 'member',
     removedAt: row.removed_at ? String(row.removed_at) : null,
     scorecardCount: Number(row.scorecard_count),

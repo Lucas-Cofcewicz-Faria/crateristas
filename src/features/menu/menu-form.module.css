@@ -8,8 +8,7 @@
 
 .reviewPanel {
   max-width: 1040px;
-  padding-block: 8px 48px;
-  border-bottom: 1px solid var(--line);
+  padding-block: 8px 16px;
 }
 
 .intro {
@@ -37,8 +36,10 @@
 .form {
   display: grid;
   gap: 32px;
-  margin-top: 32px;
+  margin-top: 0;
 }
+
+.intro + .form { margin-top: 32px; }
 
 .details,
 .scores,
@@ -51,9 +52,10 @@
 .details,
 .scoreGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px 32px;
 }
+
+.details { grid-template-columns: minmax(0, 1fr) minmax(180px, 240px); }
 
 .details legend,
 .scores legend,
@@ -141,7 +143,8 @@
   text-transform: uppercase;
 }
 
-.scoreGrid { gap: 28px 48px; }
+.scoreGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px 32px; }
+.scoreGrid > [data-score-unit] { grid-template-rows: auto 1fr auto auto; }
 
 .optionalScores {
   display: grid;
@@ -171,13 +174,12 @@
 .photoLimit { color: var(--ink-muted); font-size: 0.76rem; }
 .commentField textarea[aria-invalid='true'] { border-color: var(--danger); }
 
-.actions { display: flex; justify-content: flex-end; }
+.actions { display: flex; justify-content: flex-end; padding-top: 8px; }
 .error { color: var(--danger); font-size: 0.82rem; line-height: 1.5; }
 
 .photoUploader {
   max-width: 1040px;
-  padding-block: 32px 40px;
-  border-bottom: 1px solid var(--line);
+  padding-block: 32px;
 }
 
 .photoIntro {
@@ -217,8 +219,8 @@
 .photoUploader > .error { margin-top: 18px; }
 
 @media (max-width: 767px) {
-  .reviewPanel { padding-bottom: 36px; }
-  .form { gap: 28px; margin-top: 28px; }
+  .form { gap: 28px; }
+  .intro + .form { margin-top: 28px; }
   .details,
   .scoreGrid,
   .optionalScores,
@@ -229,7 +231,7 @@
   .optionalScores legend { grid-column: auto; }
   .optionalCriterion { padding: 18px 16px; }
   .commentHeading { align-items: flex-start; flex-direction: column; gap: 4px; }
-  .actions { display: grid; }
+  .actions { display: grid; grid-template-columns: minmax(0, 1fr); justify-content: stretch; }
   .actions button,
   .photoControls button { width: 100%; }
   .photoIntro { gap: 16px; }

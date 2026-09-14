@@ -2,6 +2,7 @@ import { BrandHomeLink } from './BrandHomeLink';
 import { EntryLink } from './EntryLink';
 import { CraterLogo } from '@/components/brand/CraterLogo';
 import { logoutAction } from '@/features/auth/actions';
+import { ProfileMenu } from './ProfileMenu';
 import { HeaderMotion } from './HeaderMotion';
 import { HeaderLinks } from './HeaderLinks';
 import { HeaderNavigation } from './HeaderNavigation';
@@ -32,11 +33,7 @@ export function AppHeader({
         <HeaderNavigation>
           <HeaderLinks member={viewer === 'member'} />
           {viewer === 'member' ? (
-            <>
-              <form action={signOutAction}>
-                <button className={styles.signOut} type="submit">Sair</button>
-              </form>
-            </>
+            <ProfileMenu signOutAction={signOutAction} />
           ) : (
             <EntryLink />
           )}

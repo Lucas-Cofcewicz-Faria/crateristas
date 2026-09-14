@@ -424,6 +424,7 @@
 }
 
 .carouselStage {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: center;
@@ -709,7 +710,27 @@
 
   .marginNote { margin-top: 0; writing-mode: horizontal-tb; }
   .historyExcerpt { font-size: 1.2rem; }
-  .carouselSlide { width: 82%; }
+  .carouselStage {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-inline: 9%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 9%;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .carouselStage::-webkit-scrollbar { display: none; }
+  .carouselSlide {
+    flex: 0 0 100%;
+    width: 100%;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+    transform: scale(0.9);
+    opacity: 0.65;
+  }
+  .carouselSlide[data-carousel-state='active'] { transform: scale(1); }
   .carouselDots { flex-wrap: wrap; }
   .closingCallout { min-height: 0; padding: 80px 24px; }
   .closingCallout h2 { font-size: clamp(2.7rem, 6vw, 4rem); }

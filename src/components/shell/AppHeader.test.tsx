@@ -83,31 +83,56 @@ describe('AppHeader', () => {
     }
   });
 
-  it('troca a entrada pelo painel e invoca o contrato de saída recebido', async () => {
+  it('troca a saída pelo perfil sem perder o acesso ao painel', () => {
     const signOutAction = vi.fn(async () => undefined);
     render(<AppHeader viewer="member" signOutAction={signOutAction} />);
 
     expect(screen.getByRole('link', { name: 'Painel' }))
       .toHaveAttribute('href', '/painel');
-    const button = screen.getByRole('button', { name: 'Sair' });
-    expect(button).toHaveAttribute('type', 'submit');
+    expect(screen.getByRole('link', { name: 'Perfil' })).toHaveAttribute('href', '/perfil');
+    expect(screen.queryByRole('button', { name: 'Sair' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Entrar' })).not.toBeInTheDocument();
 
-    fireEvent.submit(button.closest('form')!);
-    await waitFor(() => expect(signOutAction).toHaveBeenCalledOnce());
   });
 
-  it('faz todo shell de membro usar a ação real de logout por padrão', async () => {
+  it('mantém o acesso ao perfil no shell de membro', () => {
     render(
       <PublicShell viewer="member">
         <h1>Painel privado</h1>
       </PublicShell>,
     );
 
-    const button = screen.getByRole('button', { name: 'Sair' });
-    fireEvent.submit(button.closest('form')!);
+    expect(screen.getByRole('link', { name: 'Perfil' })).toHaveAttribute('href', '/perfil');
+  });
 
+  it('oferece saída no hover sem deslogar até a confirmação pelo botão', async () => {
+    render(<AppHeader viewer="member" />);
+    const link = screen.getByRole('link', { name: 'Perfil' });
+    fireEvent.pointerEnter(link.parentElement!, { pointerType: 'mouse' });
+    const button = screen.getByRole('button', { name: 'Sair da plataforma' });
+    expect(dependencies.logoutAction).not.toHaveBeenCalled();
+    fireEvent.submit(button.closest('form')!);
     await waitFor(() => expect(dependencies.logoutAction).toHaveBeenCalledOnce());
+  });
+
+  it('abre por toque, fecha por Escape e devolve foco sem reabrir', () => {
+    render(<AppHeader viewer="member" />);
+    const toggle = screen.getByRole('button', { name: 'Opções do perfil' });
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.keyDown(toggle, { key: 'Escape' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveFocus();
+    expect(screen.queryByRole('button', { name: 'Sair da plataforma' })).not.toBeInTheDocument();
+  });
+
+  it('abre pelo foco do link e fecha ao sair do grupo', () => {
+    render(<AppHeader viewer="member" />);
+    const link = screen.getByRole('link', { name: 'Perfil' });
+    fireEvent.focus(link);
+    expect(screen.getByRole('button', { name: 'Sair da plataforma' })).toBeVisible();
+    fireEvent.blur(link, { relatedTarget: document.body });
+    expect(screen.queryByRole('button', { name: 'Sair da plataforma' })).not.toBeInTheDocument();
   });
 
   it('compõe os marcos compartilhados sem acoplar a sessão ao shell', () => {

@@ -1,9 +1,10 @@
 'use client';
 
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight, Expand, Shrink } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Expand } from 'lucide-react';
 import { useId, useState, type KeyboardEvent } from 'react';
 import type { PublicPhoto } from '@/domain/reviews/repository';
+import { PhotoLightbox } from './PhotoLightbox';
 import styles from './restaurant.module.css';
 
 export interface PhotoGalleryProps {
@@ -14,7 +15,7 @@ export interface PhotoGalleryProps {
 
 export function PhotoGallery({ photos, restaurantName, subject = 'visit' }: PhotoGalleryProps) {
   const [activePhotoId, setActivePhotoId] = useState<string | null>(null);
-  const [showWholePhoto, setShowWholePhoto] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [direction, setDirection] = useState('next');
   const photoId = useId();
   if (photos.length === 0) {
@@ -62,7 +63,7 @@ export function PhotoGallery({ photos, restaurantName, subject = 'visit' }: Phot
       onKeyDown={handleKeyDown}
       tabIndex={hasNavigation ? 0 : undefined}
     >
-      <figure className={styles.photo} id={photoId} data-whole-photo={showWholePhoto} data-direction={direction}>
+      <figure className={styles.photo} id={photoId} data-direction={direction}>
         <Image
           alt={subject === 'dish' ? `Foto ${activeIndex + 1} de ${restaurantName}` : `Foto ${activeIndex + 1} da visita ao restaurante ${restaurantName}`}
           data-atmosphere-source={activeIndex === 0 ? 'true' : undefined}
@@ -74,10 +75,9 @@ export function PhotoGallery({ photos, restaurantName, subject = 'visit' }: Phot
           width={1200}
         />
         <figcaption>Registro {String(activeIndex + 1).padStart(2, '0')}</figcaption>
-        <button type="button" className={styles.photoFitToggle} aria-pressed={showWholePhoto}
-          aria-controls={photoId} onClick={() => setShowWholePhoto((current) => !current)}>
-          {showWholePhoto ? <Shrink aria-hidden="true" size={16} /> : <Expand aria-hidden="true" size={16} />}
-          {showWholePhoto ? 'Preencher enquadramento' : 'Ver foto inteira'}
+        <button type="button" className={styles.photoFitToggle} aria-haspopup="dialog"
+          onClick={() => setLightboxOpen(true)}>
+          <Expand aria-hidden="true" size={16} />Ver foto inteira
         </button>
       </figure>
       {hasNavigation && (
@@ -118,6 +118,8 @@ export function PhotoGallery({ photos, restaurantName, subject = 'visit' }: Phot
           </div>
         </div>
       )}
+      {lightboxOpen && <PhotoLightbox photos={orderedPhotos} initialPhotoId={activePhoto.id}
+        restaurantName={restaurantName} onClose={() => setLightboxOpen(false)} />}
     </section>
   );
 }

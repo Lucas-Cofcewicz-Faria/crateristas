@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from 'react';
 import { UserMinus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { MemberPortrait } from './MemberPortrait';
+import { MemberTitleEditor } from './MemberTitleEditor';
 import { removeMemberAction } from './member-actions';
 import { MEMBER_REMOVAL_CONFIRMATION, type ManagedMember } from './member-management-state';
 import styles from './member-manager.module.css';
@@ -67,7 +68,6 @@ export function MemberManager({ members, currentMemberId }: { members: ManagedMe
   const [message, setMessage] = useState('');
   const heading = useRef<HTMLHeadingElement>(null);
   const active = members.filter((member) => !member.removedAt && !removedIds.includes(member.id));
-  const removed = members.filter((member) => member.removedAt || removedIds.includes(member.id));
 
   return <section className={styles.manager} aria-labelledby="members-management-title">
     <header className={styles.header}>
@@ -88,12 +88,9 @@ export function MemberManager({ members, currentMemberId }: { members: ManagedMe
             setMessage(`${member.displayName} foi removido da sociedade. Avaliações e fotos foram preservadas.`);
             heading.current?.focus();
           }} />}
+        <MemberTitleEditor memberId={member.id} displayName={member.displayName} societyTitle={member.societyTitle ?? null} />
       </li>)}
     </ul>
     {active.length === 0 ? <p>Nenhum integrante ativo.</p> : null}
-    {removed.length > 0 ? <details className={styles.removed}>
-      <summary>Integrantes removidos ({removed.length})</summary>
-      <ul>{removed.map((member) => <li key={member.id}><span>{member.displayName}</span><span>Acesso removido · histórico preservado</span></li>)}</ul>
-    </details> : null}
   </section>;
 }

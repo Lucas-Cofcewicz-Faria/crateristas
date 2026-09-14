@@ -36,40 +36,7 @@
 
 .textAction:hover { color: var(--ember-bright); }
 
-.memberConstellation {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 48px 24px;
-  margin-top: 40px;
-}
-
-.memberPortrait { min-width: 0; }
-
-.memberPortrait h3 {
-  margin-top: 22px;
-  color: var(--ink);
-  font-size: clamp(1.6rem, 2vw, 2.15rem);
-  font-weight: 560;
-  letter-spacing: -0.025em;
-  line-height: 1.12;
-}
-
-.memberPortrait > span {
-  display: block;
-  margin-top: 8px;
-  color: var(--ink-muted);
-  font-family: var(--font-editorial), Georgia, serif;
-  font-size: 0.88rem;
-}
-
-.memberPortrait > p {
-  margin-top: 18px;
-  color: var(--ember-bright);
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
-}
+.directory { margin-top: 40px; }
 
 .membersEmpty {
   min-height: 280px;
@@ -80,24 +47,19 @@
 
 @media (max-width: 1280px) {
   .membersPreview { width: min(calc(100% - 96px), var(--page-max)); }
-  .memberConstellation { gap: 40px 16px; }
 }
 
 @media (max-width: 1023px) {
   .membersPreview { width: calc(100% - 64px); padding: 80px 0; }
   .sectionHeader { align-items: start; gap: 24px; }
   .sectionHeader h2 { font-size: clamp(2.7rem, 6vw, 4rem); }
-  .memberConstellation { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px 24px; }
-  .memberPortrait h3 { overflow-wrap: anywhere; }
-  .memberPortrait > span { font-size: 1rem; line-height: 1.5; }
 }
 
 @media (max-width: 639px) {
   .membersPreview { width: calc(100% - 40px); padding: 64px 0; }
   .sectionHeader { flex-direction: column; gap: 16px; padding-bottom: 24px; }
   .sectionHeader h2 { font-size: clamp(2.35rem, 9.5vw, 3.4rem); }
-  .memberConstellation { grid-template-columns: minmax(0, 1fr); gap: 40px; margin-top: 32px; }
-  .memberPortrait h3 { margin-top: 18px; font-size: 1.8rem; }
+  .directory { margin-top: 32px; }
   .membersEmpty { min-height: 220px; text-align: center; line-height: 1.6; }
 }
 

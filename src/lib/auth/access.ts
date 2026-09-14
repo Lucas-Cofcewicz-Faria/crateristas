@@ -1,4 +1,5 @@
 import type { MemberRecord } from '@/domain/reviews/repository';
+import { cache } from 'react';
 import { AuthConfigurationError, auth } from '@/lib/auth/server';
 import { createNeonReviewRepository } from '@/lib/repositories/neon-review-repository';
 
@@ -16,7 +17,8 @@ export class AuthorizationError extends Error {
   }
 }
 
-export async function findOptionalMember(): Promise<MemberRecord | null> {
+// Request-local deduplication only. Never share a member/session across requests.
+export const findOptionalMember = cache(async (): Promise<MemberRecord | null> => {
   let session;
   try {
     session = await auth.getSession();
@@ -29,7 +31,7 @@ export async function findOptionalMember(): Promise<MemberRecord | null> {
   if (!data?.user?.id) return null;
 
   return createNeonReviewRepository().findMemberByAuthUserId(data.user.id);
-}
+});
 
 export async function requireMember(): Promise<MemberRecord> {
   const { data } = await auth.getSession();

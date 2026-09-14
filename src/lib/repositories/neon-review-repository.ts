@@ -642,10 +642,13 @@ class NeonReviewRepository implements ReviewRepository {
 
   async findMemberByAuthUserId(authUserId: string): Promise<MemberRecord | null> {
     const rows = await this.sql.query(
-      `SELECT id, auth_user_id, email, slug, display_name, avatar_url, society_title,
-              member_number, bio, favorite_cuisine, role
-       FROM members
-       WHERE auth_user_id = $1 AND removed_at IS NULL`,
+      `SELECT m.id, m.auth_user_id, m.email, m.slug, m.display_name, m.avatar_url, m.society_title,
+              (SELECT COUNT(*)::int FROM members active_member
+               WHERE active_member.removed_at IS NULL
+                 AND active_member.member_number <= m.member_number) AS member_number,
+              m.bio, m.favorite_cuisine, m.role
+       FROM members m
+       WHERE m.auth_user_id = $1 AND m.removed_at IS NULL`,
       [authUserId],
     );
     return rows[0] ? memberFromRow(rows[0]) : null;
@@ -653,10 +656,13 @@ class NeonReviewRepository implements ReviewRepository {
 
   async findMemberById(memberId: string): Promise<MemberRecord | null> {
     const rows = await this.sql.query(
-      `SELECT id, auth_user_id, email, slug, display_name, avatar_url, society_title,
-              member_number, bio, favorite_cuisine, role
-       FROM members
-       WHERE id = $1 AND removed_at IS NULL`,
+      `SELECT m.id, m.auth_user_id, m.email, m.slug, m.display_name, m.avatar_url, m.society_title,
+              (SELECT COUNT(*)::int FROM members active_member
+               WHERE active_member.removed_at IS NULL
+                 AND active_member.member_number <= m.member_number) AS member_number,
+              m.bio, m.favorite_cuisine, m.role
+       FROM members m
+       WHERE m.id = $1 AND m.removed_at IS NULL`,
       [memberId],
     );
     return rows[0] ? memberFromRow(rows[0]) : null;
@@ -1199,7 +1205,9 @@ class NeonReviewRepository implements ReviewRepository {
          m.display_name,
          m.avatar_url,
          m.society_title,
-         m.member_number,
+         (SELECT COUNT(*)::int FROM members active_member
+          WHERE active_member.removed_at IS NULL
+            AND active_member.member_number <= m.member_number) AS member_number,
          m.bio,
          m.favorite_cuisine,
          COUNT(DISTINCT v.id) FILTER (WHERE v.id IS NOT NULL)::int AS published_visits,

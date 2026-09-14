@@ -29,6 +29,21 @@ function record(id: string, name: string): PublicVisitSummary {
 }
 
 describe('RecentRestaurantsCarousel', () => {
+  it('sincroniza o restaurante ativo e os indicadores com a rolagem horizontal', () => {
+    const { container } = render(<RecentRestaurantsCarousel records={[record('1', 'A'), record('2', 'B'), record('3', 'C')]} />);
+    const slides = container.querySelectorAll<HTMLElement>('[data-carousel-state]');
+    const track = slides[0].parentElement!;
+    Object.defineProperty(track, 'clientWidth', { value: 400 });
+    slides.forEach((slide, index) => {
+      Object.defineProperty(slide, 'offsetWidth', { value: 320 });
+      Object.defineProperty(slide, 'offsetLeft', { value: 40 + index * 336 });
+    });
+    fireEvent.scroll(track, { target: { scrollLeft: 336 } });
+    expect(screen.getByRole('article', { name: 'Registro de B' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Mostrar restaurante 2: B' })).toHaveAttribute('aria-current', 'true');
+    fireEvent.scroll(track, { target: { scrollLeft: 672 } });
+    expect(screen.getByRole('button', { name: 'Próximo restaurante' })).toBeDisabled();
+  });
   it('usa a mesma ficha clicável dos registros com cor da capa e nota sem rótulo', () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
       drawImage: () => {},

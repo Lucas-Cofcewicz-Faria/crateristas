@@ -113,7 +113,6 @@
 }
 
 .photo[data-direction='previous'] { --photo-travel: -22px; }
-.photo[data-whole-photo='true'] img { object-fit: contain; }
 
 .photoFitToggle {
   position: absolute;

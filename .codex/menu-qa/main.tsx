@@ -24,7 +24,7 @@ const carouselRecords = ['Cantina de teste', 'Cozinha do segundo registro', 'Res
 createRoot(document.getElementById('root')!).render(<MenuFrame restaurant={restaurant} coverUrl="/images/history/cratera1.jpeg">
   {view === 'carousel' ? <RecentRestaurantsCarousel records={carouselRecords} />
     : view === 'detail' ? <MenuItemReview item={item} restaurantSlug="qa" canContribute />
-    : view === 'form' ? <><header className={styles.heading}><h1>Adicionar prato</h1></header><MenuReviewForm restaurantSlug="qa" /></>
+    : view === 'form' ? <><header className={styles.heading}><div><h1>Adicionar prato</h1><p>Registre o prato e sua avaliação em {restaurant.name}. As fotos entram na próxima etapa.</p></div></header><MenuReviewForm restaurantSlug="qa" /></>
     : <><header className={styles.heading}><div><h1>À mesa, prato a prato.</h1><p>Exemplo local de catálogo, sem dados reais.</p></div><a className={styles.action} href="?view=form">Adicionar prato</a></header>
       <VisitDateSelector restaurantSlug="qa" visitedAt="2026-09-09" selectedVisitId="new" visits={[{ id: 'new', slug: 'new', visitedAt: '2026-09-09' }, { id: 'old', slug: 'old', visitedAt: '2026-08-01' }]} />
       <MenuCatalog restaurantSlug="qa" items={[item, { ...item, id: '2', slug: 'segundo', name: 'Frango crocante', category: 'Aves', priceCents: null, photos: [], publicationState: 'private' }]} /></>}
